@@ -1,30 +1,109 @@
 import SwiftUI
 import FluxerKit
 
-/// Signed-in shell: guilds and DMs in the sidebar, channels in the middle,
-/// messages in the detail pane. Collapses to stacked navigation on iPhone.
+/// Signed-in shell. Wide layouts (Mac, iPad) get a three column split view
+/// driven by selection state. Compact layouts (iPhone) get a navigation
+/// stack that drills down: sidebar, then channels, then messages.
 struct MainView: View {
     @Environment(AppSession.self) private var session
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     @State private var selectedGuild: Guild?
     @State private var selectedChannel: Channel?
 
     var body: some View {
-        NavigationSplitView {
-            sidebar
-                .navigationTitle("Fluxer")
-                .toolbar {
-                    Menu {
-                        if let user = session.currentUser {
-                            Text(user.displayName)
+        #if os(iOS)
+        if horizontalSizeClass == .compact {
+            compactLayout
+        } else {
+            splitLayout
+        }
+        #else
+        splitLayout
+        #endif
+    }
+
+    // MARK: Compact (iPhone)
+
+    private var compactLayout: some View {
+        NavigationStack {
+            List {
+                connectionRow
+                Section("Direct messages") {
+                    if session.privateChannels.isEmpty {
+                        Text("No conversations")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(session.privateChannels) { channel in
+                        NavigationLink(value: channel) {
+                            Label(dmTitle(channel), systemImage: channel.type == .groupDM ? "person.2" : "person")
                         }
-                        Button("Log out", role: .destructive) {
-                            Task { await session.logout() }
-                        }
-                    } label: {
-                        Image(systemName: "person.circle")
                     }
                 }
+                Section("Guilds") {
+                    if session.guilds.isEmpty {
+                        Text("No guilds yet")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(session.guilds) { guild in
+                        NavigationLink(value: guild) {
+                            Label(guild.name, systemImage: "rectangle.3.group")
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Fluxer")
+            .toolbar { accountMenu }
+            .navigationDestination(for: Guild.self) { guild in
+                ChannelListView(guild: guild)
+            }
+            .navigationDestination(for: Channel.self) { channel in
+                MessageView(channel: channel)
+            }
+        }
+    }
+
+    // MARK: Split (Mac, iPad)
+
+    private var splitLayout: some View {
+        NavigationSplitView {
+            List {
+                connectionRow
+                Section("Direct messages") {
+                    if session.privateChannels.isEmpty {
+                        Text("No conversations")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(session.privateChannels) { channel in
+                        Button {
+                            selectedGuild = nil
+                            selectedChannel = channel
+                        } label: {
+                            Label(dmTitle(channel), systemImage: channel.type == .groupDM ? "person.2" : "person")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Section("Guilds") {
+                    if session.guilds.isEmpty {
+                        Text("No guilds yet")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(session.guilds) { guild in
+                        Button {
+                            selectedChannel = nil
+                            selectedGuild = guild
+                        } label: {
+                            Label(guild.name, systemImage: "rectangle.3.group")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .navigationTitle("Fluxer")
+            .toolbar { accountMenu }
         } content: {
             if let guild = selectedGuild {
                 ChannelListView(guild: guild, selectedChannel: $selectedChannel)
@@ -48,42 +127,26 @@ struct MainView: View {
         }
     }
 
-    private var sidebar: some View {
-        List {
-            if !session.gatewayConnected {
-                Label("Connecting", systemImage: "wifi.slash")
-                    .foregroundStyle(.secondary)
+    // MARK: Shared bits
+
+    @ViewBuilder
+    private var connectionRow: some View {
+        if !session.gatewayConnected {
+            Label("Connecting", systemImage: "wifi.slash")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var accountMenu: some View {
+        Menu {
+            if let user = session.currentUser {
+                Text(user.displayName)
             }
-            Section("Direct messages") {
-                if session.privateChannels.isEmpty {
-                    Text("No conversations")
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(session.privateChannels) { channel in
-                    Button {
-                        selectedGuild = nil
-                        selectedChannel = channel
-                    } label: {
-                        Label(dmTitle(channel), systemImage: channel.type == .groupDM ? "person.2" : "person")
-                    }
-                    .buttonStyle(.plain)
-                }
+            Button("Log out", role: .destructive) {
+                Task { await session.logout() }
             }
-            Section("Guilds") {
-                if session.guilds.isEmpty {
-                    Text("No guilds yet")
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(session.guilds) { guild in
-                    Button {
-                        selectedChannel = nil
-                        selectedGuild = guild
-                    } label: {
-                        Label(guild.name, systemImage: "rectangle.3.group")
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+        } label: {
+            Image(systemName: "person.circle")
         }
     }
 
