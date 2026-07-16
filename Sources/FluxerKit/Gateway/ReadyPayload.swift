@@ -19,13 +19,22 @@ public struct ReadyGuild: Codable, Sendable {
     }
 }
 
+/// Per channel read position, as delivered in READY and ack responses.
+public struct ReadState: Codable, Sendable {
+    public let id: Snowflake
+    public var lastMessageId: Snowflake?
+    public var mentionCount: Int?
+}
+
 /// The parts of the READY dispatch this client uses. The full payload
-/// carries much more (settings, presences, read states) which can be
-/// picked up later without breaking decoding.
+/// carries much more (settings, presences) which can be picked up later
+/// without breaking decoding.
 public struct ReadyPayload: Codable, Sendable {
     public let sessionId: String
     public var user: User
     public var guilds: [ReadyGuild]
     public var privateChannels: [Channel]?
+    public var readStates: [ReadState]?
+    public var users: [User]?
     public var resumeGatewayUrl: String?
 }

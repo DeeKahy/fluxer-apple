@@ -22,7 +22,18 @@ final class AppSession {
     private(set) var privateChannels: [Channel] = []
     private(set) var messages: [Snowflake: [Message]] = [:]
     private(set) var gatewayConnected = false
+    /// Last read message per channel.
+    private(set) var readStates: [Snowflake: Snowflake] = [:]
+    /// Users currently typing per channel, with when their indicator expires.
+    private(set) var typingUsers: [Snowflake: [Snowflake: Date]] = [:]
+    /// Users seen in READY, message authors, and DM recipients, for name lookups.
+    private(set) var knownUsers: [Snowflake: User] = [:]
     var lastError: String?
+
+    /// The channel currently on screen; new messages there are acked as read.
+    var activeChannelId: Snowflake?
+
+    private var lastTypingSent: [Snowflake: Date] = [:]
 
     private var gateway: GatewayClient?
     private var gatewayEventTask: Task<Void, Never>?
@@ -242,6 +253,11 @@ final class AppSession {
         messages = [:]
         channelsWithFullHistory = []
         channelsLoadingOlder = []
+        readStates = [:]
+        typingUsers = [:]
+        knownUsers = [:]
+        lastTypingSent = [:]
+        activeChannelId = nil
         mfaTicket = nil
         pendingLogin = nil
         phase = .loggedOut
@@ -282,12 +298,43 @@ final class AppSession {
                 .map { $0.asGuild() }
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             privateChannels = ready.privateChannels ?? []
+            for state in ready.readStates ?? [] {
+                readStates[state.id] = state.lastMessageId
+            }
+            for user in ready.users ?? [] {
+                knownUsers[user.id] = user
+            }
+            for channel in privateChannels {
+                for recipient in channel.recipients ?? [] {
+                    knownUsers[recipient.id] = recipient
+                }
+            }
         case "RESUMED":
             reconnectAttempts = 0
             gatewayConnected = true
         case "MESSAGE_CREATE":
             guard let message = try? event.data?.decoded(as: Message.self) else { return }
             insert(message)
+            bumpLastMessageId(message)
+            typingUsers[message.channelId]?[message.author?.id ?? Snowflake(0)] = nil
+            if message.channelId == activeChannelId || message.author?.id == currentUser?.id {
+                markRead(channelId: message.channelId, messageId: message.id)
+            }
+        case "MESSAGE_ACK":
+            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+                  let messageId = event.data?["message_id"]?.stringValue.flatMap(Snowflake.init(string:))
+            else { return }
+            readStates[channelId] = messageId
+        case "TYPING_START":
+            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+                  let userId = event.data?["user_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+                  userId != currentUser?.id
+            else { return }
+            typingUsers[channelId, default: [:]][userId] = Date().addingTimeInterval(10)
+            Task {
+                try? await Task.sleep(for: .seconds(10))
+                self.pruneTyping(channelId: channelId)
+            }
         case "MESSAGE_UPDATE":
             guard let message = try? event.data?.decoded(as: Message.self) else { return }
             update(message)
@@ -418,11 +465,85 @@ final class AppSession {
     }
 
     private func insert(_ message: Message) {
+        if let author = message.author {
+            knownUsers[author.id] = author
+        }
         guard var channelMessages = messages[message.channelId] else { return }
         guard !channelMessages.contains(where: { $0.id == message.id }) else { return }
         channelMessages.append(message)
         channelMessages.sort { $0.id < $1.id }
         messages[message.channelId] = channelMessages
+    }
+
+    /// Keeps lastMessageId current on the channel objects so unread
+    /// comparisons work without refetching.
+    private func bumpLastMessageId(_ message: Message) {
+        if let index = privateChannels.firstIndex(where: { $0.id == message.channelId }) {
+            privateChannels[index].lastMessageId = message.id
+            return
+        }
+        for guildIndex in guilds.indices {
+            if let channelIndex = guilds[guildIndex].channels?.firstIndex(where: { $0.id == message.channelId }) {
+                guilds[guildIndex].channels?[channelIndex].lastMessageId = message.id
+                return
+            }
+        }
+    }
+
+    // MARK: Read state
+
+    func isUnread(_ channel: Channel) -> Bool {
+        guard channel.type != .guildVoice, channel.type != .guildCategory else { return false }
+        guard let last = channel.lastMessageId else { return false }
+        guard let read = readStates[channel.id] else { return true }
+        return last > read
+    }
+
+    func hasUnread(_ guild: Guild) -> Bool {
+        (guild.channels ?? []).contains { isUnread($0) }
+    }
+
+    /// Optimistically records the read position and tells the server.
+    func markRead(channelId: Snowflake, messageId: Snowflake) {
+        if let current = readStates[channelId], current >= messageId { return }
+        readStates[channelId] = messageId
+        Task {
+            try? await client.ackMessage(messageId, in: channelId)
+        }
+    }
+
+    func markChannelRead(_ channel: Channel) {
+        guard let last = messages(in: channel.id).last?.id ?? channel.lastMessageId else { return }
+        markRead(channelId: channel.id, messageId: last)
+    }
+
+    // MARK: Typing
+
+    func typingNames(in channelId: Snowflake) -> [String] {
+        let now = Date()
+        let active = (typingUsers[channelId] ?? [:]).filter { $0.value > now }
+        return active.keys
+            .map { knownUsers[$0]?.displayName ?? "Someone" }
+            .sorted()
+    }
+
+    private func pruneTyping(channelId: Snowflake) {
+        let now = Date()
+        typingUsers[channelId] = (typingUsers[channelId] ?? [:]).filter { $0.value > now }
+        if typingUsers[channelId]?.isEmpty == true {
+            typingUsers[channelId] = nil
+        }
+    }
+
+    /// Called as the person types; throttled so the server sees at most
+    /// one typing ping per channel every eight seconds.
+    func composerTyping(in channel: Channel) {
+        let now = Date()
+        if let last = lastTypingSent[channel.id], now.timeIntervalSince(last) < 8 { return }
+        lastTypingSent[channel.id] = now
+        Task {
+            try? await client.triggerTyping(in: channel.id)
+        }
     }
 
     private func update(_ message: Message) {

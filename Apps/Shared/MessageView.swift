@@ -112,9 +112,18 @@ struct MessageView: View {
                     }
                 }
                 .task(id: channel.id) {
+                    session.activeChannelId = channel.id
                     await session.loadMessages(for: channel)
+                    session.markChannelRead(channel)
+                }
+                .onDisappear {
+                    if session.activeChannelId == channel.id {
+                        session.activeChannelId = nil
+                    }
                 }
             }
+
+            typingIndicator
 
             Divider()
 
@@ -124,6 +133,11 @@ struct MessageView: View {
                     .lineLimit(1...6)
                     .focused($composerFocused)
                     .onSubmit(send)
+                    .onChange(of: draft) { _, newValue in
+                        if !newValue.isEmpty {
+                            session.composerTyping(in: channel)
+                        }
+                    }
                 Button(action: send) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.title2)
@@ -138,6 +152,31 @@ struct MessageView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    @ViewBuilder
+    private var typingIndicator: some View {
+        let names = session.typingNames(in: channel.id)
+        if !names.isEmpty {
+            HStack(spacing: 6) {
+                ProgressView()
+                    .controlSize(.mini)
+                Text(typingText(names))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 4)
+        }
+    }
+
+    private func typingText(_ names: [String]) -> String {
+        switch names.count {
+        case 1: return "\(names[0]) is typing"
+        case 2: return "\(names[0]) and \(names[1]) are typing"
+        default: return "Several people are typing"
+        }
     }
 
     private func send() {

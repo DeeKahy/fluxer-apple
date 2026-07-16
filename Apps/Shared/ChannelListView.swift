@@ -4,6 +4,8 @@ import FluxerKit
 /// Channels of one guild, grouped by category. With a selection binding the
 /// rows drive a split view; without one they push onto a navigation stack.
 struct ChannelListView: View {
+    @Environment(AppSession.self) private var session
+
     let guild: Guild
     var selectedChannel: Binding<Channel?>?
 
@@ -52,7 +54,14 @@ struct ChannelListView: View {
 
     @ViewBuilder
     private func row(for channel: Channel) -> some View {
-        let label = Label(channel.name ?? "channel", systemImage: "number")
+        let label = HStack {
+            Label(channel.name ?? "channel", systemImage: "number")
+                .fontWeight(session.isUnread(channel) ? .bold : .regular)
+            if session.isUnread(channel) {
+                Spacer()
+                MainView.UnreadDot()
+            }
+        }
         if let selectedChannel {
             Button {
                 selectedChannel.wrappedValue = channel

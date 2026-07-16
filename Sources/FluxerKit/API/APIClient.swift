@@ -281,6 +281,16 @@ public actor APIClient {
         try await sendExpectingNoContent("POST", Endpoint.typing(channelId))
     }
 
+    /// Marks everything up to the given message as read.
+    public func ackMessage(_ messageId: Snowflake, in channelId: Snowflake) async throws {
+        struct Body: Encodable {
+            let mentionCount: Int
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(mentionCount: 0))
+        let request = try makeRequest("POST", Endpoint.ack(channelId, messageId), bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
     // MARK: Request plumbing
 
     func makeRequest(

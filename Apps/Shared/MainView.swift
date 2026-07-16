@@ -163,6 +163,11 @@ struct MainView: View {
                 AvatarView(user: other, diameter: 28)
             }
             Text(dmTitle(channel))
+                .fontWeight(session.isUnread(channel) ? .bold : .regular)
+            if session.isUnread(channel) {
+                Spacer()
+                UnreadDot()
+            }
         }
     }
 
@@ -182,6 +187,19 @@ struct MainView: View {
             .frame(width: 28, height: 28)
             .clipShape(RoundedRectangle(cornerRadius: 7))
             Text(guild.name)
+                .fontWeight(session.hasUnread(guild) ? .bold : .regular)
+            if session.hasUnread(guild) {
+                Spacer()
+                UnreadDot()
+            }
+        }
+    }
+
+    struct UnreadDot: View {
+        var body: some View {
+            Circle()
+                .fill(Color.accentColor)
+                .frame(width: 9, height: 9)
         }
     }
 
