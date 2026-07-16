@@ -38,7 +38,7 @@ struct MainView: View {
                     }
                     ForEach(session.privateChannels) { channel in
                         NavigationLink(value: channel) {
-                            Label(dmTitle(channel), systemImage: channel.type == .groupDM ? "person.2" : "person")
+                            dmRow(channel)
                         }
                     }
                 }
@@ -49,7 +49,7 @@ struct MainView: View {
                     }
                     ForEach(session.guilds) { guild in
                         NavigationLink(value: guild) {
-                            Label(guild.name, systemImage: "rectangle.3.group")
+                            guildRow(guild)
                         }
                     }
                 }
@@ -81,7 +81,7 @@ struct MainView: View {
                             selectedGuild = nil
                             selectedChannel = channel
                         } label: {
-                            Label(dmTitle(channel), systemImage: channel.type == .groupDM ? "person.2" : "person")
+                            dmRow(channel)
                         }
                         .buttonStyle(.plain)
                     }
@@ -96,7 +96,7 @@ struct MainView: View {
                             selectedChannel = nil
                             selectedGuild = guild
                         } label: {
-                            Label(guild.name, systemImage: "rectangle.3.group")
+                            guildRow(guild)
                         }
                         .buttonStyle(.plain)
                     }
@@ -147,6 +147,41 @@ struct MainView: View {
             }
         } label: {
             Image(systemName: "person.circle")
+        }
+    }
+
+    private func dmRow(_ channel: Channel) -> some View {
+        HStack(spacing: 10) {
+            if channel.type == .groupDM {
+                Image(systemName: "person.2.circle.fill")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+            } else {
+                let other = (channel.recipients ?? []).first { $0.id != session.currentUser?.id }
+                    ?? channel.recipients?.first
+                AvatarView(user: other, diameter: 28)
+            }
+            Text(dmTitle(channel))
+        }
+    }
+
+    private func guildRow(_ guild: Guild) -> some View {
+        HStack(spacing: 10) {
+            AsyncImage(url: guild.iconURL(size: 56)) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(.tint.opacity(0.25))
+                    .overlay {
+                        Text(String(guild.name.prefix(1)).uppercased())
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tint)
+                    }
+            }
+            .frame(width: 28, height: 28)
+            .clipShape(RoundedRectangle(cornerRadius: 7))
+            Text(guild.name)
         }
     }
 

@@ -25,6 +25,8 @@
 		A2994F119944A491E195F7EE /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AC3A35D1CE4DB5A20689FC /* RootView.swift */; };
 		A31583CB9030418C32B89D9C /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933AEBE1E248E169E6C6371A /* MainView.swift */; };
 		AB6DA73141D205E5B1E5E37F /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
+		AD30210A2EF243341984B151 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
+		B5E5712786D8B7583BEF14C7 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
 		C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
 		DA24A6012598410F9C773764 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933AEBE1E248E169E6C6371A /* MainView.swift */; };
 		DEEF089735F826AB89A39211 /* EmailConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */; };
@@ -35,6 +37,7 @@
 
 /* Begin PBXFileReference section */
 		01AC3A35D1CE4DB5A20689FC /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		021E0FF137422B943D63FA25 /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Fluxer-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
 		793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
@@ -83,6 +86,7 @@
 			isa = PBXGroup;
 			children = (
 				793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */,
+				021E0FF137422B943D63FA25 /* AvatarView.swift */,
 				9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */,
 				E3920425BC39D63EECD07D72 /* ChannelListView.swift */,
 				BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */,
@@ -202,6 +206,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				353A0EF40B2575AEBB93CF99 /* AppSession.swift in Sources */,
+				B5E5712786D8B7583BEF14C7 /* AvatarView.swift in Sources */,
 				489AC99EFB5FCBE3F2929A71 /* CaptchaView.swift in Sources */,
 				0666CE21E7962CC45B865E2F /* ChannelListView.swift in Sources */,
 				DEEF089735F826AB89A39211 /* EmailConfirmationView.swift in Sources */,
@@ -220,6 +225,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4E6E873A2381F34A2C4B48AE /* AppSession.swift in Sources */,
+				AD30210A2EF243341984B151 /* AvatarView.swift in Sources */,
 				05626B0589D6B44EAE173749 /* CaptchaView.swift in Sources */,
 				A1C066C8BB95ECBBC9B20A23 /* ChannelListView.swift in Sources */,
 				4F6C27BB5379678A2173F5F3 /* EmailConfirmationView.swift in Sources */,
