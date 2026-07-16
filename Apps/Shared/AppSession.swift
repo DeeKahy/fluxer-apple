@@ -10,6 +10,7 @@ final class AppSession {
         case loggedOut
         case captchaPending
         case mfaPending
+        case emailConfirmationPending(email: String)
         case loggingIn
         case loggedIn
     }
@@ -22,6 +23,8 @@ final class AppSession {
     private var client: APIClient
     private var mfaTicket: String?
     private var pendingLogin: (email: String, password: String)?
+    private var ipAuthTicket: String?
+    private var ipAuthPollTask: Task<Void, Never>?
 
     init() {
         self.client = APIClient()
@@ -55,10 +58,20 @@ final class AppSession {
                 currentUser = try await client.currentUser()
                 phase = .loggedIn
                 await loadGuilds()
-            case .mfaRequired(let ticket):
-                mfaTicket = ticket
+            case .mfaRequired(let ticket, let totp, _):
                 pendingLogin = nil
-                phase = .mfaPending
+                if totp {
+                    mfaTicket = ticket
+                    phase = .mfaPending
+                } else {
+                    lastError = "This account uses a security key for MFA, which isn't supported here yet. Log in on the web to add an authenticator app."
+                    phase = .loggedOut
+                }
+            case .ipAuthorizationRequired(let ticket, let email):
+                pendingLogin = nil
+                ipAuthTicket = ticket
+                phase = .emailConfirmationPending(email: email)
+                startIpAuthPolling()
             }
         } catch APIError.captchaRequired {
             pendingLogin = (email, password)
@@ -90,6 +103,46 @@ final class AppSession {
         phase = .loggedOut
     }
 
+    /// Polls until the person clicks the confirmation link Fluxer emailed them.
+    private func startIpAuthPolling() {
+        ipAuthPollTask?.cancel()
+        ipAuthPollTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3))
+                guard let ticket = ipAuthTicket, case .emailConfirmationPending = phase else { return }
+                guard let status = try? await client.pollIpAuthorization(ticket: ticket) else { continue }
+                if status.completed {
+                    ipAuthTicket = nil
+                    if let token = status.token {
+                        KeychainStore.saveToken(token)
+                        phase = .loggingIn
+                        currentUser = try? await client.currentUser()
+                        phase = currentUser != nil ? .loggedIn : .loggedOut
+                        if currentUser != nil {
+                            await loadGuilds()
+                        }
+                    } else {
+                        lastError = "Device confirmed, sign in again."
+                        phase = .loggedOut
+                    }
+                    return
+                }
+            }
+        }
+    }
+
+    func resendConfirmationEmail() async {
+        guard let ticket = ipAuthTicket else { return }
+        try? await client.resendIpAuthorization(ticket: ticket)
+    }
+
+    func cancelEmailConfirmation() {
+        ipAuthPollTask?.cancel()
+        ipAuthPollTask = nil
+        ipAuthTicket = nil
+        phase = .loggedOut
+    }
+
     func submitMfaCode(_ code: String) async {
         guard let ticket = mfaTicket else { return }
         phase = .loggingIn
@@ -110,6 +163,9 @@ final class AppSession {
     func logout() async {
         try? await client.logout()
         KeychainStore.deleteToken()
+        ipAuthPollTask?.cancel()
+        ipAuthPollTask = nil
+        ipAuthTicket = nil
         currentUser = nil
         guilds = []
         mfaTicket = nil

@@ -7,6 +7,8 @@ struct RootView: View {
         switch session.phase {
         case .loggedOut, .mfaPending, .captchaPending:
             LoginView()
+        case .emailConfirmationPending(let email):
+            EmailConfirmationView(email: email)
         case .loggingIn:
             ProgressView("Signing in")
                 .controlSize(.large)

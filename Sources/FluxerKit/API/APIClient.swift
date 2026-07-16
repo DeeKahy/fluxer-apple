@@ -57,11 +57,45 @@ public enum Credential: Sendable {
     }
 }
 
-/// Result of a password login. Either we got a token straight away,
-/// or the account has MFA enabled and we got a ticket to complete it.
-public enum LoginResult: Sendable {
+/// Result of a password login. Either we got a token straight away, the
+/// account has MFA enabled, or the server wants this new device confirmed
+/// through a link it emailed to the account address.
+public enum LoginResult: Sendable, Equatable {
     case success(token: String)
-    case mfaRequired(ticket: String)
+    case mfaRequired(ticket: String, totp: Bool, webauthn: Bool)
+    case ipAuthorizationRequired(ticket: String, email: String)
+}
+
+/// The wire shape of a login response, a union of three variants.
+struct LoginResponseBody: Decodable {
+    var token: String?
+    var ticket: String?
+    var mfa: Bool?
+    var totp: Bool?
+    var webauthn: Bool?
+    var ipAuthorizationRequired: Bool?
+    var email: String?
+}
+
+extension LoginResult {
+    static func interpret(_ body: LoginResponseBody) throws -> LoginResult {
+        if let token = body.token, !token.isEmpty {
+            return .success(token: token)
+        }
+        if body.ipAuthorizationRequired == true, let ticket = body.ticket {
+            return .ipAuthorizationRequired(ticket: ticket, email: body.email ?? "")
+        }
+        if body.mfa == true, let ticket = body.ticket {
+            return .mfaRequired(ticket: ticket, totp: body.totp ?? false, webauthn: body.webauthn ?? false)
+        }
+        throw APIError.decodingFailed(underlying: "Login response matched no known variant")
+    }
+}
+
+/// Status of a pending new-device email confirmation.
+public struct IpAuthorizationStatus: Decodable, Sendable {
+    public let completed: Bool
+    public let token: String?
 }
 
 /// REST client for a Fluxer instance. Defaults to fluxer.app but any
@@ -97,29 +131,45 @@ public actor APIClient {
             let email: String
             let password: String
         }
-        struct Response: Decodable {
-            let token: String?
-            let ticket: String?
-        }
         var headers: [String: String] = [:]
         if let captcha {
             headers["x-captcha-token"] = captcha.token
             headers["x-captcha-type"] = captcha.type
         }
-        let response: Response = try await send(
+        let response: LoginResponseBody = try await send(
             "POST",
             Endpoint.login,
             body: Body(email: email, password: password),
             headers: headers
         )
-        if let token = response.token, !token.isEmpty {
+        let result = try LoginResult.interpret(response)
+        if case .success(let token) = result {
             credential = .user(token: token)
-            return .success(token: token)
         }
-        if let ticket = response.ticket {
-            return .mfaRequired(ticket: ticket)
+        return result
+    }
+
+    /// Checks whether the new-device email confirmation has been completed.
+    /// Once it has, the returned token is installed as the credential.
+    public func pollIpAuthorization(ticket: String) async throws -> IpAuthorizationStatus {
+        let status: IpAuthorizationStatus = try await send(
+            "GET",
+            Endpoint.ipAuthorizationPoll,
+            query: [URLQueryItem(name: "ticket", value: ticket)]
+        )
+        if status.completed, let token = status.token, !token.isEmpty {
+            credential = .user(token: token)
         }
-        throw APIError.decodingFailed(underlying: "Login response had neither token nor ticket")
+        return status
+    }
+
+    public func resendIpAuthorization(ticket: String) async throws {
+        struct Body: Encodable {
+            let ticket: String
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(ticket: ticket))
+        let request = try makeRequest("POST", Endpoint.ipAuthorizationResend, bodyData: data)
+        _ = try await executeRaw(request)
     }
 
     public func loginMfaTotp(code: String, ticket: String) async throws -> String {

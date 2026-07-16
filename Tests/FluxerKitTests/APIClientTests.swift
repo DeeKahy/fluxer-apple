@@ -53,6 +53,44 @@ struct APIClientRequestTests {
     }
 }
 
+@Suite("Login response interpretation")
+struct LoginResponseTests {
+    private func interpret(_ json: String) throws -> LoginResult {
+        let body = try JSONDecoder.fluxer.decode(LoginResponseBody.self, from: Data(json.utf8))
+        return try LoginResult.interpret(body)
+    }
+
+    @Test func tokenResponseIsSuccess() throws {
+        let result = try interpret(#"{"token": "tok123", "user_id": "1", "user": {"id": "1", "username": "dee"}}"#)
+        #expect(result == .success(token: "tok123"))
+    }
+
+    @Test func mfaResponseCarriesMethods() throws {
+        let result = try interpret(
+            #"{"mfa": true, "ticket": "t1", "allowed_methods": ["totp"], "totp": true, "webauthn": false}"#
+        )
+        #expect(result == .mfaRequired(ticket: "t1", totp: true, webauthn: false))
+    }
+
+    @Test func newDeviceResponseIsIpAuthorization() throws {
+        let result = try interpret(
+            #"{"ip_authorization_required": true, "ticket": "t2", "email": "d@example.com"}"#
+        )
+        #expect(result == .ipAuthorizationRequired(ticket: "t2", email: "d@example.com"))
+    }
+
+    @Test func ipAuthorizationWinsOverBareTicket() throws {
+        // A ticket alone must never be mistaken for an MFA prompt.
+        let body = try JSONDecoder.fluxer.decode(
+            LoginResponseBody.self,
+            from: Data(#"{"ticket": "t3"}"#.utf8)
+        )
+        #expect(throws: APIError.self) {
+            try LoginResult.interpret(body)
+        }
+    }
+}
+
 @Suite("API error mapping")
 struct APIErrorMappingTests {
     @Test func mapsCaptchaRequired() {

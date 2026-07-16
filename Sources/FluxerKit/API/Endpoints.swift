@@ -6,6 +6,8 @@ enum Endpoint {
     static let login = "/auth/login"
     static let loginMfaTotp = "/auth/login/mfa/totp"
     static let logout = "/auth/logout"
+    static let ipAuthorizationPoll = "/auth/ip-authorization/poll"
+    static let ipAuthorizationResend = "/auth/ip-authorization/resend"
     static let me = "/users/@me"
     static let myChannels = "/users/@me/channels"
     static let myGuilds = "/users/@me/guilds"
