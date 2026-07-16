@@ -33,7 +33,8 @@ upstream). Checked items are built and QA'd in the app.
 - [ ] Saved messages: /users/@me/saved-messages, save from context menu
 - [ ] Scheduled messages: compose with a send-at time (/channels/{id}/messages/schedule)
 - [ ] Bulk delete my messages in a channel or guild (bulk-delete-mine endpoints)
-- [ ] Slowmode awareness: respect channel slowmode, show cooldown in composer
+- [x] Slowmode awareness: cooldown countdown in the composer, bypass permissions
+      respected, server rate limit answers extend the cooldown
 - [ ] Custom emoji: render guild emoji in messages, emoji picker for composing,
       sticker rendering and picker (guild emojis/stickers endpoints, packs)
 - [ ] GIF picker: /gifs/search, /gifs/trending, /gifs/featured
@@ -42,11 +43,12 @@ upstream). Checked items are built and QA'd in the app.
 
 ## Social
 
-- [ ] Friends list: /users/@me/relationships, add by tag, accept/ignore/block,
-      RELATIONSHIP_* gateway events
+- [x] Friends list: relationships from READY plus RELATIONSHIP_* events, add by
+      username, accept/ignore/remove/unblock, open DM from the list
 - [ ] User profiles: /users/{id}/profile popover (bio, pronouns), personal notes
       (/users/@me/notes/{id})
-- [ ] Presence: online/idle/dnd dots from PRESENCE_UPDATE, set own status
+- [x] Presence: online/idle/dnd dots from READY and PRESENCE_UPDATE (setting own
+      status still todo)
 - [ ] Pinned DMs: /users/@me/channels/{id}/pin
 - [ ] User connections display (Bluesky etc.)
 
@@ -55,10 +57,12 @@ upstream). Checked items are built and QA'd in the app.
 - [ ] Create guild, edit name/icon/description, delete/leave
 - [ ] Invites: create (POST /channels/{id}/invites), list, accept (/invites/{code}),
       invite paste-to-join UI
-- [ ] Member list sidebar: /guilds/{id}/members, members-search, presences
+- [x] Member list sheet: first 200 members with local search and presence dots
+      (full pagination and server-side search still todo)
 - [ ] Roles: display colors and hoisting in member list, role management screens
 - [ ] Moderation: kick, ban, timeout, audit logs
-- [ ] Permissions: compute own permissions per channel, hide/disable UI accordingly
+- [x] Permissions: per-channel computation with tests, composer locks when send
+      is denied, attach and member list buttons follow their permissions
 - [ ] Webhooks management
 - [ ] Guild settings: notifications per guild (/users/@me/guilds/{id}/settings)
 - [ ] Discovery: browse public guilds (/discovery/guilds), join
