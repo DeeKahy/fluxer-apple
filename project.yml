@@ -1,0 +1,43 @@
+name: Fluxer
+options:
+  bundleIdPrefix: dev.deekahy
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+packages:
+  FluxerKit:
+    path: .
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    GENERATE_INFOPLIST_FILE: YES
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
+targets:
+  Fluxer-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - Apps/Shared
+    dependencies:
+      - package: FluxerKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.deekahy.fluxer
+        PRODUCT_NAME: Fluxer
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        TARGETED_DEVICE_FAMILY: "1,2"
+  Fluxer-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - Apps/Shared
+    dependencies:
+      - package: FluxerKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.deekahy.fluxer.mac
+        PRODUCT_NAME: Fluxer
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        ENABLE_HARDENED_RUNTIME: NO

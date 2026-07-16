@@ -1,0 +1,455 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AC3A35D1CE4DB5A20689FC /* RootView.swift */; };
+		353A0EF40B2575AEBB93CF99 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */; };
+		3B7D547364EED0B2570DDF54 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D00312D665CE9588D3BB5C /* HomeView.swift */; };
+		4E6E873A2381F34A2C4B48AE /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */; };
+		5ACCA3443856FBD8558540B7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B9527E570305AC9F43DFA8 /* FluxerApp.swift */; };
+		635139FE0A9159D18C2EC234 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D00312D665CE9588D3BB5C /* HomeView.swift */; };
+		6E63117BBDF5F9A13A207070 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
+		6E93A864F966E06F84AB19A9 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = B0DD205E3FEE92631EC5C284 /* FluxerKit */; };
+		879307989A18EE1B977364D4 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
+		A2994F119944A491E195F7EE /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AC3A35D1CE4DB5A20689FC /* RootView.swift */; };
+		C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
+		EC692CFA49866A54A34BDED1 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
+		F1F699778EAF114B042BA5B9 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B9527E570305AC9F43DFA8 /* FluxerApp.swift */; };
+		FD64F07718204A0FE4FC1450 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = C033D75BAE3A91A96A9A7A53 /* FluxerKit */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		01AC3A35D1CE4DB5A20689FC /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Fluxer-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		58D00312D665CE9588D3BB5C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
+		851AA6BF6493F3B3857262AE /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		90B9527E570305AC9F43DFA8 /* FluxerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxerApp.swift; sourceTree = "<group>"; };
+		A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Fluxer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D64738FE6F72259636FA76F8 /* fluxer-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fluxer-apple"; path = .; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4C75A2A1893AFEE89D6D89EB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6E93A864F966E06F84AB19A9 /* FluxerKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D4B2D23EC885316FFA61B1A5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FD64F07718204A0FE4FC1450 /* FluxerKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		01903BCD792A29194B162F34 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */,
+				157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7570AB6EA4388FD3D0D376BB /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */,
+				90B9527E570305AC9F43DFA8 /* FluxerApp.swift */,
+				58D00312D665CE9588D3BB5C /* HomeView.swift */,
+				A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */,
+				851AA6BF6493F3B3857262AE /* LoginView.swift */,
+				01AC3A35D1CE4DB5A20689FC /* RootView.swift */,
+			);
+			name = Shared;
+			path = Apps/Shared;
+			sourceTree = "<group>";
+		};
+		A2C472C31752EC858F683EAA = {
+			isa = PBXGroup;
+			children = (
+				BB8EA4069C5D80EA9243F6FE /* Packages */,
+				7570AB6EA4388FD3D0D376BB /* Shared */,
+				01903BCD792A29194B162F34 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BB8EA4069C5D80EA9243F6FE /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				D64738FE6F72259636FA76F8 /* fluxer-apple */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B6BC22C8A506032470B3AD93 /* Fluxer-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6A2171E264A638E10B9E5414 /* Build configuration list for PBXNativeTarget "Fluxer-iOS" */;
+			buildPhases = (
+				937437796B275881939F13D9 /* Sources */,
+				D4B2D23EC885316FFA61B1A5 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Fluxer-iOS";
+			packageProductDependencies = (
+				C033D75BAE3A91A96A9A7A53 /* FluxerKit */,
+			);
+			productName = "Fluxer-iOS";
+			productReference = C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E9E4E8ACB7061347DBD17F5C /* Fluxer-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9D2D007966AFBD94DAF643F1 /* Build configuration list for PBXNativeTarget "Fluxer-macOS" */;
+			buildPhases = (
+				83DCB2A38C387589B5EF5CE6 /* Sources */,
+				4C75A2A1893AFEE89D6D89EB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Fluxer-macOS";
+			packageProductDependencies = (
+				B0DD205E3FEE92631EC5C284 /* FluxerKit */,
+			);
+			productName = "Fluxer-macOS";
+			productReference = 157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		451927B2D7E74506BBF6AC91 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					B6BC22C8A506032470B3AD93 = {
+						ProvisioningStyle = Automatic;
+					};
+					E9E4E8ACB7061347DBD17F5C = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 757916A02E54E15F2D6280C1 /* Build configuration list for PBXProject "Fluxer" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A2C472C31752EC858F683EAA;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				29399FD5C22EF725BB5DF52B /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 01903BCD792A29194B162F34 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B6BC22C8A506032470B3AD93 /* Fluxer-iOS */,
+				E9E4E8ACB7061347DBD17F5C /* Fluxer-macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		83DCB2A38C387589B5EF5CE6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				353A0EF40B2575AEBB93CF99 /* AppSession.swift in Sources */,
+				5ACCA3443856FBD8558540B7 /* FluxerApp.swift in Sources */,
+				3B7D547364EED0B2570DDF54 /* HomeView.swift in Sources */,
+				C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */,
+				EC692CFA49866A54A34BDED1 /* LoginView.swift in Sources */,
+				0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		937437796B275881939F13D9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4E6E873A2381F34A2C4B48AE /* AppSession.swift in Sources */,
+				F1F699778EAF114B042BA5B9 /* FluxerApp.swift in Sources */,
+				635139FE0A9159D18C2EC234 /* HomeView.swift in Sources */,
+				6E63117BBDF5F9A13A207070 /* KeychainStore.swift in Sources */,
+				879307989A18EE1B977364D4 /* LoginView.swift in Sources */,
+				A2994F119944A491E195F7EE /* RootView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1EE38D15151B659292B37855 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.deekahy.fluxer.mac;
+				PRODUCT_NAME = Fluxer;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		28717640EAF33FC9D093BB29 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.deekahy.fluxer.mac;
+				PRODUCT_NAME = Fluxer;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		334DC319AF9F65A440270680 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		82B39EEA68E20BBBED64369B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.deekahy.fluxer;
+				PRODUCT_NAME = Fluxer;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C7555668A6C62496F848D2AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		E220049750337E0079B90D81 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.deekahy.fluxer;
+				PRODUCT_NAME = Fluxer;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6A2171E264A638E10B9E5414 /* Build configuration list for PBXNativeTarget "Fluxer-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				82B39EEA68E20BBBED64369B /* Debug */,
+				E220049750337E0079B90D81 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		757916A02E54E15F2D6280C1 /* Build configuration list for PBXProject "Fluxer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				334DC319AF9F65A440270680 /* Debug */,
+				C7555668A6C62496F848D2AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9D2D007966AFBD94DAF643F1 /* Build configuration list for PBXNativeTarget "Fluxer-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				28717640EAF33FC9D093BB29 /* Debug */,
+				1EE38D15151B659292B37855 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		29399FD5C22EF725BB5DF52B /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B0DD205E3FEE92631EC5C284 /* FluxerKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FluxerKit;
+		};
+		C033D75BAE3A91A96A9A7A53 /* FluxerKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FluxerKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 451927B2D7E74506BBF6AC91 /* Project object */;
+}
