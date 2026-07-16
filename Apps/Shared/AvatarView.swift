@@ -7,11 +7,7 @@ struct AvatarView: View {
     var diameter: CGFloat = 36
 
     var body: some View {
-        AsyncImage(url: user?.avatarURL(size: Int(diameter * 2))) { image in
-            image
-                .resizable()
-                .scaledToFill()
-        } placeholder: {
+        RemoteImage(url: user?.avatarURL(size: Int(diameter * 2))) {
             initialCircle
         }
         .frame(width: diameter, height: diameter)

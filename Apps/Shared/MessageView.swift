@@ -203,6 +203,29 @@ private struct DayDivider: View {
     }
 }
 
+private struct MessageContentText: View {
+    @Environment(AppSession.self) private var session
+
+    let content: String
+
+    var body: some View {
+        Text(session.renderMessageContent(content))
+            .textSelection(.enabled)
+            .environment(\.openURL, OpenURLAction { url in
+                guard url.scheme == MessageMarkdown.channelURLScheme,
+                      url.host() == "channel",
+                      let idPart = url.pathComponents.last,
+                      let id = Snowflake(string: idPart),
+                      let channel = session.findChannel(id)
+                else {
+                    return .systemAction
+                }
+                session.channelJump = channel
+                return .handled
+            })
+    }
+}
+
 private struct MessageRow: View {
     let message: Message
     let showsHeader: Bool
@@ -232,8 +255,7 @@ private struct MessageRow: View {
                     }
                 }
                 if let content = message.content, !content.isEmpty {
-                    Text(content)
-                        .textSelection(.enabled)
+                    MessageContentText(content: content)
                 }
                 ForEach(message.attachments ?? []) { attachment in
                     AttachmentContent(attachment: attachment)
@@ -258,16 +280,12 @@ private struct AttachmentContent: View {
 
     var body: some View {
         if isImage, let url = imageURL {
-            AsyncImage(url: url) { image in
-                image
-                    .resizable()
-                    .scaledToFit()
-            } placeholder: {
+            RemoteImage(url: url) {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(.quaternary)
                     .overlay { ProgressView() }
-                    .aspectRatio(aspectRatio, contentMode: .fit)
             }
+            .aspectRatio(aspectRatio, contentMode: .fit)
             .frame(maxWidth: 320, maxHeight: 320, alignment: .leading)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .padding(.top, 4)

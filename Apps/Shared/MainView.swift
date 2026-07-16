@@ -12,23 +12,42 @@ struct MainView: View {
 
     @State private var selectedGuild: Guild?
     @State private var selectedChannel: Channel?
+    @State private var compactPath = NavigationPath()
 
     var body: some View {
-        #if os(iOS)
-        if horizontalSizeClass == .compact {
-            compactLayout
-        } else {
+        Group {
+            #if os(iOS)
+            if horizontalSizeClass == .compact {
+                compactLayout
+            } else {
+                splitLayout
+            }
+            #else
             splitLayout
+            #endif
         }
-        #else
-        splitLayout
-        #endif
+        .onChange(of: session.channelJump) { _, jump in
+            guard let jump else { return }
+            session.channelJump = nil
+            #if os(iOS)
+            if horizontalSizeClass == .compact {
+                compactPath.append(jump)
+                return
+            }
+            #endif
+            if let guildId = jump.guildId {
+                selectedGuild = session.guilds.first { $0.id == guildId }
+            } else {
+                selectedGuild = nil
+            }
+            selectedChannel = jump
+        }
     }
 
     // MARK: Compact (iPhone)
 
     private var compactLayout: some View {
-        NavigationStack {
+        NavigationStack(path: $compactPath) {
             List {
                 connectionRow
                 Section("Direct messages") {
@@ -173,9 +192,7 @@ struct MainView: View {
 
     private func guildRow(_ guild: Guild) -> some View {
         HStack(spacing: 10) {
-            AsyncImage(url: guild.iconURL(size: 56)) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
+            RemoteImage(url: guild.iconURL(size: 56)) {
                 RoundedRectangle(cornerRadius: 7)
                     .fill(.tint.opacity(0.25))
                     .overlay {

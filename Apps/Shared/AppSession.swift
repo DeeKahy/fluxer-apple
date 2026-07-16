@@ -33,6 +33,9 @@ final class AppSession {
     /// The channel currently on screen; new messages there are acked as read.
     var activeChannelId: Snowflake?
 
+    /// Set when a channel mention is tapped; the navigation layer consumes it.
+    var channelJump: Channel?
+
     private var lastTypingSent: [Snowflake: Date] = [:]
 
     private var gateway: GatewayClient?
@@ -515,6 +518,28 @@ final class AppSession {
     func markChannelRead(_ channel: Channel) {
         guard let last = messages(in: channel.id).last?.id ?? channel.lastMessageId else { return }
         markRead(channelId: channel.id, messageId: last)
+    }
+
+    // MARK: Lookups and mentions
+
+    func findChannel(_ id: Snowflake) -> Channel? {
+        if let dm = privateChannels.first(where: { $0.id == id }) {
+            return dm
+        }
+        for guild in guilds {
+            if let channel = guild.channels?.first(where: { $0.id == id }) {
+                return channel
+            }
+        }
+        return nil
+    }
+
+    func renderMessageContent(_ content: String) -> AttributedString {
+        MessageMarkdown.render(
+            content,
+            channelName: { self.findChannel($0)?.name },
+            userName: { self.knownUsers[$0]?.displayName }
+        )
     }
 
     // MARK: Typing

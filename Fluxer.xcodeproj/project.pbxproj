@@ -19,6 +19,7 @@
 		5ACCA3443856FBD8558540B7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B9527E570305AC9F43DFA8 /* FluxerApp.swift */; };
 		6E63117BBDF5F9A13A207070 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
 		6E93A864F966E06F84AB19A9 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = B0DD205E3FEE92631EC5C284 /* FluxerKit */; };
+		73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */; };
 		766F7FBE1E334CC61E6D4881 /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
 		879307989A18EE1B977364D4 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
 		A1C066C8BB95ECBBC9B20A23 /* ChannelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3920425BC39D63EECD07D72 /* ChannelListView.swift */; };
@@ -27,9 +28,12 @@
 		AB6DA73141D205E5B1E5E37F /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
 		AD30210A2EF243341984B151 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
 		B5E5712786D8B7583BEF14C7 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
+		C2707F3CFFAF4427FBFC11E9 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */; };
 		C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
+		D704C447D019BCDC315481C7 /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79732C766EF19446FBEB0EA1 /* MessageMarkdown.swift */; };
 		DA24A6012598410F9C773764 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933AEBE1E248E169E6C6371A /* MainView.swift */; };
 		DEEF089735F826AB89A39211 /* EmailConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */; };
+		E745FA31C9FADC222CA7CE44 /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79732C766EF19446FBEB0EA1 /* MessageMarkdown.swift */; };
 		EC692CFA49866A54A34BDED1 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
 		F1F699778EAF114B042BA5B9 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B9527E570305AC9F43DFA8 /* FluxerApp.swift */; };
 		FD64F07718204A0FE4FC1450 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = C033D75BAE3A91A96A9A7A53 /* FluxerKit */; };
@@ -40,7 +44,9 @@
 		021E0FF137422B943D63FA25 /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Fluxer-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
+		5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImage.swift; sourceTree = "<group>"; };
 		793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
+		79732C766EF19446FBEB0EA1 /* MessageMarkdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageMarkdown.swift; sourceTree = "<group>"; };
 		851AA6BF6493F3B3857262AE /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		90B9527E570305AC9F43DFA8 /* FluxerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxerApp.swift; sourceTree = "<group>"; };
 		9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptchaView.swift; sourceTree = "<group>"; };
@@ -95,7 +101,9 @@
 				A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */,
 				851AA6BF6493F3B3857262AE /* LoginView.swift */,
 				933AEBE1E248E169E6C6371A /* MainView.swift */,
+				79732C766EF19446FBEB0EA1 /* MessageMarkdown.swift */,
 				3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */,
+				5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */,
 				01AC3A35D1CE4DB5A20689FC /* RootView.swift */,
 			);
 			name = Shared;
@@ -215,7 +223,9 @@
 				C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */,
 				EC692CFA49866A54A34BDED1 /* LoginView.swift in Sources */,
 				DA24A6012598410F9C773764 /* MainView.swift in Sources */,
+				E745FA31C9FADC222CA7CE44 /* MessageMarkdown.swift in Sources */,
 				766F7FBE1E334CC61E6D4881 /* MessageView.swift in Sources */,
+				C2707F3CFFAF4427FBFC11E9 /* RemoteImage.swift in Sources */,
 				0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -234,7 +244,9 @@
 				6E63117BBDF5F9A13A207070 /* KeychainStore.swift in Sources */,
 				879307989A18EE1B977364D4 /* LoginView.swift in Sources */,
 				A31583CB9030418C32B89D9C /* MainView.swift in Sources */,
+				D704C447D019BCDC315481C7 /* MessageMarkdown.swift in Sources */,
 				AB6DA73141D205E5B1E5E37F /* MessageView.swift in Sources */,
+				73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */,
 				A2994F119944A491E195F7EE /* RootView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
