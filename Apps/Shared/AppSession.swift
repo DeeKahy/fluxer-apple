@@ -240,6 +240,8 @@ final class AppSession {
         guilds = []
         privateChannels = []
         messages = [:]
+        channelsWithFullHistory = []
+        channelsLoadingOlder = []
         mfaTicket = nil
         pendingLogin = nil
         phase = .loggedOut
@@ -344,20 +346,63 @@ final class AppSession {
 
     // MARK: Messages
 
+    private var channelsWithFullHistory: Set<Snowflake> = []
+    private var channelsLoadingOlder: Set<Snowflake> = []
+    private static let historyPageSize = 50
+
     func messages(in channelId: Snowflake) -> [Message] {
         messages[channelId] ?? []
     }
 
+    func canLoadOlderMessages(in channelId: Snowflake) -> Bool {
+        !channelsWithFullHistory.contains(channelId)
+    }
+
     /// Loads history the first time a channel is opened. Later messages
-    /// arrive through the gateway.
+    /// arrive through the gateway, older pages through loadOlderMessages.
     func loadMessages(for channel: Channel) async {
         guard messages[channel.id] == nil else { return }
         do {
-            let history = try await client.messages(in: channel.id)
+            let history = try await client.messages(in: channel.id, limit: Self.historyPageSize)
+            if history.count < Self.historyPageSize {
+                channelsWithFullHistory.insert(channel.id)
+            }
             // The API returns newest first, the UI wants oldest first.
             messages[channel.id] = history.sorted { $0.id < $1.id }
         } catch {
             lastError = Self.describe(error)
+        }
+    }
+
+    /// Fetches the page before the oldest loaded message and prepends it.
+    /// Returns the previous oldest message id so the view can keep its
+    /// scroll position anchored there, or nil when nothing was loaded.
+    func loadOlderMessages(for channel: Channel) async -> Snowflake? {
+        guard let existing = messages[channel.id], let oldest = existing.first else { return nil }
+        guard !channelsLoadingOlder.contains(channel.id),
+              !channelsWithFullHistory.contains(channel.id)
+        else { return nil }
+        channelsLoadingOlder.insert(channel.id)
+        defer { channelsLoadingOlder.remove(channel.id) }
+        do {
+            let older = try await client.messages(
+                in: channel.id,
+                before: oldest.id,
+                limit: Self.historyPageSize
+            )
+            if older.count < Self.historyPageSize {
+                channelsWithFullHistory.insert(channel.id)
+            }
+            guard !older.isEmpty else { return nil }
+            let existingIds = Set(existing.map(\.id))
+            var merged = existing
+            merged.append(contentsOf: older.filter { !existingIds.contains($0.id) })
+            merged.sort { $0.id < $1.id }
+            messages[channel.id] = merged
+            return oldest.id
+        } catch {
+            lastError = Self.describe(error)
+            return nil
         }
     }
 

@@ -22,6 +22,19 @@ struct MessageView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
+                        if session.canLoadOlderMessages(in: channel.id),
+                           !session.messages(in: channel.id).isEmpty {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .onAppear {
+                                    Task {
+                                        if let anchor = await session.loadOlderMessages(for: channel) {
+                                            proxy.scrollTo(anchor, anchor: .top)
+                                        }
+                                    }
+                                }
+                        }
                         ForEach(session.messages(in: channel.id)) { message in
                             MessageRow(message: message)
                                 .id(message.id)
@@ -29,7 +42,9 @@ struct MessageView: View {
                     }
                     .padding()
                 }
-                .onChange(of: session.messages(in: channel.id).count) {
+                // Keyed on the newest id, not the count, so prepending
+                // older history doesn't yank the view to the bottom.
+                .onChange(of: session.messages(in: channel.id).last?.id) {
                     if let last = session.messages(in: channel.id).last {
                         proxy.scrollTo(last.id, anchor: .bottom)
                     }
