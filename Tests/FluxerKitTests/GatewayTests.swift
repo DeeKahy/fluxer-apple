@@ -73,6 +73,47 @@ struct GatewayPayloadTests {
     }
 }
 
+@Suite("ReadyPayload")
+struct ReadyPayloadTests {
+    @Test func decodesWrappedGuilds() throws {
+        let json = """
+        {
+          "session_id": "sess1",
+          "resume_gateway_url": "wss://resume.test",
+          "user": {"id": "1", "username": "dee"},
+          "guilds": [
+            {
+              "id": "10",
+              "properties": {"id": "10", "name": "My Guild", "owner_id": "1"},
+              "channels": [
+                {"id": "11", "type": 0, "guild_id": "10", "name": "general", "position": 0},
+                {"id": "12", "type": 4, "guild_id": "10", "name": "Category", "position": 1}
+              ],
+              "member_count": 5,
+              "roles": [],
+              "joined_at": "2026-01-01T00:00:00Z"
+            }
+          ],
+          "private_channels": [
+            {"id": "20", "type": 1, "recipients": [{"id": "2", "username": "friend"}]}
+          ]
+        }
+        """
+        let ready = try JSONDecoder.fluxer.decode(ReadyPayload.self, from: Data(json.utf8))
+        #expect(ready.sessionId == "sess1")
+        #expect(ready.user.username == "dee")
+
+        let guild = try #require(ready.guilds.first?.asGuild())
+        #expect(guild.name == "My Guild")
+        #expect(guild.memberCount == 5)
+        #expect(guild.channels?.count == 2)
+        #expect(guild.channels?.first?.name == "general")
+
+        #expect(ready.privateChannels?.first?.type == .dm)
+        #expect(ready.privateChannels?.first?.recipients?.first?.username == "friend")
+    }
+}
+
 @Suite("GatewayClient")
 struct GatewayClientTests {
     private func makeClient() -> (GatewayClient, FakeTransport) {

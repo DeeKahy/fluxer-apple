@@ -7,6 +7,8 @@ public struct Channel: Codable, Hashable, Identifiable, Sendable {
         case guildVoice = 2
         case groupDM = 3
         case guildCategory = 4
+        case guildLink = 998
+        case personalNotes = 999
         case unknown = -1
 
         public init(from decoder: Decoder) throws {

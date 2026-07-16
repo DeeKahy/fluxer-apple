@@ -19,7 +19,14 @@ final class AppSession {
     private(set) var phase: Phase = .loggedOut
     private(set) var currentUser: User?
     private(set) var guilds: [Guild] = []
+    private(set) var privateChannels: [Channel] = []
+    private(set) var messages: [Snowflake: [Message]] = [:]
+    private(set) var gatewayConnected = false
     var lastError: String?
+
+    private var gateway: GatewayClient?
+    private var gatewayEventTask: Task<Void, Never>?
+    private var reconnectAttempts = 0
 
     private var client: APIClient
     private var mfaTicket: String?
@@ -45,10 +52,25 @@ final class AppSession {
         do {
             currentUser = try await client.currentUser()
             phase = .loggedIn
-            await loadGuilds()
+            connectGateway(token: token)
         } catch {
             KeychainStore.deleteToken()
             await client.setCredential(nil)
+            phase = .loggedOut
+        }
+    }
+
+    /// Shared tail of every successful auth path: persist the token,
+    /// fetch the account, and bring up the gateway.
+    private func finishLogin(token: String) async {
+        KeychainStore.saveToken(token)
+        phase = .loggingIn
+        do {
+            currentUser = try await client.currentUser()
+            phase = .loggedIn
+            connectGateway(token: token)
+        } catch {
+            lastError = Self.describe(error)
             phase = .loggedOut
         }
     }
@@ -59,11 +81,8 @@ final class AppSession {
         do {
             switch try await client.login(email: email, password: password, captcha: captcha) {
             case .success(let token):
-                KeychainStore.saveToken(token)
                 pendingLogin = nil
-                currentUser = try await client.currentUser()
-                phase = .loggedIn
-                await loadGuilds()
+                await finishLogin(token: token)
             case .mfaRequired(let ticket, let totp, _):
                 pendingLogin = nil
                 if totp {
@@ -120,13 +139,7 @@ final class AppSession {
                 if status.completed {
                     ipAuthTicket = nil
                     if let token = status.token {
-                        KeychainStore.saveToken(token)
-                        phase = .loggingIn
-                        currentUser = try? await client.currentUser()
-                        phase = currentUser != nil ? .loggedIn : .loggedOut
-                        if currentUser != nil {
-                            await loadGuilds()
-                        }
+                        await finishLogin(token: token)
                     } else {
                         lastError = "Device confirmed, sign in again."
                         phase = .loggedOut
@@ -161,13 +174,7 @@ final class AppSession {
                 guard let status = try? await client.pollHandoff(code: code) else { continue }
                 if status.isCompleted, let token = status.token {
                     handoffCode = nil
-                    KeychainStore.saveToken(token)
-                    phase = .loggingIn
-                    currentUser = try? await client.currentUser()
-                    phase = currentUser != nil ? .loggedIn : .loggedOut
-                    if currentUser != nil {
-                        await loadGuilds()
-                    }
+                    await finishLogin(token: token)
                     return
                 }
                 if status.isExpired {
@@ -208,11 +215,8 @@ final class AppSession {
         lastError = nil
         do {
             let token = try await client.loginMfaTotp(code: code, ticket: ticket)
-            KeychainStore.saveToken(token)
             mfaTicket = nil
-            currentUser = try await client.currentUser()
-            phase = .loggedIn
-            await loadGuilds()
+            await finishLogin(token: token)
         } catch {
             lastError = Self.describe(error)
             phase = .mfaPending
@@ -220,6 +224,13 @@ final class AppSession {
     }
 
     func logout() async {
+        gatewayEventTask?.cancel()
+        gatewayEventTask = nil
+        if let gateway {
+            await gateway.disconnect()
+        }
+        gateway = nil
+        gatewayConnected = false
         try? await client.logout()
         KeychainStore.deleteToken()
         ipAuthPollTask?.cancel()
@@ -227,6 +238,8 @@ final class AppSession {
         ipAuthTicket = nil
         currentUser = nil
         guilds = []
+        privateChannels = []
+        messages = [:]
         mfaTicket = nil
         pendingLogin = nil
         phase = .loggedOut
@@ -238,6 +251,140 @@ final class AppSession {
         } catch {
             lastError = Self.describe(error)
         }
+    }
+
+    // MARK: Gateway
+
+    private func connectGateway(token: String) {
+        gatewayEventTask?.cancel()
+        let gateway = GatewayClient()
+        self.gateway = gateway
+        gatewayEventTask = Task { [weak self] in
+            let events = await gateway.events()
+            try? await gateway.connect(token: token)
+            for await event in events {
+                guard let self else { return }
+                await self.handleGatewayEvent(event, token: token)
+            }
+        }
+    }
+
+    private func handleGatewayEvent(_ event: GatewayEvent, token: String) async {
+        switch event.name {
+        case "READY":
+            guard let ready = try? event.data?.decoded(as: ReadyPayload.self) else { return }
+            reconnectAttempts = 0
+            gatewayConnected = true
+            currentUser = ready.user
+            guilds = ready.guilds
+                .map { $0.asGuild() }
+                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            privateChannels = ready.privateChannels ?? []
+        case "RESUMED":
+            reconnectAttempts = 0
+            gatewayConnected = true
+        case "MESSAGE_CREATE":
+            guard let message = try? event.data?.decoded(as: Message.self) else { return }
+            insert(message)
+        case "MESSAGE_UPDATE":
+            guard let message = try? event.data?.decoded(as: Message.self) else { return }
+            update(message)
+        case "MESSAGE_DELETE":
+            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+                  let messageId = event.data?["id"]?.stringValue.flatMap(Snowflake.init(string:))
+            else { return }
+            messages[channelId]?.removeAll { $0.id == messageId }
+        case "GUILD_CREATE":
+            guard let readyGuild = try? event.data?.decoded(as: ReadyGuild.self) else { return }
+            let guild = readyGuild.asGuild()
+            if let index = guilds.firstIndex(where: { $0.id == guild.id }) {
+                guilds[index] = guild
+            } else {
+                guilds.append(guild)
+                guilds.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            }
+        case "GUILD_DELETE":
+            guard let guildId = event.data?["id"]?.stringValue.flatMap(Snowflake.init(string:)) else { return }
+            guilds.removeAll { $0.id == guildId }
+        case "CHANNEL_CREATE", "CHANNEL_UPDATE":
+            guard let channel = try? event.data?.decoded(as: Channel.self) else { return }
+            if let guildId = channel.guildId, let index = guilds.firstIndex(where: { $0.id == guildId }) {
+                var channels = guilds[index].channels ?? []
+                if let existing = channels.firstIndex(where: { $0.id == channel.id }) {
+                    channels[existing] = channel
+                } else {
+                    channels.append(channel)
+                }
+                guilds[index].channels = channels
+            } else if channel.type == .dm || channel.type == .groupDM {
+                if let existing = privateChannels.firstIndex(where: { $0.id == channel.id }) {
+                    privateChannels[existing] = channel
+                } else {
+                    privateChannels.insert(channel, at: 0)
+                }
+            }
+        case "CHANNEL_DELETE":
+            guard let channel = try? event.data?.decoded(as: Channel.self) else { return }
+            if let guildId = channel.guildId, let index = guilds.firstIndex(where: { $0.id == guildId }) {
+                guilds[index].channels?.removeAll { $0.id == channel.id }
+            }
+            privateChannels.removeAll { $0.id == channel.id }
+        case GatewayEvent.disconnected:
+            gatewayConnected = false
+            guard phase == .loggedIn, let gateway else { return }
+            reconnectAttempts += 1
+            let delay = min(pow(2, Double(reconnectAttempts)), 60)
+            try? await Task.sleep(for: .seconds(delay))
+            guard phase == .loggedIn else { return }
+            try? await gateway.connect(token: token)
+        default:
+            break
+        }
+    }
+
+    // MARK: Messages
+
+    func messages(in channelId: Snowflake) -> [Message] {
+        messages[channelId] ?? []
+    }
+
+    /// Loads history the first time a channel is opened. Later messages
+    /// arrive through the gateway.
+    func loadMessages(for channel: Channel) async {
+        guard messages[channel.id] == nil else { return }
+        do {
+            let history = try await client.messages(in: channel.id)
+            // The API returns newest first, the UI wants oldest first.
+            messages[channel.id] = history.sorted { $0.id < $1.id }
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    func sendMessage(_ content: String, in channel: Channel) async {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        do {
+            let sent = try await client.sendMessage(trimmed, to: channel.id)
+            insert(sent)
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    private func insert(_ message: Message) {
+        guard var channelMessages = messages[message.channelId] else { return }
+        guard !channelMessages.contains(where: { $0.id == message.id }) else { return }
+        channelMessages.append(message)
+        channelMessages.sort { $0.id < $1.id }
+        messages[message.channelId] = channelMessages
+    }
+
+    private func update(_ message: Message) {
+        guard var channelMessages = messages[message.channelId] else { return }
+        guard let index = channelMessages.firstIndex(where: { $0.id == message.id }) else { return }
+        channelMessages[index] = message
+        messages[message.channelId] = channelMessages
     }
 
     private static func describe(_ error: any Error) -> String {

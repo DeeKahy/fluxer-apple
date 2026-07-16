@@ -216,8 +216,15 @@ public actor GatewayClient {
         heartbeatLoop?.cancel()
         heartbeatLoop = nil
         await transport.close()
+        let wasDisconnected = state == .disconnected
         state = .disconnected
-        // Reconnection with backoff is driven by the app layer for now.
+        // Reconnection with backoff is driven by the app layer, which
+        // learns about the drop through this synthetic event.
+        if !wasDisconnected {
+            eventContinuation?.yield(
+                GatewayEvent(name: GatewayEvent.disconnected, data: nil, sequence: nil)
+            )
+        }
     }
 
     private func osName() -> String {

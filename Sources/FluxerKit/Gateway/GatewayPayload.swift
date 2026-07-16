@@ -31,7 +31,17 @@ public struct GatewayPayload: Codable, Sendable {
 
 /// A dispatched gateway event, such as MESSAGE_CREATE or READY.
 public struct GatewayEvent: Sendable {
+    /// Synthetic event yielded when the connection drops, so consumers
+    /// can react (reconnect, show state) from the same stream.
+    public static let disconnected = "@fluxer.gateway.disconnected"
+
     public let name: String
     public let data: JSONValue?
     public let sequence: Int?
+
+    public init(name: String, data: JSONValue?, sequence: Int?) {
+        self.name = name
+        self.data = data
+        self.sequence = sequence
+    }
 }

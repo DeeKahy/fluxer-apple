@@ -15,7 +15,7 @@ struct RootView: View {
             ProgressView("Signing in")
                 .controlSize(.large)
         case .loggedIn:
-            HomeView()
+            MainView()
         }
     }
 }
