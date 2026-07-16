@@ -8,6 +8,7 @@ import FluxerKit
 final class AppSession {
     enum Phase: Equatable {
         case loggedOut
+        case captchaPending
         case mfaPending
         case loggingIn
         case loggedIn
@@ -20,6 +21,7 @@ final class AppSession {
 
     private var client: APIClient
     private var mfaTicket: String?
+    private var pendingLogin: (email: String, password: String)?
 
     init() {
         self.client = APIClient()
@@ -42,24 +44,50 @@ final class AppSession {
         }
     }
 
-    func login(email: String, password: String) async {
+    func login(email: String, password: String, captcha: CaptchaSolution? = nil) async {
         phase = .loggingIn
         lastError = nil
         do {
-            switch try await client.login(email: email, password: password) {
+            switch try await client.login(email: email, password: password, captcha: captcha) {
             case .success(let token):
                 KeychainStore.saveToken(token)
+                pendingLogin = nil
                 currentUser = try await client.currentUser()
                 phase = .loggedIn
                 await loadGuilds()
             case .mfaRequired(let ticket):
                 mfaTicket = ticket
+                pendingLogin = nil
                 phase = .mfaPending
             }
+        } catch APIError.captchaRequired {
+            pendingLogin = (email, password)
+            phase = .captchaPending
+        } catch APIError.invalidCaptcha {
+            pendingLogin = (email, password)
+            lastError = "Captcha check failed, try again."
+            phase = .captchaPending
         } catch {
             lastError = Self.describe(error)
             phase = .loggedOut
         }
+    }
+
+    func submitCaptcha(token: String) async {
+        guard let pending = pendingLogin else {
+            phase = .loggedOut
+            return
+        }
+        await login(
+            email: pending.email,
+            password: pending.password,
+            captcha: CaptchaSolution(token: token)
+        )
+    }
+
+    func cancelCaptcha() {
+        pendingLogin = nil
+        phase = .loggedOut
     }
 
     func submitMfaCode(_ code: String) async {
@@ -85,6 +113,7 @@ final class AppSession {
         currentUser = nil
         guilds = []
         mfaTicket = nil
+        pendingLogin = nil
         phase = .loggedOut
     }
 
@@ -102,8 +131,8 @@ final class AppSession {
             return "Wrong email or password."
         case APIError.rateLimited:
             return "Too many attempts, wait a moment and try again."
-        case APIError.httpError(let status, _):
-            return "Server error (\(status))."
+        case APIError.httpError(let status, _, let message):
+            return message ?? "Server error (\(status))."
         case is URLError:
             return "Could not reach the server. Check your connection."
         default:

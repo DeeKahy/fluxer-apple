@@ -69,6 +69,35 @@ struct LoginView: View {
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: showCaptcha) {
+            VStack(spacing: 16) {
+                Text("Prove you're human")
+                    .font(.headline)
+                    .padding(.top, 20)
+                CaptchaView { token in
+                    Task { await session.submitCaptcha(token: token) }
+                }
+                .frame(minWidth: 340, minHeight: 500)
+                Button("Cancel") {
+                    session.cancelCaptcha()
+                }
+                .padding(.bottom, 16)
+            }
+            #if os(macOS)
+            .frame(width: 420, height: 620)
+            #endif
+        }
+    }
+
+    private var showCaptcha: Binding<Bool> {
+        Binding(
+            get: { session.phase == .captchaPending },
+            set: { isShown in
+                if !isShown && session.phase == .captchaPending {
+                    session.cancelCaptcha()
+                }
+            }
+        )
     }
 
     private var canSubmit: Bool {

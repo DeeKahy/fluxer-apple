@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AC3A35D1CE4DB5A20689FC /* RootView.swift */; };
+		05626B0589D6B44EAE173749 /* CaptchaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */; };
 		353A0EF40B2575AEBB93CF99 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */; };
 		3B7D547364EED0B2570DDF54 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D00312D665CE9588D3BB5C /* HomeView.swift */; };
+		489AC99EFB5FCBE3F2929A71 /* CaptchaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */; };
 		4E6E873A2381F34A2C4B48AE /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */; };
 		5ACCA3443856FBD8558540B7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B9527E570305AC9F43DFA8 /* FluxerApp.swift */; };
 		635139FE0A9159D18C2EC234 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D00312D665CE9588D3BB5C /* HomeView.swift */; };
@@ -30,6 +32,7 @@
 		793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
 		851AA6BF6493F3B3857262AE /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		90B9527E570305AC9F43DFA8 /* FluxerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxerApp.swift; sourceTree = "<group>"; };
+		9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptchaView.swift; sourceTree = "<group>"; };
 		A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Fluxer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D64738FE6F72259636FA76F8 /* fluxer-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fluxer-apple"; path = .; sourceTree = SOURCE_ROOT; };
@@ -68,6 +71,7 @@
 			isa = PBXGroup;
 			children = (
 				793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */,
+				9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */,
 				90B9527E570305AC9F43DFA8 /* FluxerApp.swift */,
 				58D00312D665CE9588D3BB5C /* HomeView.swift */,
 				A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */,
@@ -182,6 +186,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				353A0EF40B2575AEBB93CF99 /* AppSession.swift in Sources */,
+				489AC99EFB5FCBE3F2929A71 /* CaptchaView.swift in Sources */,
 				5ACCA3443856FBD8558540B7 /* FluxerApp.swift in Sources */,
 				3B7D547364EED0B2570DDF54 /* HomeView.swift in Sources */,
 				C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */,
@@ -195,6 +200,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4E6E873A2381F34A2C4B48AE /* AppSession.swift in Sources */,
+				05626B0589D6B44EAE173749 /* CaptchaView.swift in Sources */,
 				F1F699778EAF114B042BA5B9 /* FluxerApp.swift in Sources */,
 				635139FE0A9159D18C2EC234 /* HomeView.swift in Sources */,
 				6E63117BBDF5F9A13A207070 /* KeychainStore.swift in Sources */,

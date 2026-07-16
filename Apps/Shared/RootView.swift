@@ -5,7 +5,7 @@ struct RootView: View {
 
     var body: some View {
         switch session.phase {
-        case .loggedOut, .mfaPending:
+        case .loggedOut, .mfaPending, .captchaPending:
             LoginView()
         case .loggingIn:
             ProgressView("Signing in")

@@ -53,6 +53,62 @@ struct APIClientRequestTests {
     }
 }
 
+@Suite("API error mapping")
+struct APIErrorMappingTests {
+    @Test func mapsCaptchaRequired() {
+        let body = Data(#"{"code":"CAPTCHA_REQUIRED","message":"Captcha is required."}"#.utf8)
+        let error = APIError.from(status: 400, data: body)
+        guard case .captchaRequired = error else {
+            Issue.record("Expected captchaRequired, got \(error)")
+            return
+        }
+    }
+
+    @Test func mapsUnauthorized() {
+        let error = APIError.from(status: 401, data: Data("{}".utf8))
+        guard case .unauthorized = error else {
+            Issue.record("Expected unauthorized, got \(error)")
+            return
+        }
+    }
+
+    @Test func keepsCodeAndMessageForOtherErrors() {
+        let body = Data(#"{"code":"NOT_FOUND","message":"Not found."}"#.utf8)
+        let error = APIError.from(status: 404, data: body)
+        guard case .httpError(let status, let code, let message) = error else {
+            Issue.record("Expected httpError, got \(error)")
+            return
+        }
+        #expect(status == 404)
+        #expect(code == "NOT_FOUND")
+        #expect(message == "Not found.")
+    }
+
+    @Test func survivesNonJSONBodies() {
+        let error = APIError.from(status: 502, data: Data("Bad Gateway".utf8))
+        guard case .httpError(let status, _, _) = error else {
+            Issue.record("Expected httpError, got \(error)")
+            return
+        }
+        #expect(status == 502)
+    }
+}
+
+@Suite("APIClient captcha headers")
+struct APIClientCaptchaTests {
+    @Test func captchaHeadersRideAlong() async throws {
+        let client = APIClient()
+        let request = try await client.makeRequest(
+            "POST",
+            Endpoint.login,
+            bodyData: Data("{}".utf8),
+            headers: ["x-captcha-token": "solved", "x-captcha-type": "hcaptcha"]
+        )
+        #expect(request.value(forHTTPHeaderField: "x-captcha-token") == "solved")
+        #expect(request.value(forHTTPHeaderField: "x-captcha-type") == "hcaptcha")
+    }
+}
+
 @Suite("Endpoint paths")
 struct EndpointTests {
     @Test func messagePathsIncludeIDs() {

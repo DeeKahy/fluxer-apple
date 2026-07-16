@@ -2,10 +2,47 @@ import Foundation
 
 public enum APIError: Error, Sendable {
     case invalidURL(String)
-    case httpError(status: Int, body: String)
+    case httpError(status: Int, code: String?, message: String?)
     case unauthorized
+    case captchaRequired
+    case invalidCaptcha
     case rateLimited(retryAfter: TimeInterval?)
     case decodingFailed(underlying: String)
+
+    /// Maps a non-success HTTP response to a typed error using the
+    /// {code, message} JSON shape the Fluxer API returns.
+    static func from(status: Int, data: Data) -> APIError {
+        struct ErrorBody: Decodable {
+            let code: String?
+            let message: String?
+        }
+        let body = try? JSONDecoder().decode(ErrorBody.self, from: data)
+        switch body?.code {
+        case "CAPTCHA_REQUIRED":
+            return .captchaRequired
+        case "INVALID_CAPTCHA", "CAPTCHA_INVALID":
+            return .invalidCaptcha
+        default:
+            break
+        }
+        switch status {
+        case 401:
+            return .unauthorized
+        default:
+            return .httpError(status: status, code: body?.code, message: body?.message)
+        }
+    }
+}
+
+/// A solved captcha challenge, passed along with login or registration.
+public struct CaptchaSolution: Sendable {
+    public let token: String
+    public let type: String
+
+    public init(token: String, type: String = "hcaptcha") {
+        self.token = token
+        self.type = type
+    }
 }
 
 public enum Credential: Sendable {
@@ -51,7 +88,11 @@ public actor APIClient {
 
     // MARK: Auth
 
-    public func login(email: String, password: String) async throws -> LoginResult {
+    public func login(
+        email: String,
+        password: String,
+        captcha: CaptchaSolution? = nil
+    ) async throws -> LoginResult {
         struct Body: Encodable {
             let email: String
             let password: String
@@ -60,7 +101,17 @@ public actor APIClient {
             let token: String?
             let ticket: String?
         }
-        let response: Response = try await send("POST", Endpoint.login, body: Body(email: email, password: password))
+        var headers: [String: String] = [:]
+        if let captcha {
+            headers["x-captcha-token"] = captcha.token
+            headers["x-captcha-type"] = captcha.type
+        }
+        let response: Response = try await send(
+            "POST",
+            Endpoint.login,
+            body: Body(email: email, password: password),
+            headers: headers
+        )
         if let token = response.token, !token.isEmpty {
             credential = .user(token: token)
             return .success(token: token)
@@ -150,7 +201,8 @@ public actor APIClient {
         _ method: String,
         _ path: String,
         query: [URLQueryItem] = [],
-        bodyData: Data? = nil
+        bodyData: Data? = nil,
+        headers: [String: String] = [:]
     ) throws -> URLRequest {
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             throw APIError.invalidURL(baseURL.absoluteString)
@@ -171,6 +223,9 @@ public actor APIClient {
             request.httpBody = bodyData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
+        for (field, value) in headers {
+            request.setValue(value, forHTTPHeaderField: field)
+        }
         return request
     }
 
@@ -187,10 +242,11 @@ public actor APIClient {
         _ method: String,
         _ path: String,
         query: [URLQueryItem] = [],
-        body: Body
+        body: Body,
+        headers: [String: String] = [:]
     ) async throws -> Response {
         let data = try JSONEncoder.fluxer.encode(body)
-        let request = try makeRequest(method, path, query: query, bodyData: data)
+        let request = try makeRequest(method, path, query: query, bodyData: data, headers: headers)
         return try await execute(request)
     }
 
@@ -211,21 +267,16 @@ public actor APIClient {
     private func executeRaw(_ request: URLRequest) async throws -> Data {
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
-            throw APIError.httpError(status: -1, body: "Not an HTTP response")
+            throw APIError.httpError(status: -1, code: nil, message: "Not an HTTP response")
         }
         switch http.statusCode {
         case 200..<300:
             return data
-        case 401:
-            throw APIError.unauthorized
         case 429:
             let retryAfter = http.value(forHTTPHeaderField: "Retry-After").flatMap(TimeInterval.init)
             throw APIError.rateLimited(retryAfter: retryAfter)
         default:
-            throw APIError.httpError(
-                status: http.statusCode,
-                body: String(data: data, encoding: .utf8) ?? ""
-            )
+            throw APIError.from(status: http.statusCode, data: data)
         }
     }
 }
