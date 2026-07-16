@@ -2,7 +2,8 @@ import Foundation
 
 public struct User: Codable, Hashable, Identifiable, Sendable {
     public let id: Snowflake
-    public var username: String
+    /// Missing on partial user objects, such as members inside READY.
+    public var username: String?
     public var discriminator: String?
     public var globalName: String?
     public var avatar: String?
@@ -15,6 +16,6 @@ public struct User: Codable, Hashable, Identifiable, Sendable {
 
     /// The name to show in UI, preferring the display name over the login name.
     public var displayName: String {
-        globalName ?? username
+        globalName ?? username ?? "Unknown"
     }
 }

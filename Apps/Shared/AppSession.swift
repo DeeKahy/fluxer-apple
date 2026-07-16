@@ -1,6 +1,9 @@
 import Foundation
 import Observation
+import os
 import FluxerKit
+
+let gatewayLog = Logger(subsystem: "dev.deekahy.fluxer", category: "gateway")
 
 /// Top level app state: authentication, the API client, and the signed-in user.
 @MainActor
@@ -308,37 +311,7 @@ final class AppSession {
     private func handleGatewayEvent(_ event: GatewayEvent, token: String) async {
         switch event.name {
         case "READY":
-            guard let ready = try? event.data?.decoded(as: ReadyPayload.self) else { return }
-            reconnectAttempts = 0
-            gatewayConnected = true
-            currentUser = ready.user
-            guilds = ready.guilds
-                .map { $0.asGuild() }
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            privateChannels = ready.privateChannels ?? []
-            for state in ready.readStates ?? [] {
-                readStates[state.id] = state.lastMessageId
-            }
-            for user in ready.users ?? [] {
-                knownUsers[user.id] = user
-            }
-            for channel in privateChannels {
-                for recipient in channel.recipients ?? [] {
-                    knownUsers[recipient.id] = recipient
-                }
-            }
-            for relationship in ready.relationships ?? [] {
-                relationships[relationship.id] = relationship
-                if let user = relationship.user {
-                    knownUsers[user.id] = user
-                }
-            }
-            for guild in ready.guilds {
-                if let member = guild.members?.first(where: { $0.user?.id == ready.user.id }) {
-                    myMembers[guild.id] = member
-                }
-            }
-            applyReadyPresences(event.data)
+            handleReady(event.data)
         case "RESUMED":
             reconnectAttempts = 0
             gatewayConnected = true
@@ -676,6 +649,80 @@ final class AppSession {
     func markChannelRead(_ channel: Channel) {
         guard let last = messages(in: channel.id).last?.id ?? channel.lastMessageId else { return }
         markRead(channelId: channel.id, messageId: last)
+    }
+
+    /// Applies READY piece by piece so one unexpected field in a section
+    /// (or one bad entry in a list) can't take down the whole login.
+    private func handleReady(_ data: JSONValue?) {
+        guard let data else {
+            gatewayLog.error("READY arrived with no data")
+            return
+        }
+        reconnectAttempts = 0
+        gatewayConnected = true
+
+        do {
+            currentUser = try data["user"]?.decoded(as: User.self) ?? currentUser
+        } catch {
+            gatewayLog.error("READY user decode failed: \(String(describing: error))")
+        }
+
+        var readyGuilds: [ReadyGuild] = []
+        for entry in data["guilds"]?.arrayValue ?? [] {
+            do {
+                readyGuilds.append(try entry.decoded(as: ReadyGuild.self))
+            } catch {
+                gatewayLog.error("READY guild decode failed: \(String(describing: error))")
+            }
+        }
+        guilds = readyGuilds
+            .map { $0.asGuild() }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        privateChannels = (data["private_channels"]?.arrayValue ?? []).compactMap {
+            do {
+                return try $0.decoded(as: Channel.self)
+            } catch {
+                gatewayLog.error("READY private channel decode failed: \(String(describing: error))")
+                return nil
+            }
+        }
+
+        for entry in data["read_states"]?.arrayValue ?? [] {
+            if let state = try? entry.decoded(as: ReadState.self) {
+                readStates[state.id] = state.lastMessageId
+            }
+        }
+        for entry in data["users"]?.arrayValue ?? [] {
+            if let user = try? entry.decoded(as: User.self) {
+                knownUsers[user.id] = user
+            }
+        }
+        for channel in privateChannels {
+            for recipient in channel.recipients ?? [] {
+                knownUsers[recipient.id] = recipient
+            }
+        }
+        for entry in data["relationships"]?.arrayValue ?? [] {
+            do {
+                let relationship = try entry.decoded(as: Relationship.self)
+                relationships[relationship.id] = relationship
+                if let user = relationship.user {
+                    knownUsers[user.id] = user
+                }
+            } catch {
+                gatewayLog.error("READY relationship decode failed: \(String(describing: error))")
+            }
+        }
+        if let myId = currentUser?.id {
+            for guild in readyGuilds {
+                if let member = guild.members?.first(where: { $0.user?.id == myId }) {
+                    myMembers[guild.id] = member
+                }
+            }
+        }
+        applyReadyPresences(data)
+        gatewayLog.info("READY applied: \(self.guilds.count) guilds, \(self.privateChannels.count) DMs, \(self.relationships.count) relationships")
     }
 
     // MARK: Presence
