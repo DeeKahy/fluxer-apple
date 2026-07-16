@@ -98,6 +98,21 @@ public struct IpAuthorizationStatus: Decodable, Sendable {
     public let token: String?
 }
 
+/// A browser login handoff: the app shows this code, the person signs in
+/// on the web and enters it there, then the app polls for the token.
+public struct HandoffInitiation: Decodable, Sendable {
+    public let code: String
+    public let expiresAt: String
+}
+
+public struct HandoffStatus: Decodable, Sendable {
+    public let status: String
+    public let token: String?
+
+    public var isCompleted: Bool { status == "completed" }
+    public var isExpired: Bool { status == "expired" }
+}
+
 /// REST client for a Fluxer instance. Defaults to fluxer.app but any
 /// self-hosted instance works by passing its API base URL.
 public actor APIClient {
@@ -169,6 +184,27 @@ public actor APIClient {
         }
         let data = try JSONEncoder.fluxer.encode(Body(ticket: ticket))
         let request = try makeRequest("POST", Endpoint.ipAuthorizationResend, bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
+    // MARK: Browser login handoff
+
+    public func initiateHandoff() async throws -> HandoffInitiation {
+        try await send("POST", Endpoint.handoffInitiate)
+    }
+
+    /// Checks whether the browser side has approved the handoff yet.
+    /// On completion the returned token becomes the credential.
+    public func pollHandoff(code: String) async throws -> HandoffStatus {
+        let status: HandoffStatus = try await send("GET", Endpoint.handoffStatus(code))
+        if status.isCompleted, let token = status.token, !token.isEmpty {
+            credential = .user(token: token)
+        }
+        return status
+    }
+
+    public func cancelHandoff(code: String) async throws {
+        let request = try makeRequest("DELETE", Endpoint.handoffCancel(code))
         _ = try await executeRaw(request)
     }
 

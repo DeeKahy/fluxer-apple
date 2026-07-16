@@ -9,6 +9,8 @@ struct RootView: View {
             LoginView()
         case .emailConfirmationPending(let email):
             EmailConfirmationView(email: email)
+        case .handoffPending(let code):
+            HandoffView(code: code)
         case .loggingIn:
             ProgressView("Signing in")
                 .controlSize(.large)

@@ -91,6 +91,29 @@ struct LoginResponseTests {
     }
 }
 
+@Suite("Handoff decoding")
+struct HandoffDecodingTests {
+    @Test func decodesInitiation() throws {
+        let json = #"{"code": "ABC123-DEF456", "expires_at": "2026-07-16T12:05:00.000Z"}"#
+        let initiation = try JSONDecoder.fluxer.decode(HandoffInitiation.self, from: Data(json.utf8))
+        #expect(initiation.code == "ABC123-DEF456")
+    }
+
+    @Test func decodesPendingStatus() throws {
+        let json = #"{"status": "pending"}"#
+        let status = try JSONDecoder.fluxer.decode(HandoffStatus.self, from: Data(json.utf8))
+        #expect(!status.isCompleted)
+        #expect(!status.isExpired)
+    }
+
+    @Test func decodesCompletedStatusWithToken() throws {
+        let json = #"{"status": "completed", "token": "tok9", "user_id": "1", "user": {"id": "1", "username": "dee"}}"#
+        let status = try JSONDecoder.fluxer.decode(HandoffStatus.self, from: Data(json.utf8))
+        #expect(status.isCompleted)
+        #expect(status.token == "tok9")
+    }
+}
+
 @Suite("API error mapping")
 struct APIErrorMappingTests {
     @Test func mapsCaptchaRequired() {

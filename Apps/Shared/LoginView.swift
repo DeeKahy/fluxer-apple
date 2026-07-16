@@ -66,6 +66,14 @@ struct LoginView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .disabled(!canSubmit)
+
+            if !isMfaStep {
+                Button("Sign in with browser") {
+                    Task { await session.startBrowserLogin() }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+            }
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

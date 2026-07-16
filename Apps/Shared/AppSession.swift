@@ -11,6 +11,7 @@ final class AppSession {
         case captchaPending
         case mfaPending
         case emailConfirmationPending(email: String)
+        case handoffPending(code: String)
         case loggingIn
         case loggedIn
     }
@@ -25,6 +26,11 @@ final class AppSession {
     private var pendingLogin: (email: String, password: String)?
     private var ipAuthTicket: String?
     private var ipAuthPollTask: Task<Void, Never>?
+    private var handoffCode: String?
+    private var handoffPollTask: Task<Void, Never>?
+
+    /// Where the person completes a browser login for this instance.
+    static let browserLoginURL = URL(string: "https://web.fluxer.app/login?handoff=1")!
 
     init() {
         self.client = APIClient()
@@ -64,7 +70,7 @@ final class AppSession {
                     mfaTicket = ticket
                     phase = .mfaPending
                 } else {
-                    lastError = "This account uses a security key for MFA, which isn't supported here yet. Log in on the web to add an authenticator app."
+                    lastError = "This account uses a passkey. Use \"Sign in with browser\" below."
                     phase = .loggedOut
                 }
             case .ipAuthorizationRequired(let ticket, let email):
@@ -129,6 +135,59 @@ final class AppSession {
                 }
             }
         }
+    }
+
+    /// Starts a browser login: get a pairing code, show it, and poll for
+    /// approval while the person signs in on the web and enters the code.
+    func startBrowserLogin() async {
+        lastError = nil
+        do {
+            let initiation = try await client.initiateHandoff()
+            handoffCode = initiation.code
+            phase = .handoffPending(code: initiation.code)
+            startHandoffPolling()
+        } catch {
+            lastError = Self.describe(error)
+            phase = .loggedOut
+        }
+    }
+
+    private func startHandoffPolling() {
+        handoffPollTask?.cancel()
+        handoffPollTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3))
+                guard let code = handoffCode, case .handoffPending = phase else { return }
+                guard let status = try? await client.pollHandoff(code: code) else { continue }
+                if status.isCompleted, let token = status.token {
+                    handoffCode = nil
+                    KeychainStore.saveToken(token)
+                    phase = .loggingIn
+                    currentUser = try? await client.currentUser()
+                    phase = currentUser != nil ? .loggedIn : .loggedOut
+                    if currentUser != nil {
+                        await loadGuilds()
+                    }
+                    return
+                }
+                if status.isExpired {
+                    handoffCode = nil
+                    lastError = "The code expired, try again."
+                    phase = .loggedOut
+                    return
+                }
+            }
+        }
+    }
+
+    func cancelBrowserLogin() {
+        handoffPollTask?.cancel()
+        handoffPollTask = nil
+        if let code = handoffCode {
+            Task { try? await client.cancelHandoff(code: code) }
+        }
+        handoffCode = nil
+        phase = .loggedOut
     }
 
     func resendConfirmationEmail() async {

@@ -8,6 +8,10 @@ enum Endpoint {
     static let logout = "/auth/logout"
     static let ipAuthorizationPoll = "/auth/ip-authorization/poll"
     static let ipAuthorizationResend = "/auth/ip-authorization/resend"
+    static let handoffInitiate = "/auth/handoff/initiate"
+
+    static func handoffStatus(_ code: String) -> String { "/auth/handoff/\(code)/status" }
+    static func handoffCancel(_ code: String) -> String { "/auth/handoff/\(code)" }
     static let me = "/users/@me"
     static let myChannels = "/users/@me/channels"
     static let myGuilds = "/users/@me/guilds"
