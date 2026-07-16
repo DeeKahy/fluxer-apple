@@ -11,6 +11,42 @@ public struct Attachment: Codable, Hashable, Identifiable, Sendable {
     public var height: Int?
 }
 
+public struct ReactionEmoji: Codable, Hashable, Sendable {
+    public var id: Snowflake?
+    public var name: String
+    public var animated: Bool?
+
+    public init(id: Snowflake? = nil, name: String, animated: Bool? = nil) {
+        self.id = id
+        self.name = name
+        self.animated = animated
+    }
+
+    /// The form used in reaction endpoint paths: the character itself for
+    /// unicode emoji, name:id for custom emoji.
+    public var apiValue: String {
+        if let id {
+            return "\(name):\(id)"
+        }
+        return name
+    }
+
+    /// Identity for merging reaction updates.
+    public var key: String { apiValue }
+}
+
+public struct Reaction: Codable, Hashable, Sendable {
+    public var emoji: ReactionEmoji
+    public var count: Int
+    public var me: Bool?
+
+    public init(emoji: ReactionEmoji, count: Int, me: Bool? = nil) {
+        self.emoji = emoji
+        self.count = count
+        self.me = me
+    }
+}
+
 public struct Message: Codable, Hashable, Identifiable, Sendable {
     public let id: Snowflake
     public var channelId: Snowflake
@@ -20,6 +56,7 @@ public struct Message: Codable, Hashable, Identifiable, Sendable {
     public var timestamp: Date?
     public var editedTimestamp: Date?
     public var attachments: [Attachment]?
+    public var reactions: [Reaction]?
     public var pinned: Bool?
     public var type: Int?
     public var referencedMessage: IndirectBox<Message>?

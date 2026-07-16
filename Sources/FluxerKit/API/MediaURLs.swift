@@ -18,6 +18,13 @@ public enum MediaURLs {
         return mediaURL(path: "avatars", id: userId, hash: hash, size: size)
     }
 
+    public static func customEmoji(_ emoji: ReactionEmoji) -> URL? {
+        guard let id = emoji.id else { return nil }
+        var url = userContentBase.appending(path: "emojis/\(id).webp")
+        url.append(queryItems: [URLQueryItem(name: "v", value: "5")])
+        return url
+    }
+
     public static func guildIcon(guildId: Snowflake, hash: String?, size: Int = 64) -> URL? {
         guard let hash, !hash.isEmpty else { return nil }
         return mediaURL(path: "icons", id: guildId, hash: hash, size: size)

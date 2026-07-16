@@ -1,5 +1,12 @@
 import SwiftUI
 import FluxerKit
+import UniformTypeIdentifiers
+#if os(iOS)
+import PhotosUI
+#endif
+
+/// The quick reaction choices in the message context menu.
+private let quickReactions = ["\u{1F44D}", "\u{2764}\u{FE0F}", "\u{1F602}", "\u{1F62E}", "\u{1F622}", "\u{1F525}", "\u{2705}", "\u{1F440}"]
 
 struct MessageView: View {
     @Environment(AppSession.self) private var session
@@ -7,7 +14,24 @@ struct MessageView: View {
     let channel: Channel
 
     @State private var draft = ""
+    @State private var replyingTo: Message?
+    @State private var editing: Message?
+    @State private var pendingFiles: [PendingFile] = []
+    @State private var messageToDelete: Message?
+    @State private var isSending = false
     @FocusState private var composerFocused: Bool
+    #if os(iOS)
+    @State private var photoItems: [PhotosPickerItem] = []
+    #else
+    @State private var showFileImporter = false
+    #endif
+
+    struct PendingFile: Identifiable {
+        let id = UUID()
+        let filename: String
+        let data: Data
+        let contentType: String
+    }
 
     private var channelTitle: String {
         if let name = channel.name, !name.isEmpty {
@@ -53,6 +77,7 @@ struct MessageView: View {
                 guard !isNewDay,
                       let previous,
                       previous.author?.id == message.author?.id,
+                      message.referencedMessage == nil,
                       let previousTimestamp = previous.timestamp,
                       let timestamp = message.timestamp
                 else { return false }
@@ -94,8 +119,18 @@ struct MessageView: View {
                             if let dayLabel = entry.dayLabel {
                                 DayDivider(label: dayLabel)
                             }
-                            MessageRow(message: entry.message, showsHeader: entry.showsHeader)
-                                .id(entry.message.id)
+                            MessageRow(
+                                message: entry.message,
+                                showsHeader: entry.showsHeader,
+                                isOwn: entry.message.author?.id == session.currentUser?.id,
+                                onReact: { emoji in
+                                    Task { await session.toggleReaction(emoji, on: entry.message) }
+                                },
+                                onReply: { startReply(entry.message) },
+                                onEdit: { startEdit(entry.message) },
+                                onDelete: { messageToDelete = entry.message }
+                            )
+                            .id(entry.message.id)
                         }
                     }
                     .padding(.horizontal)
@@ -113,6 +148,7 @@ struct MessageView: View {
                 }
                 .task(id: channel.id) {
                     session.activeChannelId = channel.id
+                    session.recordVisit(channel)
                     await session.loadMessages(for: channel)
                     session.markChannelRead(channel)
                 }
@@ -127,24 +163,28 @@ struct MessageView: View {
 
             Divider()
 
+            composerBanner
+            pendingFilesRow
+
             HStack(spacing: 8) {
+                attachButton
                 TextField("Message \(channelTitle)", text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...6)
                     .focused($composerFocused)
                     .onSubmit(send)
                     .onChange(of: draft) { _, newValue in
-                        if !newValue.isEmpty {
+                        if !newValue.isEmpty && editing == nil {
                             session.composerTyping(in: channel)
                         }
                     }
                 Button(action: send) {
-                    Image(systemName: "arrow.up.circle.fill")
+                    Image(systemName: editing != nil ? "checkmark.circle.fill" : "arrow.up.circle.fill")
                         .font(.title2)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.tint)
-                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(!canSend || isSending)
             }
             .padding(12)
         }
@@ -152,6 +192,209 @@ struct MessageView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .confirmationDialog(
+            "Delete this message?",
+            isPresented: Binding(
+                get: { messageToDelete != nil },
+                set: { if !$0 { messageToDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let message = messageToDelete {
+                    Task { await session.deleteMessage(message) }
+                }
+                messageToDelete = nil
+            }
+        }
+        #if os(macOS)
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: true
+        ) { result in
+            guard case .success(let urls) = result else { return }
+            for url in urls.prefix(10) {
+                let accessing = url.startAccessingSecurityScopedResource()
+                defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+                guard let data = try? Data(contentsOf: url) else { continue }
+                let contentType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
+                    ?? "application/octet-stream"
+                pendingFiles.append(
+                    PendingFile(filename: url.lastPathComponent, data: data, contentType: contentType)
+                )
+            }
+        }
+        #endif
+    }
+
+    private var canSend: Bool {
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !pendingFiles.isEmpty
+    }
+
+    // MARK: Composer accessories
+
+    @ViewBuilder
+    private var attachButton: some View {
+        #if os(iOS)
+        PhotosPicker(selection: $photoItems, maxSelectionCount: 10, matching: .images) {
+            Image(systemName: "plus.circle")
+                .font(.title2)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .onChange(of: photoItems) { _, items in
+            guard !items.isEmpty else { return }
+            photoItems = []
+            Task {
+                for (index, item) in items.enumerated() {
+                    guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+                    let type = item.supportedContentTypes.first
+                    let ext = type?.preferredFilenameExtension ?? "jpg"
+                    let mime = type?.preferredMIMEType ?? "image/jpeg"
+                    pendingFiles.append(
+                        PendingFile(
+                            filename: "photo-\(Int(Date().timeIntervalSince1970))-\(index).\(ext)",
+                            data: data,
+                            contentType: mime
+                        )
+                    )
+                }
+            }
+        }
+        #else
+        Button {
+            showFileImporter = true
+        } label: {
+            Image(systemName: "plus.circle")
+                .font(.title2)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        #endif
+    }
+
+    @ViewBuilder
+    private var composerBanner: some View {
+        if let editing {
+            bannerRow(icon: "pencil", text: "Editing message") {
+                self.editing = nil
+                draft = ""
+            }
+        } else if let replyingTo {
+            bannerRow(
+                icon: "arrowshape.turn.up.left",
+                text: "Replying to \(replyingTo.author?.displayName ?? "message")"
+            ) {
+                self.replyingTo = nil
+            }
+        }
+    }
+
+    private func bannerRow(icon: String, text: String, cancel: @escaping () -> Void) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.caption)
+            Text(text)
+                .font(.caption)
+                .lineLimit(1)
+            Spacer()
+            Button {
+                cancel()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder
+    private var pendingFilesRow: some View {
+        if !pendingFiles.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(pendingFiles) { file in
+                        HStack(spacing: 6) {
+                            if file.contentType.hasPrefix("image/"), let image = PlatformImage(data: file.data) {
+                                #if os(macOS)
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 32, height: 32)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                #else
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 32, height: 32)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                #endif
+                            } else {
+                                Image(systemName: "doc")
+                            }
+                            Text(file.filename)
+                                .font(.caption)
+                                .lineLimit(1)
+                                .frame(maxWidth: 120)
+                            Button {
+                                pendingFiles.removeAll { $0.id == file.id }
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(6)
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    // MARK: Actions
+
+    private func startReply(_ message: Message) {
+        editing = nil
+        replyingTo = message
+        composerFocused = true
+    }
+
+    private func startEdit(_ message: Message) {
+        replyingTo = nil
+        editing = message
+        draft = message.content ?? ""
+        composerFocused = true
+    }
+
+    private func send() {
+        guard canSend, !isSending else { return }
+        let content = draft
+        let reply = replyingTo?.id
+        let files = pendingFiles.map {
+            APIClient.UploadFile(filename: $0.filename, data: $0.data, contentType: $0.contentType)
+        }
+        let editTarget = editing
+        draft = ""
+        replyingTo = nil
+        editing = nil
+        pendingFiles = []
+        composerFocused = true
+        isSending = true
+        Task {
+            if let editTarget {
+                await session.editMessage(editTarget, content: content)
+            } else {
+                await session.sendMessage(content, in: channel, replyTo: reply, files: files)
+            }
+            isSending = false
+        }
     }
 
     @ViewBuilder
@@ -177,13 +420,6 @@ struct MessageView: View {
         case 2: return "\(names[0]) and \(names[1]) are typing"
         default: return "Several people are typing"
         }
-    }
-
-    private func send() {
-        let content = draft
-        draft = ""
-        composerFocused = true
-        Task { await session.sendMessage(content, in: channel) }
     }
 }
 
@@ -229,6 +465,11 @@ private struct MessageContentText: View {
 private struct MessageRow: View {
     let message: Message
     let showsHeader: Bool
+    let isOwn: Bool
+    let onReact: (ReactionEmoji) -> Void
+    let onReply: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -238,6 +479,9 @@ private struct MessageRow: View {
                 Color.clear.frame(width: 36, height: 1)
             }
             VStack(alignment: .leading, spacing: 2) {
+                if let referenced = message.referencedMessage?.value {
+                    replyPreview(referenced)
+                }
                 if showsHeader {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(message.author?.displayName ?? "Unknown")
@@ -260,10 +504,107 @@ private struct MessageRow: View {
                 ForEach(message.attachments ?? []) { attachment in
                     AttachmentContent(attachment: attachment)
                 }
+                reactionPills
             }
             Spacer(minLength: 0)
         }
         .padding(.top, showsHeader ? 10 : 2)
+        .contentShape(Rectangle())
+        .contextMenu {
+            ControlGroup {
+                ForEach(quickReactions.prefix(4), id: \.self) { emoji in
+                    Button(emoji) {
+                        onReact(ReactionEmoji(name: emoji))
+                    }
+                }
+            }
+            Menu("More reactions") {
+                ForEach(quickReactions, id: \.self) { emoji in
+                    Button(emoji) {
+                        onReact(ReactionEmoji(name: emoji))
+                    }
+                }
+            }
+            Button("Reply", systemImage: "arrowshape.turn.up.left") {
+                onReply()
+            }
+            Button("Copy text", systemImage: "doc.on.doc") {
+                copyText()
+            }
+            if isOwn {
+                Divider()
+                Button("Edit", systemImage: "pencil") {
+                    onEdit()
+                }
+                Button("Delete", systemImage: "trash", role: .destructive) {
+                    onDelete()
+                }
+            }
+        }
+    }
+
+    private func replyPreview(_ referenced: Message) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "arrowshape.turn.up.left")
+                .font(.caption2)
+            Text(referenced.author?.displayName ?? "Unknown")
+                .font(.caption.bold())
+            Text(referenced.content ?? "attachment")
+                .font(.caption)
+                .lineLimit(1)
+        }
+        .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder
+    private var reactionPills: some View {
+        let reactions = message.reactions ?? []
+        if !reactions.isEmpty {
+            HStack(spacing: 6) {
+                ForEach(reactions, id: \.emoji.key) { reaction in
+                    Button {
+                        onReact(reaction.emoji)
+                    } label: {
+                        HStack(spacing: 4) {
+                            if reaction.emoji.id != nil {
+                                RemoteImage(url: MediaURLs.customEmoji(reaction.emoji)) {
+                                    Text(":\(reaction.emoji.name):").font(.caption2)
+                                }
+                                .frame(width: 16, height: 16)
+                            } else {
+                                Text(reaction.emoji.name)
+                                    .font(.footnote)
+                            }
+                            Text("\(reaction.count)")
+                                .font(.caption.monospacedDigit())
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            reaction.me == true ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.12),
+                            in: Capsule()
+                        )
+                        .overlay {
+                            if reaction.me == true {
+                                Capsule().strokeBorder(Color.accentColor.opacity(0.5), lineWidth: 1)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private func copyText() {
+        guard let content = message.content else { return }
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(content, forType: .string)
+        #else
+        UIPasteboard.general.string = content
+        #endif
     }
 }
 

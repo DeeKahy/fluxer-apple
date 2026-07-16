@@ -25,6 +25,9 @@ enum Endpoint {
         "/channels/\(channelId)/messages/\(messageId)"
     }
     static func typing(_ channelId: Snowflake) -> String { "/channels/\(channelId)/typing" }
+    static func myReaction(_ channelId: Snowflake, _ messageId: Snowflake, _ emoji: String) -> String {
+        "/channels/\(channelId)/messages/\(messageId)/reactions/\(emoji)/@me"
+    }
     static func ack(_ channelId: Snowflake, _ messageId: Snowflake) -> String {
         "/channels/\(channelId)/messages/\(messageId)/ack"
     }

@@ -258,12 +258,99 @@ public actor APIClient {
         return try await send("GET", Endpoint.messages(channelId), query: query)
     }
 
-    public func sendMessage(_ content: String, to channelId: Snowflake, nonce: String? = nil) async throws -> Message {
-        struct Body: Encodable {
-            let content: String
-            let nonce: String?
+    struct MessageReferencePayload: Encodable {
+        let messageId: Snowflake
+    }
+
+    struct MessageCreateBody: Encodable {
+        let content: String
+        let nonce: String?
+        let messageReference: MessageReferencePayload?
+    }
+
+    public func sendMessage(
+        _ content: String,
+        to channelId: Snowflake,
+        replyTo: Snowflake? = nil,
+        nonce: String? = nil
+    ) async throws -> Message {
+        let body = MessageCreateBody(
+            content: content,
+            nonce: nonce,
+            messageReference: replyTo.map(MessageReferencePayload.init)
+        )
+        return try await send("POST", Endpoint.messages(channelId), body: body)
+    }
+
+    /// A file staged for upload alongside a message.
+    public struct UploadFile: Sendable {
+        public let filename: String
+        public let data: Data
+        public let contentType: String
+
+        public init(filename: String, data: Data, contentType: String) {
+            self.filename = filename
+            self.data = data
+            self.contentType = contentType
         }
-        return try await send("POST", Endpoint.messages(channelId), body: Body(content: content, nonce: nonce))
+    }
+
+    /// Sends a message with attached files as one multipart request:
+    /// a payload_json part plus files[N] parts, same as the web client's
+    /// non-presigned upload path.
+    public func sendMessage(
+        _ content: String,
+        to channelId: Snowflake,
+        files: [UploadFile],
+        replyTo: Snowflake? = nil,
+        nonce: String? = nil
+    ) async throws -> Message {
+        let payload = MessageCreateBody(
+            content: content,
+            nonce: nonce,
+            messageReference: replyTo.map(MessageReferencePayload.init)
+        )
+        let payloadData = try JSONEncoder.fluxer.encode(payload)
+
+        let boundary = "FluxerKit-\(UUID().uuidString)"
+        var body = Data()
+        func appendPart(_ string: String) {
+            body.append(Data(string.utf8))
+        }
+        appendPart("--\(boundary)\r\n")
+        appendPart("Content-Disposition: form-data; name=\"payload_json\"\r\n")
+        appendPart("Content-Type: application/json\r\n\r\n")
+        body.append(payloadData)
+        appendPart("\r\n")
+        for (index, file) in files.enumerated() {
+            let safeName = file.filename.replacingOccurrences(of: "\"", with: "_")
+            appendPart("--\(boundary)\r\n")
+            appendPart("Content-Disposition: form-data; name=\"files[\(index)]\"; filename=\"\(safeName)\"\r\n")
+            appendPart("Content-Type: \(file.contentType)\r\n\r\n")
+            body.append(file.data)
+            appendPart("\r\n")
+        }
+        appendPart("--\(boundary)--\r\n")
+
+        var request = try makeRequest("POST", Endpoint.messages(channelId))
+        request.httpBody = body
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        let data = try await executeRaw(request)
+        do {
+            return try JSONDecoder.fluxer.decode(Message.self, from: data)
+        } catch {
+            throw APIError.decodingFailed(underlying: String(describing: error))
+        }
+    }
+
+    public func addReaction(_ emoji: ReactionEmoji, to messageId: Snowflake, in channelId: Snowflake) async throws {
+        let request = try makeRequest("PUT", Endpoint.myReaction(channelId, messageId, emoji.apiValue))
+        _ = try await executeRaw(request)
+    }
+
+    public func removeReaction(_ emoji: ReactionEmoji, from messageId: Snowflake, in channelId: Snowflake) async throws {
+        let request = try makeRequest("DELETE", Endpoint.myReaction(channelId, messageId, emoji.apiValue))
+        _ = try await executeRaw(request)
     }
 
     public func editMessage(_ messageId: Snowflake, in channelId: Snowflake, content: String) async throws -> Message {

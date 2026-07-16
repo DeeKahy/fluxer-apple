@@ -67,9 +67,23 @@ struct MainView: View {
                             .foregroundStyle(.secondary)
                     }
                     ForEach(session.guilds) { guild in
-                        NavigationLink(value: guild) {
-                            guildRow(guild)
+                        Button {
+                            // Land in the last visited channel (or the first
+                            // one), with the channel list a back tap away.
+                            compactPath.append(guild)
+                            if let channel = session.defaultChannel(for: guild) {
+                                compactPath.append(channel)
+                            }
+                        } label: {
+                            HStack {
+                                guildRow(guild)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -112,8 +126,8 @@ struct MainView: View {
                     }
                     ForEach(session.guilds) { guild in
                         Button {
-                            selectedChannel = nil
                             selectedGuild = guild
+                            selectedChannel = session.defaultChannel(for: guild)
                         } label: {
                             guildRow(guild)
                         }

@@ -328,6 +328,19 @@ final class AppSession {
                   let messageId = event.data?["message_id"]?.stringValue.flatMap(Snowflake.init(string:))
             else { return }
             readStates[channelId] = messageId
+        case "MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE":
+            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+                  let messageId = event.data?["message_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+                  let userId = event.data?["user_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+                  let emoji = try? event.data?["emoji"]?.decoded(as: ReactionEmoji.self)
+            else { return }
+            applyReactionChange(
+                channelId: channelId,
+                messageId: messageId,
+                emoji: emoji,
+                delta: event.name == "MESSAGE_REACTION_ADD" ? 1 : -1,
+                byMe: userId == currentUser?.id
+            )
         case "TYPING_START":
             guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
                   let userId = event.data?["user_id"]?.stringValue.flatMap(Snowflake.init(string:)),
@@ -456,15 +469,109 @@ final class AppSession {
         }
     }
 
-    func sendMessage(_ content: String, in channel: Channel) async {
+    func sendMessage(
+        _ content: String,
+        in channel: Channel,
+        replyTo: Snowflake? = nil,
+        files: [APIClient.UploadFile] = []
+    ) async {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty || !files.isEmpty else { return }
         do {
-            let sent = try await client.sendMessage(trimmed, to: channel.id)
+            let sent: Message
+            if files.isEmpty {
+                sent = try await client.sendMessage(trimmed, to: channel.id, replyTo: replyTo)
+            } else {
+                sent = try await client.sendMessage(trimmed, to: channel.id, files: files, replyTo: replyTo)
+            }
             insert(sent)
         } catch {
             lastError = Self.describe(error)
         }
+    }
+
+    func editMessage(_ message: Message, content: String) async {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        do {
+            let edited = try await client.editMessage(message.id, in: message.channelId, content: trimmed)
+            update(edited)
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    func deleteMessage(_ message: Message) async {
+        do {
+            try await client.deleteMessage(message.id, in: message.channelId)
+            messages[message.channelId]?.removeAll { $0.id == message.id }
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    // MARK: Reactions
+
+    func toggleReaction(_ emoji: ReactionEmoji, on message: Message) async {
+        let mine = message.reactions?.first { $0.emoji.key == emoji.key }?.me == true
+        // Optimistic local flip; the gateway event confirms it.
+        applyReactionChange(
+            channelId: message.channelId,
+            messageId: message.id,
+            emoji: emoji,
+            delta: mine ? -1 : 1,
+            byMe: true
+        )
+        do {
+            if mine {
+                try await client.removeReaction(emoji, from: message.id, in: message.channelId)
+            } else {
+                try await client.addReaction(emoji, to: message.id, in: message.channelId)
+            }
+        } catch {
+            applyReactionChange(
+                channelId: message.channelId,
+                messageId: message.id,
+                emoji: emoji,
+                delta: mine ? 1 : -1,
+                byMe: true
+            )
+            lastError = Self.describe(error)
+        }
+    }
+
+    private func applyReactionChange(
+        channelId: Snowflake,
+        messageId: Snowflake,
+        emoji: ReactionEmoji,
+        delta: Int,
+        byMe: Bool
+    ) {
+        guard var channelMessages = messages[channelId],
+              let index = channelMessages.firstIndex(where: { $0.id == messageId })
+        else { return }
+        var message = channelMessages[index]
+        var reactions = message.reactions ?? []
+        if let reactionIndex = reactions.firstIndex(where: { $0.emoji.key == emoji.key }) {
+            var reaction = reactions[reactionIndex]
+            let alreadyMine = reaction.me == true
+            // Skip echoes of changes already applied optimistically.
+            if byMe && ((delta > 0 && alreadyMine) || (delta < 0 && !alreadyMine)) { return }
+            reaction.count += delta
+            if byMe {
+                reaction.me = delta > 0
+            }
+            if reaction.count <= 0 {
+                reactions.remove(at: reactionIndex)
+            } else {
+                reactions[reactionIndex] = reaction
+            }
+        } else if delta > 0 {
+            reactions.append(Reaction(emoji: emoji, count: 1, me: byMe))
+        }
+        message.reactions = reactions.isEmpty ? nil : reactions
+        channelMessages[index] = message
+        messages[channelId] = channelMessages
     }
 
     private func insert(_ message: Message) {
@@ -518,6 +625,44 @@ final class AppSession {
     func markChannelRead(_ channel: Channel) {
         guard let last = messages(in: channel.id).last?.id ?? channel.lastMessageId else { return }
         markRead(channelId: channel.id, messageId: last)
+    }
+
+    // MARK: Guild channel memory
+
+    private static let lastChannelDefaultsKey = "lastChannelByGuild"
+    private var lastChannelByGuild: [Snowflake: Snowflake] = {
+        let stored = UserDefaults.standard.dictionary(forKey: lastChannelDefaultsKey) as? [String: String] ?? [:]
+        var result: [Snowflake: Snowflake] = [:]
+        for (guild, channel) in stored {
+            if let guildId = Snowflake(string: guild), let channelId = Snowflake(string: channel) {
+                result[guildId] = channelId
+            }
+        }
+        return result
+    }()
+
+    /// Remembers the channel so the guild reopens there next time.
+    func recordVisit(_ channel: Channel) {
+        guard let guildId = channel.guildId else { return }
+        guard lastChannelByGuild[guildId] != channel.id else { return }
+        lastChannelByGuild[guildId] = channel.id
+        let stored = lastChannelByGuild.reduce(into: [String: String]()) { result, entry in
+            result[entry.key.stringValue] = entry.value.stringValue
+        }
+        UserDefaults.standard.set(stored, forKey: Self.lastChannelDefaultsKey)
+    }
+
+    /// The channel a guild should open on: the last one visited if it still
+    /// exists, otherwise the first text channel by position.
+    func defaultChannel(for guild: Guild) -> Channel? {
+        let channels = guild.channels ?? []
+        if let remembered = lastChannelByGuild[guild.id],
+           let channel = channels.first(where: { $0.id == remembered }) {
+            return channel
+        }
+        return channels
+            .filter { $0.type == .guildText }
+            .min { ($0.position ?? 0, $0.id) < ($1.position ?? 0, $1.id) }
     }
 
     // MARK: Lookups and mentions
