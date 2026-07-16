@@ -20,12 +20,13 @@ upstream). Checked items are built and QA'd in the app.
 
 ## Messaging, near term
 
-- [ ] Send attachments: two phase upload (POST /channels/{id}/attachments, upload, complete),
-      photo picker on iOS, drag and drop and file picker on macOS
-- [ ] Replies: referenced message preview on rows, swipe or context menu to reply
-- [ ] Reactions: show reaction pills, add/remove (PUT/DELETE .../reactions/{emoji}/@me),
-      MESSAGE_REACTION_ADD/REMOVE gateway events
-- [ ] Edit and delete own messages from a context menu
+- [x] Send attachments (multipart payload_json + files path; presigned two phase
+      upload for big files still todo), photo picker on iOS, file panel on macOS
+- [x] Replies: referenced message preview on rows, context menu to reply
+- [x] Reactions: pills with counts, toggle via tap or context menu quick picks,
+      MESSAGE_REACTION_ADD/REMOVE gateway events, custom emoji rendering
+- [x] Edit and delete own messages from a context menu
+- [x] Guilds open on the last visited channel, falling back to the first
 - [ ] Pins: view pinned messages (GET .../messages/pins), pin/unpin
 - [ ] Link previews: render embeds that arrive on messages, /unfurl for composing
 - [ ] Mentions feed: /users/@me/mentions as a "recent mentions" screen
