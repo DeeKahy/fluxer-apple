@@ -42,6 +42,9 @@ struct MessageView: View {
                     }
                     .padding()
                 }
+                // Content starts pinned to the newest message, which also
+                // survives lazy row sizing, unlike a manual scrollTo.
+                .defaultScrollAnchor(.bottom)
                 // Keyed on the newest id, not the count, so prepending
                 // older history doesn't yank the view to the bottom.
                 .onChange(of: session.messages(in: channel.id).last?.id) {
@@ -51,9 +54,6 @@ struct MessageView: View {
                 }
                 .task(id: channel.id) {
                     await session.loadMessages(for: channel)
-                    if let last = session.messages(in: channel.id).last {
-                        proxy.scrollTo(last.id, anchor: .bottom)
-                    }
                 }
             }
 
