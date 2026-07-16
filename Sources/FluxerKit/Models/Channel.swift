@@ -27,4 +27,7 @@ public struct Channel: Codable, Hashable, Identifiable, Sendable {
     public var lastMessageId: Snowflake?
     public var recipients: [User]?
     public var nsfw: Bool?
+    public var permissionOverwrites: [PermissionOverwrite]?
+    /// Slowmode interval in seconds, 0 or nil when disabled.
+    public var rateLimitPerUser: Int?
 }

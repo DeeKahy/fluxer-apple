@@ -244,6 +244,63 @@ public actor APIClient {
         try await send("GET", Endpoint.myChannels)
     }
 
+    public func guildMembers(
+        _ guildId: Snowflake,
+        limit: Int = 100,
+        after: Snowflake? = nil
+    ) async throws -> [GuildMember] {
+        var query = [URLQueryItem(name: "limit", value: String(limit))]
+        if let after {
+            query.append(URLQueryItem(name: "after", value: after.stringValue))
+        }
+        return try await send("GET", Endpoint.guildMembers(guildId), query: query)
+    }
+
+    /// Opens (or returns the existing) DM channel with a user.
+    public func openDM(with userId: Snowflake) async throws -> Channel {
+        struct Body: Encodable {
+            let recipientId: Snowflake
+        }
+        return try await send("POST", Endpoint.myChannels, body: Body(recipientId: userId))
+    }
+
+    // MARK: Relationships
+
+    public func relationships() async throws -> [Relationship] {
+        try await send("GET", Endpoint.myRelationships)
+    }
+
+    /// Sends a friend request by username (and optional discriminator).
+    public func sendFriendRequest(username: String, discriminator: String?) async throws {
+        struct Body: Encodable {
+            let username: String
+            let discriminator: String?
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(username: username, discriminator: discriminator))
+        let request = try makeRequest("POST", Endpoint.myRelationships, bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
+    public func acceptFriendRequest(from userId: Snowflake) async throws {
+        let request = try makeRequest("PUT", Endpoint.relationship(userId))
+        _ = try await executeRaw(request)
+    }
+
+    /// Removes a friend, cancels a request, or unblocks.
+    public func removeRelationship(with userId: Snowflake) async throws {
+        let request = try makeRequest("DELETE", Endpoint.relationship(userId))
+        _ = try await executeRaw(request)
+    }
+
+    public func blockUser(_ userId: Snowflake) async throws {
+        struct Body: Encodable {
+            let type: Int
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(type: Relationship.Kind.blocked.rawValue))
+        let request = try makeRequest("PUT", Endpoint.relationship(userId), bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
     // MARK: Messages
 
     public func messages(

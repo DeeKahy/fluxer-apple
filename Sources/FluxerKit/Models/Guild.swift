@@ -7,6 +7,7 @@ public struct Guild: Codable, Hashable, Identifiable, Sendable {
     public var description: String?
     public var ownerId: Snowflake?
     public var channels: [Channel]?
+    public var roles: [Role]?
     public var memberCount: Int?
     public var unavailable: Bool?
 }

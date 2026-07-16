@@ -19,6 +19,7 @@ struct MessageView: View {
     @State private var pendingFiles: [PendingFile] = []
     @State private var messageToDelete: Message?
     @State private var isSending = false
+    @State private var showMembers = false
     @FocusState private var composerFocused: Bool
     #if os(iOS)
     @State private var photoItems: [PhotosPickerItem] = []
@@ -163,35 +164,63 @@ struct MessageView: View {
 
             Divider()
 
-            composerBanner
-            pendingFilesRow
+            if session.canSendMessages(in: channel) {
+                composerBanner
+                pendingFilesRow
+                slowmodeNotice
 
-            HStack(spacing: 8) {
-                attachButton
-                TextField("Message \(channelTitle)", text: $draft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...6)
-                    .focused($composerFocused)
-                    .onSubmit(send)
-                    .onChange(of: draft) { _, newValue in
-                        if !newValue.isEmpty && editing == nil {
-                            session.composerTyping(in: channel)
-                        }
+                HStack(spacing: 8) {
+                    if session.canAttachFiles(in: channel) {
+                        attachButton
                     }
-                Button(action: send) {
-                    Image(systemName: editing != nil ? "checkmark.circle.fill" : "arrow.up.circle.fill")
-                        .font(.title2)
+                    TextField("Message \(channelTitle)", text: $draft, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(1...6)
+                        .focused($composerFocused)
+                        .onSubmit(send)
+                        .onChange(of: draft) { _, newValue in
+                            if !newValue.isEmpty && editing == nil {
+                                session.composerTyping(in: channel)
+                            }
+                        }
+                    Button(action: send) {
+                        Image(systemName: editing != nil ? "checkmark.circle.fill" : "arrow.up.circle.fill")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.tint)
+                    .disabled(!canSend || isSending || slowmodeRemaining > 0)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.tint)
-                .disabled(!canSend || isSending)
+                .padding(12)
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill")
+                    Text("You don't have permission to send messages in this channel.")
+                        .font(.callout)
+                }
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(.quaternary.opacity(0.5))
             }
-            .padding(12)
         }
         .navigationTitle(channelTitle)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .toolbar {
+            if let guildId = channel.guildId,
+               session.permissions(in: channel).contains(.viewChannelMembers) {
+                Button {
+                    showMembers = true
+                } label: {
+                    Image(systemName: "person.2")
+                }
+                .sheet(isPresented: $showMembers) {
+                    MemberListView(guildId: guildId)
+                }
+            }
+        }
         .confirmationDialog(
             "Delete this message?",
             isPresented: Binding(
@@ -230,6 +259,44 @@ struct MessageView: View {
 
     private var canSend: Bool {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !pendingFiles.isEmpty
+    }
+
+    private var slowmodeRemaining: TimeInterval {
+        _ = slowmodeTick
+        return session.slowmodeRemaining(in: channel)
+    }
+
+    /// Bumped by a timer so the slowmode countdown re-renders each second.
+    @State private var slowmodeTick = 0
+
+    @ViewBuilder
+    private var slowmodeNotice: some View {
+        let interval = session.slowmodeInterval(in: channel)
+        if interval > 0 {
+            let remaining = slowmodeRemaining
+            HStack(spacing: 6) {
+                Image(systemName: "hourglass")
+                    .font(.caption)
+                if remaining > 0 {
+                    Text("Slowmode: you can send again in \(Int(remaining.rounded(.up)))s")
+                        .font(.caption)
+                        .monospacedDigit()
+                } else {
+                    Text("Slowmode is on: one message every \(interval)s")
+                        .font(.caption)
+                }
+                Spacer()
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .task(id: remaining > 0) {
+                while slowmodeRemaining > 0 {
+                    try? await Task.sleep(for: .seconds(1))
+                    slowmodeTick += 1
+                }
+            }
+        }
     }
 
     // MARK: Composer accessories
@@ -374,7 +441,7 @@ struct MessageView: View {
     }
 
     private func send() {
-        guard canSend, !isSending else { return }
+        guard canSend, !isSending, slowmodeRemaining <= 0 else { return }
         let content = draft
         let reply = replyingTo?.id
         let files = pendingFiles.map {

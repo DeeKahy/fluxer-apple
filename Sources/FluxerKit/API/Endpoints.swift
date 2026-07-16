@@ -19,6 +19,9 @@ enum Endpoint {
     static func user(_ id: Snowflake) -> String { "/users/\(id)" }
     static func guild(_ id: Snowflake) -> String { "/guilds/\(id)" }
     static func guildChannels(_ id: Snowflake) -> String { "/guilds/\(id)/channels" }
+    static func guildMembers(_ id: Snowflake) -> String { "/guilds/\(id)/members" }
+    static let myRelationships = "/users/@me/relationships"
+    static func relationship(_ userId: Snowflake) -> String { "/users/@me/relationships/\(userId)" }
     static func channel(_ id: Snowflake) -> String { "/channels/\(id)" }
     static func messages(_ channelId: Snowflake) -> String { "/channels/\(channelId)/messages" }
     static func message(_ channelId: Snowflake, _ messageId: Snowflake) -> String {

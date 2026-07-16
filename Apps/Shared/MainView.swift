@@ -13,6 +13,7 @@ struct MainView: View {
     @State private var selectedGuild: Guild?
     @State private var selectedChannel: Channel?
     @State private var compactPath = NavigationPath()
+    @State private var showFriends = false
 
     var body: some View {
         Group {
@@ -50,6 +51,9 @@ struct MainView: View {
         NavigationStack(path: $compactPath) {
             List {
                 connectionRow
+                NavigationLink(value: FriendsRoute()) {
+                    Label("Friends", systemImage: "person.2.fill")
+                }
                 Section("Direct messages") {
                     if session.privateChannels.isEmpty {
                         Text("No conversations")
@@ -95,8 +99,13 @@ struct MainView: View {
             .navigationDestination(for: Channel.self) { channel in
                 MessageView(channel: channel)
             }
+            .navigationDestination(for: FriendsRoute.self) { _ in
+                FriendsView()
+            }
         }
     }
+
+    struct FriendsRoute: Hashable {}
 
     // MARK: Split (Mac, iPad)
 
@@ -104,6 +113,21 @@ struct MainView: View {
         NavigationSplitView {
             List {
                 connectionRow
+                Button {
+                    showFriends = true
+                } label: {
+                    Label("Friends", systemImage: "person.2.fill")
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showFriends) {
+                    NavigationStack {
+                        FriendsView()
+                            .toolbar {
+                                Button("Done") { showFriends = false }
+                            }
+                    }
+                    .frame(minWidth: 400, minHeight: 500)
+                }
                 Section("Direct messages") {
                     if session.privateChannels.isEmpty {
                         Text("No conversations")
@@ -194,6 +218,9 @@ struct MainView: View {
                 let other = (channel.recipients ?? []).first { $0.id != session.currentUser?.id }
                     ?? channel.recipients?.first
                 AvatarView(user: other, diameter: 28)
+                    .overlay(alignment: .bottomTrailing) {
+                        PresenceDot(status: session.presenceStatus(for: other?.id))
+                    }
             }
             Text(dmTitle(channel))
                 .fontWeight(session.isUnread(channel) ? .bold : .regular)
