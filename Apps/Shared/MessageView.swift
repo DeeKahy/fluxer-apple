@@ -141,10 +141,15 @@ struct MessageView: View {
                 // survives lazy row sizing, unlike a manual scrollTo.
                 .defaultScrollAnchor(.bottom)
                 // Keyed on the newest id, not the count, so prepending
-                // older history doesn't yank the view to the bottom.
+                // older history doesn't yank the view to the bottom. The
+                // scroll is deferred a beat so it never runs inside the
+                // same layout pass that inserted the row.
                 .onChange(of: session.messages(in: channel.id).last?.id) {
-                    if let last = session.messages(in: channel.id).last {
-                        proxy.scrollTo(last.id, anchor: .bottom)
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(60))
+                        if let last = session.messages(in: channel.id).last {
+                            proxy.scrollTo(last.id, anchor: .bottom)
+                        }
                     }
                 }
                 .task(id: channel.id) {
@@ -209,16 +214,18 @@ struct MessageView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
-            if let guildId = channel.guildId,
+            if channel.guildId != nil,
                session.permissions(in: channel).contains(.viewChannelMembers) {
                 Button {
                     showMembers = true
                 } label: {
                     Image(systemName: "person.2")
                 }
-                .sheet(isPresented: $showMembers) {
-                    MemberListView(guildId: guildId)
-                }
+            }
+        }
+        .sheet(isPresented: $showMembers) {
+            if let guildId = channel.guildId {
+                MemberListView(guildId: guildId)
             }
         }
         .confirmationDialog(
@@ -262,40 +269,34 @@ struct MessageView: View {
     }
 
     private var slowmodeRemaining: TimeInterval {
-        _ = slowmodeTick
-        return session.slowmodeRemaining(in: channel)
+        session.slowmodeRemaining(in: channel)
     }
-
-    /// Bumped by a timer so the slowmode countdown re-renders each second.
-    @State private var slowmodeTick = 0
 
     @ViewBuilder
     private var slowmodeNotice: some View {
         let interval = session.slowmodeInterval(in: channel)
         if interval > 0 {
-            let remaining = slowmodeRemaining
-            HStack(spacing: 6) {
-                Image(systemName: "hourglass")
-                    .font(.caption)
-                if remaining > 0 {
-                    Text("Slowmode: you can send again in \(Int(remaining.rounded(.up)))s")
+            // TimelineView redraws just this row each second; driving the
+            // countdown by mutating view state destabilised the whole screen.
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let remaining = max(0, session.slowmodeUntil[channel.id]?.timeIntervalSince(context.date) ?? 0)
+                HStack(spacing: 6) {
+                    Image(systemName: "hourglass")
                         .font(.caption)
-                        .monospacedDigit()
-                } else {
-                    Text("Slowmode is on: one message every \(interval)s")
-                        .font(.caption)
+                    if remaining > 0 {
+                        Text("Slowmode: you can send again in \(Int(remaining.rounded(.up)))s")
+                            .font(.caption)
+                            .monospacedDigit()
+                    } else {
+                        Text("Slowmode is on: one message every \(interval)s")
+                            .font(.caption)
+                    }
+                    Spacer()
                 }
-                Spacer()
             }
             .foregroundStyle(.secondary)
             .padding(.horizontal, 12)
             .padding(.top, 8)
-            .task(id: remaining > 0) {
-                while slowmodeRemaining > 0 {
-                    try? await Task.sleep(for: .seconds(1))
-                    slowmodeTick += 1
-                }
-            }
         }
     }
 
