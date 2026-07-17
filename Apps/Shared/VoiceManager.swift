@@ -51,6 +51,11 @@ final class VoiceManager {
     }
 
     init() {
+        #if targetEnvironment(simulator)
+        // The simulator's voice processing audio unit fails to start
+        // (error -4010), which kills the room connect. Plain audio works.
+        try? AudioManager.shared.setVoiceProcessingEnabled(false)
+        #endif
         room = Room()
         room.add(delegate: delegateProxy)
         delegateProxy.onChange = { [weak self] in
@@ -92,7 +97,14 @@ final class VoiceManager {
         phase = .connecting(channelId: channelId)
         do {
             try await room.connect(url: url.absoluteString, token: update.token)
-            try await room.localParticipant.setMicrophone(enabled: !muted)
+            do {
+                try await room.localParticipant.setMicrophone(enabled: !muted)
+            } catch {
+                // Stay in the call listen-only rather than dropping it.
+                voiceLog.error("Microphone publish failed: \(String(describing: error))")
+                muted = true
+                lastError = "Microphone unavailable, connected listen only."
+            }
             phase = .connected(channelId: channelId)
             refreshParticipants()
             startHeartbeat(channelId: channelId)

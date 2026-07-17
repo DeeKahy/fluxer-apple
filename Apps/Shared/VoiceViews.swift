@@ -15,9 +15,9 @@ struct VoiceBar: View {
                     Text(channelName)
                         .font(.callout.bold())
                         .lineLimit(1)
-                    Text(statusText)
+                    Text(session.voice.lastError ?? statusText)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(session.voice.lastError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
                 }
                 participantStrip
                 Spacer()
