@@ -119,6 +119,13 @@ struct DesktopShell: View {
             callMinimized = false
             callConnectedAt = active ? Date() : nil
         }
+        .task(id: session.guilds.count) {
+            // Open straight into the guild's default channel like the comp,
+            // instead of an empty pick-a-conversation state.
+            if selectedChannel == nil, let guild = currentGuild {
+                selectedChannel = session.defaultChannel(for: guild)
+            }
+        }
     }
 
     // MARK: Main column
@@ -228,6 +235,7 @@ private struct DesktopRail: View {
                             }
                     }
                     .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
                     .frame(width: 46, height: 46)
                 }
                 .padding(.vertical, 2)
@@ -374,22 +382,24 @@ private struct DesktopSidebar: View {
                 }
             }
         } label: {
-            HStack {
+            HStack(spacing: 6) {
                 Text(guild?.name ?? "Fluxer")
                     .font(.system(size: 17, weight: .heavy))
                     .foregroundStyle(Theme.text)
                     .lineLimit(1)
-                Spacer()
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(Theme.secondary)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 46)
             .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .buttonStyle(.plain)
+        .fixedSize()
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 46)
         .overlay(alignment: .bottom) { Theme.hairline.frame(height: 1) }
     }
 
@@ -435,7 +445,7 @@ private struct DesktopSidebar: View {
             .padding(.horizontal, 10)
             .contentShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(PressableRowStyle())
+        .buttonStyle(DeskRowStyle())
     }
 
     private func sectionHeader(_ title: String) -> some View {
@@ -511,7 +521,7 @@ private struct DesktopSidebar: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(PressableRowStyle())
+        .buttonStyle(DeskRowStyle())
         .contextMenu {
             if session.permissions(in: channel).contains(.createInstantInvite) {
                 Button("Create invite", systemImage: "person.crop.circle.badge.plus") {
@@ -564,7 +574,7 @@ private struct DesktopSidebar: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(PressableRowStyle())
+        .buttonStyle(DeskRowStyle())
         ForEach(occupants, id: \.self) { userId in
             let user = userId == session.currentUser?.id ? session.currentUser : session.knownUsers[userId]
             Button {
@@ -590,7 +600,7 @@ private struct DesktopSidebar: View {
                 .padding(.trailing, 10)
                 .contentShape(RoundedRectangle(cornerRadius: 8))
             }
-            .buttonStyle(PressableRowStyle())
+            .buttonStyle(DeskRowStyle())
         }
     }
 
@@ -644,7 +654,7 @@ private struct DesktopSidebar: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(PressableRowStyle())
+        .buttonStyle(DeskRowStyle())
         .contextMenu {
             Button(
                 session.isDMPinned(channel) ? "Unpin conversation" : "Pin conversation",
@@ -737,6 +747,8 @@ private struct DesktopSidebar: View {
                     }
             }
             .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
             .frame(width: 36)
             VStack(alignment: .leading, spacing: 1) {
                 Text(session.currentUser?.displayName ?? "You")
@@ -978,7 +990,7 @@ private struct DesktopSearchResults: View {
                             .padding(8)
                             .contentShape(RoundedRectangle(cornerRadius: 10))
                         }
-                        .buttonStyle(PressableRowStyle())
+                        .buttonStyle(DeskRowStyle())
                     }
                 }
 
@@ -1044,7 +1056,7 @@ private struct DesktopSearchResults: View {
             .padding(.vertical, 9)
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
-        .buttonStyle(PressableRowStyle())
+        .buttonStyle(DeskRowStyle())
     }
 
     private func channelResultName(_ channel: Channel) -> String {
@@ -1121,7 +1133,7 @@ private struct DesktopMembersPanel: View {
                             .padding(.vertical, 8)
                             .contentShape(RoundedRectangle(cornerRadius: 10))
                         }
-                        .buttonStyle(PressableRowStyle())
+                        .buttonStyle(DeskRowStyle())
                     }
                 }
                 .padding(.horizontal, 10)
@@ -1262,6 +1274,17 @@ private struct DesktopProfilePanel: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(13)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+/// Row button style for the desktop sidebar and panels. Unlike
+/// PressableRowStyle it adds no padding or background of its own, the
+/// rows draw those themselves to stay on the comp's 6px geometry.
+struct DeskRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
