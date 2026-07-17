@@ -41,6 +41,23 @@ enum Theme {
     static let sidebarBg = Color(hex: 0x111118)
     static let sidebarField = Color(hex: 0x1C1C26)
     static let sectionMuted = Color(hex: 0x5C5C68)
+    static let deskBg = Color(hex: 0x0D0D12)
+    static let panelBg = Color(hex: 0x101017)
+    static let selfBarBg = Color(hex: 0x0C0C11)
+    static let deskTile = Color(hex: 0x20202A)
+    static let sendIdle = Color(hex: 0x2A2A34)
+    static let idleYellow = Color(hex: 0xFAA61A)
+    static let offlineGray = Color(hex: 0x747F8D)
+
+    /// Presence status to dot color, comp palette.
+    static func presenceColor(_ status: String?) -> Color {
+        switch status {
+        case "online": return green
+        case "idle": return idleYellow
+        case "dnd": return red
+        default: return offlineGray
+        }
+    }
 
     /// Stable per-user name colors, like the comp's colored usernames.
     static let namePalette: [Color] = [

@@ -15,6 +15,7 @@
 		15ECF4F3FFC1CFC52BAF14B1 /* AppSession+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A40A2B18BDA8AD57D0BCACA /* AppSession+Features.swift */; };
 		1AB4E9C3B15A8B03AFE9FF87 /* DesktopShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E15614D2336D491775754197 /* DesktopShell.swift */; };
 		1E2695117AAF0D1F479DA28A /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEACEAA9AFA28CCB8B597D9 /* MessageMarkdown.swift */; };
+		218AFECD428DC97DFD8971B7 /* DesktopCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF51E7329A15AFA7849205D /* DesktopCallView.swift */; };
 		298DA37D180F9F0AD925F9AF /* CaptchaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12D0494483EF2AF4F9294E6 /* CaptchaView.swift */; };
 		29DD7F1A895C38A12DAF7EF0 /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B213DD2CD1F1C0B06F0DF5 /* SweepViews.swift */; };
 		30BB9131D7A136458979CCAF /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC0563281F663523448325E /* MessageView.swift */; };
@@ -34,6 +35,7 @@
 		5DFF2694A1E76C9020D5EDF9 /* VoiceStageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C83B9D05FD1AC94A4BE2718 /* VoiceStageView.swift */; };
 		62A493586E908D38A9677660 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086581378BB70D816FB3E614 /* AvatarView.swift */; };
 		63A69801C14B9F149710B8C7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1569297C4C0181A49661B6D /* FluxerApp.swift */; };
+		647DFC8212C830FB693D8C30 /* DesktopCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF51E7329A15AFA7849205D /* DesktopCallView.swift */; };
 		66B669B833DAC9A284550E15 /* TabShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35760DB8E41F00840B94EB6E /* TabShell.swift */; };
 		6DE8274C763F7D26902AC857 /* UIStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B8E5A1AAC07EC10FE5EC037 /* UIStyles.swift */; };
 		6E93A864F966E06F84AB19A9 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = B0DD205E3FEE92631EC5C284 /* FluxerKit */; };
@@ -96,6 +98,7 @@
 		B3D966850F387D2CAB8CE0AF /* VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceManager.swift; sourceTree = "<group>"; };
 		B7564963A1AD0848B4BB13E7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		B800819ED6C65A12153EF532 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		BEF51E7329A15AFA7849205D /* DesktopCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopCallView.swift; sourceTree = "<group>"; };
 		C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Fluxer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBE136C76A83BC536C207F06 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		CE99545FAB788ECBDF230844 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
@@ -153,6 +156,7 @@
 		3C52E0272CD73C1D63AFC12A /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				BEF51E7329A15AFA7849205D /* DesktopCallView.swift */,
 				E15614D2336D491775754197 /* DesktopShell.swift */,
 				A73D5EA6236F490A5E74EEA4 /* EmailConfirmationView.swift */,
 				F1569297C4C0181A49661B6D /* FluxerApp.swift */,
@@ -326,6 +330,7 @@
 				BDE5E435C429452EC58E9FF0 /* AppSession.swift in Sources */,
 				62A493586E908D38A9677660 /* AvatarView.swift in Sources */,
 				298DA37D180F9F0AD925F9AF /* CaptchaView.swift in Sources */,
+				647DFC8212C830FB693D8C30 /* DesktopCallView.swift in Sources */,
 				1AB4E9C3B15A8B03AFE9FF87 /* DesktopShell.swift in Sources */,
 				A6E4053C15486ED08484F41F /* DiskCache.swift in Sources */,
 				8DE0D45FD488DE5EAC291C31 /* EmailConfirmationView.swift in Sources */,
@@ -363,6 +368,7 @@
 				09600609281EE5894455717C /* AppSession.swift in Sources */,
 				120F5D4A8EEA21A2F9905E37 /* AvatarView.swift in Sources */,
 				973519C12F765204B7D5C9EE /* CaptchaView.swift in Sources */,
+				218AFECD428DC97DFD8971B7 /* DesktopCallView.swift in Sources */,
 				5A6E114E18A8D6B8583FDF79 /* DesktopShell.swift in Sources */,
 				DDE0E2C1BB00E8743226ABEB /* DiskCache.swift in Sources */,
 				4BE856A21BD6F4631FED6E20 /* EmailConfirmationView.swift in Sources */,

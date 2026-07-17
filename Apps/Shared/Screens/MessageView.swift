@@ -10,6 +10,7 @@ private let quickReactions = ["\u{1F44D}", "\u{2764}\u{FE0F}", "\u{1F602}", "\u{
 
 struct MessageView: View {
     @Environment(AppSession.self) private var session
+    @Environment(\.desktopChrome) private var desktopChrome
 
     let channel: Channel
 
@@ -223,58 +224,11 @@ struct MessageView: View {
                 pendingFilesRow
                 slowmodeNotice
 
-                HStack(alignment: .bottom, spacing: 8) {
-                    if session.canAttachFiles(in: channel) {
-                        attachButton
-                    }
-                    HStack(alignment: .bottom, spacing: 4) {
-                        TextField("Message \(channelTitle)", text: $draft, axis: .vertical)
-                            .textFieldStyle(.plain)
-                            .lineLimit(1...6)
-                            .font(.system(size: 15))
-                            .foregroundStyle(Theme.text)
-                            .padding(.leading, 14)
-                            .padding(.vertical, 9)
-                            .focused($composerFocused)
-                            .onSubmit(send)
-                            .onChange(of: draft) { _, newValue in
-                                if !newValue.isEmpty && editing == nil {
-                                    session.composerTyping(in: channel)
-                                }
-                            }
-                        Button {
-                            showEmojiPicker = true
-                        } label: {
-                            Image(systemName: "face.smiling")
-                                .font(.system(size: 19))
-                                .foregroundStyle(Theme.icon)
-                                .padding(.trailing, 10)
-                                .padding(.bottom, 9)
-                        }
-                        .buttonStyle(SquishButtonStyle())
-                        .sheet(isPresented: $showEmojiPicker) {
-                            EmojiPickerSheet { emoji in
-                                draft += (draft.isEmpty || draft.hasSuffix(" ") ? "" : " ") + emoji.messageToken + " "
-                            }
-                            .preferredColorScheme(.dark)
-                        }
-                    }
-                    .background(Theme.field, in: RoundedRectangle(cornerRadius: 18))
-                    Button(action: send) {
-                        Image(systemName: editing != nil ? "checkmark" : "arrow.up")
-                            .font(.system(size: 16, weight: .heavy))
-                            .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                canSend && slowmodeRemaining <= 0 ? Theme.accent : Theme.bubble,
-                                in: Circle()
-                            )
-                    }
-                    .buttonStyle(SquishButtonStyle())
-                    .disabled(!canSend || isSending || slowmodeRemaining > 0)
+                if desktopChrome {
+                    desktopComposer
+                } else {
+                    mobileComposer
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "lock.fill")
@@ -292,25 +246,27 @@ struct MessageView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
-            if channel.type == .dm || channel.type == .groupDM {
-                Button {
-                    Task { await session.startCall(in: channel) }
-                } label: {
-                    Image(systemName: "phone")
+            if !desktopChrome {
+                if channel.type == .dm || channel.type == .groupDM {
+                    Button {
+                        Task { await session.startCall(in: channel) }
+                    } label: {
+                        Image(systemName: "phone")
+                    }
+                    .disabled(session.voice.connectedChannelId == channel.id)
                 }
-                .disabled(session.voice.connectedChannelId == channel.id)
-            }
-            Button {
-                showPins = true
-            } label: {
-                Image(systemName: "pin")
-            }
-            if channel.guildId != nil,
-               session.permissions(in: channel).contains(.viewChannelMembers) {
                 Button {
-                    showMembers = true
+                    showPins = true
                 } label: {
-                    Image(systemName: "person.2")
+                    Image(systemName: "pin")
+                }
+                if channel.guildId != nil,
+                   session.permissions(in: channel).contains(.viewChannelMembers) {
+                    Button {
+                        showMembers = true
+                    } label: {
+                        Image(systemName: "person.2")
+                    }
                 }
             }
         }
@@ -392,6 +348,163 @@ struct MessageView: View {
             .padding(.horizontal, 12)
             .padding(.top, 8)
         }
+    }
+
+    // MARK: Composers
+
+    private var mobileComposer: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            if session.canAttachFiles(in: channel) {
+                attachButton
+            }
+            HStack(alignment: .bottom, spacing: 4) {
+                composerField
+                emojiButton
+                    .padding(.trailing, 10)
+                    .padding(.bottom, 9)
+            }
+            .background(Theme.field, in: RoundedRectangle(cornerRadius: 18))
+            Button(action: send) {
+                Image(systemName: editing != nil ? "checkmark" : "arrow.up")
+                    .font(.system(size: 16, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        canSend && slowmodeRemaining <= 0 ? Theme.accent : Theme.bubble,
+                        in: Circle()
+                    )
+            }
+            .buttonStyle(SquishButtonStyle())
+            .disabled(!canSend || isSending || slowmodeRemaining > 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    /// The comp's boxed desktop composer: a formatting strip on top and
+    /// the input row with attach, emoji, and a square send key below.
+    private var desktopComposer: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                markerButton("bold", marker: "**") {
+                    Text("B").font(.system(size: 13, weight: .bold))
+                }
+                markerButton("italic", marker: "*") {
+                    Text("i").font(.system(size: 13)).italic()
+                }
+                markerButton("strikethrough", marker: "~~") {
+                    Text("S").font(.system(size: 13)).strikethrough()
+                }
+                Rectangle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 1, height: 15)
+                markerButton("code", marker: "`") {
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                        .font(.system(size: 11))
+                }
+                markerButton("code block", marker: "```\n") {
+                    Image(systemName: "square.topthird.inset.filled")
+                        .font(.system(size: 11))
+                }
+                Spacer()
+            }
+            .foregroundStyle(Theme.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .overlay(alignment: .bottom) { Color.white.opacity(0.06).frame(height: 1) }
+            HStack(alignment: .bottom, spacing: 8) {
+                composerField
+                    .padding(.vertical, 3)
+                HStack(spacing: 4) {
+                    if session.canAttachFiles(in: channel) {
+                        attachButton
+                    }
+                    emojiButton
+                    Button(action: send) {
+                        Image(systemName: editing != nil ? "checkmark" : "paperplane.fill")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                canSend && slowmodeRemaining <= 0 ? Theme.accent : Theme.sendIdle,
+                                in: RoundedRectangle(cornerRadius: 8)
+                            )
+                            .contentShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(SquishButtonStyle())
+                    .disabled(!canSend || isSending || slowmodeRemaining > 0)
+                }
+                .padding(.bottom, 4)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+        }
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 2)
+        .padding(.bottom, 20)
+    }
+
+    private var composerField: some View {
+        TextField("Message \(channelTitle)", text: $draft, axis: .vertical)
+            .textFieldStyle(.plain)
+            .lineLimit(1...6)
+            .font(.system(size: 15))
+            .foregroundStyle(Theme.text)
+            .padding(.leading, desktopChrome ? 4 : 14)
+            .padding(.vertical, 9)
+            .focused($composerFocused)
+            .onSubmit(send)
+            .onChange(of: draft) { _, newValue in
+                if !newValue.isEmpty && editing == nil {
+                    session.composerTyping(in: channel)
+                }
+            }
+    }
+
+    private var emojiButton: some View {
+        Button {
+            showEmojiPicker = true
+        } label: {
+            Image(systemName: "face.smiling")
+                .font(.system(size: desktopChrome ? 16 : 19))
+                .foregroundStyle(Theme.icon)
+                .frame(
+                    width: desktopChrome ? 30 : nil,
+                    height: desktopChrome ? 30 : nil
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(SquishButtonStyle())
+        .sheet(isPresented: $showEmojiPicker) {
+            EmojiPickerSheet { emoji in
+                draft += (draft.isEmpty || draft.hasSuffix(" ") ? "" : " ") + emoji.messageToken + " "
+            }
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    /// Appends a markdown marker; click once to open, again to close.
+    private func markerButton<C: View>(
+        _ help: String,
+        marker: String,
+        @ViewBuilder label: () -> C
+    ) -> some View {
+        Button {
+            draft += marker
+            composerFocused = true
+        } label: {
+            label()
+                .frame(width: 22, height: 20)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(SquishButtonStyle())
+        .help(help)
     }
 
     // MARK: Composer accessories
@@ -646,6 +759,7 @@ private struct MessageContentText: View {
 
 private struct MessageRow: View {
     @Environment(AppSession.self) private var session
+    @Environment(\.desktopChrome) private var desktopChrome
 
     let message: Message
     let showsHeader: Bool
@@ -656,6 +770,7 @@ private struct MessageRow: View {
     let onDelete: () -> Void
 
     @State private var profileUser: User?
+    @State private var hovering = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -663,12 +778,22 @@ private struct MessageRow: View {
                 Button {
                     profileUser = message.author
                 } label: {
-                    AvatarView(user: message.author, diameter: 36)
+                    AvatarView(user: message.author, diameter: desktopChrome ? 40 : 36)
                 }
                 .buttonStyle(SquishButtonStyle())
                 .tapTarget()
             } else {
-                Color.clear.frame(width: 36, height: 1)
+                Color.clear
+                    .frame(width: desktopChrome ? 40 : 36, height: 1)
+                    .overlay(alignment: .topTrailing) {
+                        if desktopChrome, hovering, let timestamp = message.timestamp {
+                            Text(timestamp, style: .time)
+                                .font(.system(size: 10))
+                                .foregroundStyle(Theme.sectionMuted)
+                                .fixedSize()
+                                .padding(.top, 3)
+                        }
+                    }
             }
             VStack(alignment: .leading, spacing: 2) {
                 if let referenced = message.referencedMessage?.value {
@@ -736,7 +861,21 @@ private struct MessageRow: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.top, showsHeader ? 10 : 2)
+        .padding(.top, desktopChrome ? (showsHeader ? 8 : 1) : (showsHeader ? 10 : 2))
+        .padding(.horizontal, desktopChrome ? 6 : 0)
+        .padding(.bottom, desktopChrome ? 1 : 0)
+        .background {
+            if desktopChrome && hovering {
+                RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.035))
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if desktopChrome && hovering {
+                hoverToolbar
+            }
+        }
+        .zIndex(hovering ? 1 : 0)
+        .onHover { hovering = $0 }
         .contentShape(Rectangle())
         .sheet(item: $profileUser) { user in
             ProfileSheet(user: user)
@@ -756,36 +895,92 @@ private struct MessageRow: View {
                     }
                 }
             }
-            Button("Reply", systemImage: "arrowshape.turn.up.left") {
-                onReply()
-            }
-            Button("Copy text", systemImage: "doc.on.doc") {
-                copyText()
-            }
-            Button("Save message", systemImage: "bookmark") {
-                Task { await session.setSaved(message, saved: true) }
-            }
-            if canPin {
-                if message.pinned == true {
-                    Button("Unpin", systemImage: "pin.slash") {
-                        Task { await session.setPinned(message, pinned: false) }
-                    }
-                } else {
-                    Button("Pin message", systemImage: "pin") {
-                        Task { await session.setPinned(message, pinned: true) }
-                    }
+            actionItems
+        }
+    }
+
+    /// Shared message actions, used by the context menu and the desktop
+    /// hover toolbar's overflow menu.
+    @ViewBuilder
+    private var actionItems: some View {
+        Button("Reply", systemImage: "arrowshape.turn.up.left") {
+            onReply()
+        }
+        Button("Copy text", systemImage: "doc.on.doc") {
+            copyText()
+        }
+        Button("Save message", systemImage: "bookmark") {
+            Task { await session.setSaved(message, saved: true) }
+        }
+        if canPin {
+            if message.pinned == true {
+                Button("Unpin", systemImage: "pin.slash") {
+                    Task { await session.setPinned(message, pinned: false) }
                 }
-            }
-            if isOwn {
-                Divider()
-                Button("Edit", systemImage: "pencil") {
-                    onEdit()
-                }
-                Button("Delete", systemImage: "trash", role: .destructive) {
-                    onDelete()
+            } else {
+                Button("Pin message", systemImage: "pin") {
+                    Task { await session.setPinned(message, pinned: true) }
                 }
             }
         }
+        if isOwn {
+            Divider()
+            Button("Edit", systemImage: "pencil") {
+                onEdit()
+            }
+            Button("Delete", systemImage: "trash", role: .destructive) {
+                onDelete()
+            }
+        }
+    }
+
+    /// Floating quick actions revealed on hover, comp's mtools bar.
+    private var hoverToolbar: some View {
+        HStack(spacing: 1) {
+            ForEach(quickReactions.prefix(3), id: \.self) { emoji in
+                Button {
+                    onReact(ReactionEmoji(name: emoji))
+                } label: {
+                    Text(emoji)
+                        .font(.system(size: 15))
+                        .frame(width: 30, height: 30)
+                        .contentShape(RoundedRectangle(cornerRadius: 7))
+                }
+                .buttonStyle(SquishButtonStyle())
+            }
+            Button {
+                onReply()
+            } label: {
+                Image(systemName: "arrowshape.turn.up.left")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.icon)
+                    .frame(width: 30, height: 30)
+                    .contentShape(RoundedRectangle(cornerRadius: 7))
+            }
+            .buttonStyle(SquishButtonStyle())
+            .help("Reply")
+            Menu {
+                actionItems
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.icon)
+                    .frame(width: 30, height: 30)
+                    .contentShape(RoundedRectangle(cornerRadius: 7))
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .frame(width: 30, height: 30)
+        }
+        .padding(3)
+        .background(Theme.sidebarField, in: RoundedRectangle(cornerRadius: 9))
+        .overlay {
+            RoundedRectangle(cornerRadius: 9)
+                .strokeBorder(Color.white.opacity(0.09), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.4), radius: 9, y: 6)
+        .offset(y: -16)
+        .padding(.trailing, 12)
     }
 
     private func replyPreview(_ referenced: Message) -> some View {
