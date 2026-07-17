@@ -941,6 +941,17 @@ final class AppSession {
         }
     }
 
+    /// Friend request to a user we already know the id of, from profiles.
+    func sendFriendRequest(to userId: Snowflake) async -> Bool {
+        do {
+            try await client.sendFriendRequest(to: userId)
+            return true
+        } catch {
+            lastError = Self.describe(error)
+            return false
+        }
+    }
+
     func acceptRequest(_ relationship: Relationship) async {
         do {
             try await client.acceptFriendRequest(from: relationship.id)
@@ -1075,6 +1086,42 @@ final class AppSession {
         } catch {
             lastError = Self.describe(error)
             return false
+        }
+    }
+
+    /// Invite lookups cached per code; nil value means the code is invalid.
+    private var inviteCache: [String: APIClient.Invite?] = [:]
+
+    func inviteInfo(code: String) async -> APIClient.Invite? {
+        if let cached = inviteCache[code] {
+            return cached
+        }
+        let info = try? await client.inviteInfo(code)
+        inviteCache[code] = .some(info)
+        return info
+    }
+
+    func isMember(ofGuild guildId: Snowflake) -> Bool {
+        guilds.contains { $0.id == guildId }
+    }
+
+    /// Accepts an invite and navigates there once the guild arrives.
+    func joinAndJump(code: String) async {
+        guard await joinGuild(code: code) else { return }
+        let info = inviteCache[code].flatMap { $0 }
+        // The guild lands via GUILD_CREATE; give it a moment.
+        for _ in 0..<10 {
+            if let guildId = info?.guild?.id,
+               let guild = guilds.first(where: { $0.id == guildId }) {
+                let inviteChannelId = info?.channel?.id
+                let target = guild.channels?.first { $0.id == inviteChannelId }
+                    ?? defaultChannel(for: guild)
+                if let target {
+                    channelJump = target
+                }
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(300))
         }
     }
 

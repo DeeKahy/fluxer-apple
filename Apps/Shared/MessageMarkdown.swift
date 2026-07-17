@@ -77,6 +77,26 @@ enum MessageMarkdown {
         }
     }
 
+    /// Invite codes found in message content, from fluxer.gg links or full
+    /// invite URLs. Order preserved, duplicates removed, capped at three.
+    static func inviteCodes(_ content: String) -> [String] {
+        guard let regex = try? NSRegularExpression(
+            pattern: #"(?:https?://)?fluxer\.gg/([A-Za-z0-9_-]+)"#
+        ) else { return [] }
+        let range = NSRange(content.startIndex..., in: content)
+        var seen = Set<String>()
+        var codes: [String] = []
+        for match in regex.matches(in: content, range: range) {
+            guard let codeRange = Range(match.range(at: 1), in: content) else { continue }
+            let code = String(content[codeRange])
+            if seen.insert(code).inserted {
+                codes.append(code)
+            }
+            if codes.count == 3 { break }
+        }
+        return codes
+    }
+
     /// Splits content into plain segments and fenced code blocks.
     enum Segment: Equatable {
         case text(String)

@@ -657,6 +657,9 @@ private struct MessageRow: View {
                 ForEach(Array((message.embeds ?? []).prefix(3).enumerated()), id: \.offset) { _, embed in
                     EmbedView(embed: embed)
                 }
+                ForEach(MessageMarkdown.inviteCodes(message.content ?? ""), id: \.self) { code in
+                    InviteCardView(code: code)
+                }
                 reactionPills
             }
             Spacer(minLength: 0)

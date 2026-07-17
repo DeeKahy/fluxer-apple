@@ -161,6 +161,8 @@ struct ProfileSheet: View {
     let user: User
 
     @State private var profile: APIClient.UserProfile?
+    @State private var requestSent = false
+    @State private var friendRequestFailed = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -214,25 +216,48 @@ struct ProfileSheet: View {
     @ViewBuilder
     private var actionButtons: some View {
         if user.id != session.currentUser?.id {
-            HStack(spacing: 12) {
-                Button {
-                    Task {
-                        if let dm = await session.openDM(with: user.id) {
-                            dismiss()
-                            session.channelJump = dm
-                        }
-                    }
-                } label: {
-                    Label("Message", systemImage: "bubble.left")
-                }
-                .buttonStyle(.borderedProminent)
-                if session.relationships[user.id] == nil, let username = user.username {
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
                     Button {
-                        Task { _ = await session.sendFriendRequest(username: username) }
+                        Task {
+                            if let dm = await session.openDM(with: user.id) {
+                                dismiss()
+                                session.channelJump = dm
+                            }
+                        }
                     } label: {
-                        Label("Add friend", systemImage: "person.badge.plus")
+                        Label("Message", systemImage: "bubble.left")
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderedProminent)
+                    if session.relationships[user.id] == nil {
+                        Button {
+                            Task {
+                                friendRequestFailed = false
+                                requestSent = await session.sendFriendRequest(to: user.id)
+                                friendRequestFailed = !requestSent
+                            }
+                        } label: {
+                            Label(
+                                requestSent ? "Request sent" : "Add friend",
+                                systemImage: requestSent ? "checkmark" : "person.badge.plus"
+                            )
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(requestSent)
+                    } else if session.relationships[user.id]?.type == .friend {
+                        Label("Friends", systemImage: "checkmark.circle")
+                            .foregroundStyle(.secondary)
+                    } else if session.relationships[user.id]?.type == .outgoingRequest {
+                        Label("Request pending", systemImage: "hourglass")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if friendRequestFailed, let error = session.lastError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 300)
                 }
             }
         }
@@ -416,6 +441,119 @@ struct SessionsView: View {
         let info = authSession.clientInfo
         let parts = [info?.platform, info?.os, info?.browser].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.isEmpty ? "Unknown device" : parts.joined(separator: ", ")
+    }
+}
+
+/// Invite card rendered under messages containing fluxer.gg links.
+struct InviteCardView: View {
+    @Environment(AppSession.self) private var session
+
+    let code: String
+
+    private enum LoadState {
+        case loading
+        case invalid
+        case loaded(APIClient.Invite)
+    }
+
+    @State private var state: LoadState = .loading
+    @State private var joining = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            switch state {
+            case .loading:
+                ProgressView()
+                Text("Resolving invite")
+                    .foregroundStyle(.secondary)
+            case .invalid:
+                Image(systemName: "xmark.circle")
+                    .foregroundStyle(.secondary)
+                Text("Invalid or expired invite")
+                    .foregroundStyle(.secondary)
+            case .loaded(let invite):
+                inviteContent(invite)
+            }
+        }
+        .font(.callout)
+        .padding(10)
+        .frame(maxWidth: 360, alignment: .leading)
+        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
+        .padding(.top, 4)
+        .task(id: code) {
+            if let invite = await session.inviteInfo(code: code) {
+                state = .loaded(invite)
+            } else {
+                state = .invalid
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func inviteContent(_ invite: APIClient.Invite) -> some View {
+        let guildId = invite.guild?.id
+        let isMember = guildId.map { session.isMember(ofGuild: $0) } ?? false
+
+        if let guild = invite.guild {
+            RemoteImage(url: guild.iconURL(size: 56)) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.tint.opacity(0.25))
+                    .overlay {
+                        Text(String(guild.name.prefix(1)).uppercased())
+                            .font(.headline)
+                            .foregroundStyle(.tint)
+                    }
+            }
+            .frame(width: 36, height: 36)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+
+        VStack(alignment: .leading, spacing: 1) {
+            Text(invite.guild?.name ?? "A Fluxer guild")
+                .font(.callout.bold())
+                .lineLimit(1)
+            if let channelName = invite.channel?.name {
+                Text("#\(channelName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if isMember {
+                Text("You're a member")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        Spacer(minLength: 8)
+
+        if isMember {
+            Button("Open") {
+                openLocally(invite)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        } else {
+            Button(joining ? "Joining" : "Join") {
+                joining = true
+                Task {
+                    await session.joinAndJump(code: code)
+                    joining = false
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(joining)
+        }
+    }
+
+    private func openLocally(_ invite: APIClient.Invite) {
+        guard let guildId = invite.guild?.id,
+              let guild = session.guilds.first(where: { $0.id == guildId })
+        else { return }
+        let channel = invite.channel.flatMap { inviteChannel in
+            guild.channels?.first { $0.id == inviteChannel.id }
+        } ?? session.defaultChannel(for: guild)
+        if let channel {
+            session.channelJump = channel
+        }
     }
 }
 

@@ -270,6 +270,13 @@ public actor APIClient {
         try await send("GET", Endpoint.myRelationships)
     }
 
+    /// Sends a friend request straight to a known user id.
+    public func sendFriendRequest(to userId: Snowflake) async throws {
+        let data = Data("{}".utf8)
+        let request = try makeRequest("POST", Endpoint.relationship(userId), bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
     /// Sends a friend request by username (and optional discriminator).
     public func sendFriendRequest(username: String, discriminator: String?) async throws {
         struct Body: Encodable {
