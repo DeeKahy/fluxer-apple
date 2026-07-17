@@ -36,6 +36,12 @@ enum Theme {
     static let red = Color(hex: 0xED4245)
     static let hairline = Color.white.opacity(0.07)
 
+    // Desktop comp surfaces
+    static let railBg = Color(hex: 0x08080B)
+    static let sidebarBg = Color(hex: 0x111118)
+    static let sidebarField = Color(hex: 0x1C1C26)
+    static let sectionMuted = Color(hex: 0x5C5C68)
+
     /// Stable per-user name colors, like the comp's colored usernames.
     static let namePalette: [Color] = [
         Color(hex: 0x8B96FF), Color(hex: 0xFA709A), Color(hex: 0x3BA55D),
