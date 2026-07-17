@@ -54,21 +54,25 @@ is parked until the project earns it. The same membership would enable CallKit
 ringing on the lock screen and remove the seven day resigning cycle for
 sideloaded builds.
 
-## Supporting the project
+## Funding goal: notifications and a public release
 
-The next milestone is real push notifications and lock screen call ringing.
-The technical path is clear (Fluxer uses standard Web Push, so a small relay
-can forward encrypted pushes through Apple's push service), but Apple only
-grants push entitlements to paid developer accounts. The funding goal is the
-Apple Developer Program membership, 99 USD per year, which unlocks:
+One thing gates the next era of this app: the Apple Developer Program
+membership, 99 USD per year. Everything below is already technically mapped
+out and becomes buildable the moment the membership exists:
 
-- Notifications and calls arriving with the app closed on iPhone
-- CallKit: incoming Fluxer calls ring like phone calls, answerable from
-  the lock screen
-- TestFlight distribution, so anyone can install without a Mac
-- No more seven day expiry on installed builds
+- Push notifications and calls arriving with the app closed on iPhone.
+  Fluxer uses standard Web Push, so a small relay can forward the encrypted
+  pushes through Apple's push service without ever seeing message contents
+  or account tokens. Apple only grants push entitlements to paid accounts.
+- CallKit: incoming Fluxer calls ring like real phone calls and can be
+  answered from the lock screen.
+- A public TestFlight beta. TestFlight itself is free with the membership
+  and supports up to ten thousand testers through a public link, so anyone
+  could install the app without owning a Mac.
+- An eventual App Store release, and no more seven day expiry on builds.
 
-If you'd like to help, use the Sponsor button on this repository.
+If you'd like to help, use the Sponsor button on this repository. The goal
+is exactly one membership; anything past it goes to keeping it renewed.
 
 ## Building
 
@@ -87,10 +91,11 @@ Free Apple accounts work; apps expire after seven days and need a rebuild.
 
 ## Relation to Fluxer
 
-This is an unofficial community client. Fluxer's terms of service do not
-prohibit third-party clients and a small ecosystem of them already exists. It
-uses the same documented HTTP and websocket APIs as the official web client,
-and LiveKit for media, matching upstream.
+This is an unofficial community client. Custom clients are explicitly
+welcomed by the Fluxer team: asked whether custom or modified clients and
+non-malicious user token automation are allowed, a Fluxer lead answered with
+a plain yes. The app uses the same documented HTTP and websocket APIs as the
+official web client, and LiveKit for media, matching upstream.
 
 ## License
 
