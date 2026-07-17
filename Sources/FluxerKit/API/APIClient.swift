@@ -425,6 +425,160 @@ public actor APIClient {
         try await sendExpectingNoContent("POST", Endpoint.typing(channelId))
     }
 
+    // MARK: Pins, saved messages, mentions
+
+    /// The pins list arrives either as a bare array or wrapped in a
+    /// container; both are handled.
+    public func pinnedMessages(in channelId: Snowflake) async throws -> [Message] {
+        let request = try makeRequest("GET", Endpoint.pins(channelId))
+        let data = try await executeRaw(request)
+        return Self.extractMessages(from: data)
+    }
+
+    public func pinMessage(_ messageId: Snowflake, in channelId: Snowflake) async throws {
+        let request = try makeRequest("PUT", Endpoint.pin(channelId, messageId))
+        _ = try await executeRaw(request)
+    }
+
+    public func unpinMessage(_ messageId: Snowflake, in channelId: Snowflake) async throws {
+        let request = try makeRequest("DELETE", Endpoint.pin(channelId, messageId))
+        _ = try await executeRaw(request)
+    }
+
+    public func savedMessages() async throws -> [Message] {
+        let request = try makeRequest("GET", Endpoint.savedMessages)
+        let data = try await executeRaw(request)
+        return Self.extractMessages(from: data)
+    }
+
+    public func saveMessage(_ messageId: Snowflake) async throws {
+        let request = try makeRequest("PUT", Endpoint.savedMessage(messageId))
+        _ = try await executeRaw(request)
+    }
+
+    public func unsaveMessage(_ messageId: Snowflake) async throws {
+        let request = try makeRequest("DELETE", Endpoint.savedMessage(messageId))
+        _ = try await executeRaw(request)
+    }
+
+    public func mentions(limit: Int = 50) async throws -> [Message] {
+        let request = try makeRequest("GET", Endpoint.mentions, query: [
+            URLQueryItem(name: "limit", value: String(limit)),
+        ])
+        let data = try await executeRaw(request)
+        return Self.extractMessages(from: data)
+    }
+
+    /// Pulls message objects out of a response that may be a plain array,
+    /// or an object wrapping the array, or entries wrapping each message.
+    static func extractMessages(from data: Data) -> [Message] {
+        guard let value = try? JSONDecoder().decode(JSONValue.self, from: data) else { return [] }
+        let array = value.arrayValue
+            ?? value["items"]?.arrayValue
+            ?? value["messages"]?.arrayValue
+            ?? value["mentions"]?.arrayValue
+            ?? []
+        return array.compactMap { entry in
+            if let message = try? entry.decoded(as: Message.self) {
+                return message
+            }
+            if let inner = entry["message"], let message = try? inner.decoded(as: Message.self) {
+                return message
+            }
+            return nil
+        }
+    }
+
+    // MARK: Profiles, sessions
+
+    public struct UserProfile: Decodable, Sendable {
+        public var bio: String?
+        public var pronouns: String?
+        public var user: User?
+    }
+
+    public func profile(of userId: Snowflake) async throws -> UserProfile {
+        try await send("GET", Endpoint.profile(userId))
+    }
+
+    public struct AuthSession: Decodable, Sendable, Identifiable {
+        public struct ClientInfo: Decodable, Sendable {
+            public var platform: String?
+            public var os: String?
+            public var browser: String?
+        }
+
+        public var idHash: String
+        public var clientInfo: ClientInfo?
+        public var maskedIp: String?
+        public var approxLastUsedAt: String?
+        public var current: Bool
+
+        public var id: String { idHash }
+    }
+
+    public func sessions() async throws -> [AuthSession] {
+        try await send("GET", Endpoint.sessions)
+    }
+
+    public func logoutSessions(idHashes: [String]) async throws {
+        struct Body: Encodable {
+            let sessionIdHashes: [String]
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(sessionIdHashes: idHashes))
+        let request = try makeRequest("POST", Endpoint.sessionsLogout, bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
+    // MARK: Guilds and invites
+
+    public struct Invite: Decodable, Sendable {
+        public var code: String
+        public var guild: Guild?
+        public var channel: Channel?
+    }
+
+    public func createInvite(in channelId: Snowflake) async throws -> Invite {
+        struct Body: Encodable {}
+        return try await send("POST", Endpoint.channelInvites(channelId), body: Body())
+    }
+
+    public func inviteInfo(_ code: String) async throws -> Invite {
+        try await send("GET", Endpoint.invite(code))
+    }
+
+    public func acceptInvite(_ code: String) async throws -> Invite {
+        struct Body: Encodable {}
+        return try await send("POST", Endpoint.invite(code), body: Body())
+    }
+
+    public func createGuild(name: String) async throws -> Guild {
+        struct Body: Encodable {
+            let name: String
+        }
+        return try await send("POST", Endpoint.guilds, body: Body(name: name))
+    }
+
+    public func leaveGuild(_ guildId: Snowflake) async throws {
+        let request = try makeRequest("DELETE", Endpoint.leaveGuild(guildId))
+        _ = try await executeRaw(request)
+    }
+
+    public func kickMember(_ userId: Snowflake, from guildId: Snowflake) async throws {
+        let request = try makeRequest("DELETE", Endpoint.guildMember(guildId, userId))
+        _ = try await executeRaw(request)
+    }
+
+    public func banMember(_ userId: Snowflake, from guildId: Snowflake) async throws {
+        let request = try makeRequest("PUT", Endpoint.guildBan(guildId, userId))
+        _ = try await executeRaw(request)
+    }
+
+    public func setDMPinned(_ channelId: Snowflake, pinned: Bool) async throws {
+        let request = try makeRequest(pinned ? "PUT" : "DELETE", Endpoint.dmPin(channelId))
+        _ = try await executeRaw(request)
+    }
+
     /// Marks everything up to the given message as read.
     public func ackMessage(_ messageId: Snowflake, in channelId: Snowflake) async throws {
         struct Body: Encodable {

@@ -56,6 +56,7 @@ public struct Message: Codable, Hashable, Identifiable, Sendable {
     public var timestamp: Date?
     public var editedTimestamp: Date?
     public var attachments: [Attachment]?
+    public var embeds: [Embed]?
     public var reactions: [Reaction]?
     public var pinned: Bool?
     public var type: Int?

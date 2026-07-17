@@ -1,14 +1,13 @@
 import SwiftUI
 import WebKit
+import FluxerKit
 
 /// Hosts the hCaptcha widget in a web view so the person signing in can
 /// solve the challenge. The solved token is handed back through onToken.
 /// The page is loaded with the official web app origin because hCaptcha
 /// site keys only run on their allowed domains.
 struct CaptchaView {
-    static let hcaptchaSiteKey = "9cbad400-df84-4e0c-bda6-e65000be78aa"
-    static let webOrigin = URL(string: "https://web.fluxer.app")!
-
+    let config: InstanceConfig
     let onToken: @Sendable (String) -> Void
 
     fileprivate func makeWebView() -> WKWebView {
@@ -17,7 +16,7 @@ struct CaptchaView {
         controller.add(MessageHandler(onToken: onToken), name: "captcha")
         configuration.userContentController = controller
         let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.loadHTMLString(Self.pageHTML, baseURL: Self.webOrigin)
+        webView.loadHTMLString(pageHTML, baseURL: config.webOrigin)
         #if os(macOS)
         webView.setValue(false, forKey: "drawsBackground")
         #else
@@ -44,29 +43,36 @@ struct CaptchaView {
         }
     }
 
-    private static let pageHTML = """
-    <!doctype html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <style>
-        body { margin: 0; display: flex; justify-content: center; align-items: center;
-               min-height: 100vh; background: transparent; }
-      </style>
-      <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-    </head>
-    <body>
-      <div class="h-captcha"
-           data-sitekey="\(hcaptchaSiteKey)"
-           data-callback="onCaptchaSolved"></div>
-      <script>
-        function onCaptchaSolved(token) {
-          window.webkit.messageHandlers.captcha.postMessage(token);
-        }
-      </script>
-    </body>
-    </html>
-    """
+    private var pageHTML: String {
+        let useTurnstile = config.captchaProvider == "turnstile" && config.turnstileSiteKey != nil
+        let script = useTurnstile
+            ? "https://challenges.cloudflare.com/turnstile/v0/api.js"
+            : "https://js.hcaptcha.com/1/api.js"
+        let widget = useTurnstile
+            ? "<div class=\"cf-turnstile\" data-sitekey=\"\(config.turnstileSiteKey ?? "")\" data-callback=\"onCaptchaSolved\"></div>"
+            : "<div class=\"h-captcha\" data-sitekey=\"\(config.hcaptchaSiteKey ?? "")\" data-callback=\"onCaptchaSolved\"></div>"
+        return """
+        <!doctype html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center;
+                   min-height: 100vh; background: transparent; }
+          </style>
+          <script src="\(script)" async defer></script>
+        </head>
+        <body>
+          \(widget)
+          <script>
+            function onCaptchaSolved(token) {
+              window.webkit.messageHandlers.captcha.postMessage(token);
+            }
+          </script>
+        </body>
+        </html>
+        """
+    }
 }
 
 #if os(iOS)

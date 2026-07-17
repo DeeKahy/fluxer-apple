@@ -6,6 +6,9 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var mfaCode = ""
+    @State private var instanceInput = ""
+    @State private var showInstanceField = false
+    @State private var switchingInstance = false
 
     private var isMfaStep: Bool {
         session.phase == .mfaPending
@@ -73,6 +76,8 @@ struct LoginView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.tint)
+
+                instancePicker
             }
         }
         .padding(32)
@@ -82,7 +87,7 @@ struct LoginView: View {
                 Text("Prove you're human")
                     .font(.headline)
                     .padding(.top, 20)
-                CaptchaView { token in
+                CaptchaView(config: session.instanceConfig) { token in
                     Task { await session.submitCaptcha(token: token) }
                 }
                 .frame(minWidth: 340, minHeight: 500)
@@ -95,6 +100,53 @@ struct LoginView: View {
             .frame(width: 420, height: 620)
             #endif
         }
+    }
+
+    @ViewBuilder
+    private var instancePicker: some View {
+        VStack(spacing: 6) {
+            Button {
+                showInstanceField.toggle()
+            } label: {
+                let host = session.instanceConfig.apiBase.host() ?? "fluxer.app"
+                Label("Instance: \(host)", systemImage: "server.rack")
+                    .font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+
+            if showInstanceField {
+                HStack {
+                    TextField("your-instance.example.com", text: $instanceInput)
+                        .textFieldStyle(.roundedBorder)
+                        #if os(iOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        #endif
+                    Button("Use") {
+                        let input = instanceInput
+                        switchingInstance = true
+                        Task {
+                            _ = await session.useInstance(input)
+                            switchingInstance = false
+                            showInstanceField = false
+                        }
+                    }
+                    .disabled(instanceInput.trimmingCharacters(in: .whitespaces).isEmpty || switchingInstance)
+                }
+                .frame(maxWidth: 320)
+                if session.instanceConfig != .fluxerApp {
+                    Button("Back to fluxer.app") {
+                        session.resetToDefaultInstance()
+                    }
+                    .font(.caption)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.tint)
+                }
+            }
+        }
+        .padding(.top, 8)
     }
 
     private var showCaptcha: Binding<Bool> {
