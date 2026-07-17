@@ -4,8 +4,14 @@ import Foundation
 /// official client uses. Endpoints come from the instance bootstrap config;
 /// these defaults are fluxer.app's.
 public enum MediaURLs {
-    public static let userContentBase = URL(string: "https://fluxerusercontent.com")!
-    public static let staticBase = URL(string: "https://fluxerstatic.com")!
+    public nonisolated(unsafe) static var userContentBase = URL(string: "https://fluxerusercontent.com")!
+    public nonisolated(unsafe) static var staticBase = URL(string: "https://fluxerstatic.com")!
+
+    /// Points media at a different instance's endpoints.
+    public static func configure(with config: InstanceConfig) {
+        userContentBase = config.mediaBase
+        staticBase = config.staticBase
+    }
 
     /// fluxerstatic.com serves default avatars 0 through 5.
     static let defaultAvatarCount: UInt64 = 6

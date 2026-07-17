@@ -7,6 +7,7 @@ public struct ReadyGuild: Codable, Sendable {
     public var properties: Guild
     public var channels: [Channel]?
     public var roles: [Role]?
+    public var emojis: [GuildEmoji]?
     public var members: [GuildMember]?
     public var memberCount: Int?
     public var unavailable: Bool?
@@ -16,6 +17,7 @@ public struct ReadyGuild: Codable, Sendable {
         var guild = properties
         guild.channels = channels
         guild.roles = roles
+        guild.emojis = emojis
         guild.memberCount = memberCount
         guild.unavailable = unavailable
         return guild

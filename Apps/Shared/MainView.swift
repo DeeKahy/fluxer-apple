@@ -14,6 +14,14 @@ struct MainView: View {
     @State private var selectedChannel: Channel?
     @State private var compactPath = NavigationPath()
     @State private var showFriends = false
+    @State private var showSaved = false
+    @State private var showMentions = false
+    @State private var showSessions = false
+    @State private var joinCode = ""
+    @State private var showJoinPrompt = false
+    @State private var newGuildName = ""
+    @State private var showCreatePrompt = false
+    @State private var guildToLeave: Guild?
 
     var body: some View {
         Group {
@@ -48,6 +56,10 @@ struct MainView: View {
     // MARK: Compact (iPhone)
 
     private var compactLayout: some View {
+        withOverlays(compactStack)
+    }
+
+    private var compactStack: some View {
         NavigationStack(path: $compactPath) {
             List {
                 connectionRow
@@ -62,6 +74,14 @@ struct MainView: View {
                     ForEach(session.privateChannels) { channel in
                         NavigationLink(value: channel) {
                             dmRow(channel)
+                        }
+                        .contextMenu {
+                            Button(
+                                session.isDMPinned(channel) ? "Unpin conversation" : "Pin conversation",
+                                systemImage: session.isDMPinned(channel) ? "pin.slash" : "pin"
+                            ) {
+                                Task { await session.toggleDMPinned(channel) }
+                            }
                         }
                     }
                 }
@@ -88,11 +108,21 @@ struct MainView: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            if guild.ownerId != session.currentUser?.id {
+                                Button("Leave guild", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                                    guildToLeave = guild
+                                }
+                            }
+                        }
                     }
                 }
             }
             .navigationTitle("Fluxer")
-            .toolbar { accountMenu }
+            .toolbar {
+                addMenu
+                accountMenu
+            }
             .navigationDestination(for: Guild.self) { guild in
                 ChannelListView(guild: guild)
             }
@@ -110,6 +140,10 @@ struct MainView: View {
     // MARK: Split (Mac, iPad)
 
     private var splitLayout: some View {
+        withOverlays(splitView)
+    }
+
+    private var splitView: some View {
         NavigationSplitView {
             List {
                 connectionRow
@@ -141,6 +175,14 @@ struct MainView: View {
                             dmRow(channel)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            Button(
+                                session.isDMPinned(channel) ? "Unpin conversation" : "Pin conversation",
+                                systemImage: session.isDMPinned(channel) ? "pin.slash" : "pin"
+                            ) {
+                                Task { await session.toggleDMPinned(channel) }
+                            }
+                        }
                     }
                 }
                 Section("Guilds") {
@@ -156,11 +198,21 @@ struct MainView: View {
                             guildRow(guild)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            if guild.ownerId != session.currentUser?.id {
+                                Button("Leave guild", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                                    guildToLeave = guild
+                                }
+                            }
+                        }
                     }
                 }
             }
             .navigationTitle("Fluxer")
-            .toolbar { accountMenu }
+            .toolbar {
+                addMenu
+                accountMenu
+            }
         } content: {
             if let guild = selectedGuild {
                 ChannelListView(guild: guild, selectedChannel: $selectedChannel)
@@ -199,12 +251,116 @@ struct MainView: View {
             if let user = session.currentUser {
                 Text(user.displayName)
             }
+            Menu("Status") {
+                ForEach(["online", "idle", "dnd", "invisible"], id: \.self) { status in
+                    Button {
+                        Task { await session.setStatus(status) }
+                    } label: {
+                        if session.myStatus == status {
+                            Label(statusLabel(status), systemImage: "checkmark")
+                        } else {
+                            Text(statusLabel(status))
+                        }
+                    }
+                }
+            }
+            Button("Saved messages", systemImage: "bookmark") {
+                showSaved = true
+            }
+            Button("Recent mentions", systemImage: "at") {
+                showMentions = true
+            }
+            Button("Sessions", systemImage: "laptopcomputer.and.iphone") {
+                showSessions = true
+            }
+            Divider()
             Button("Log out", role: .destructive) {
                 Task { await session.logout() }
             }
         } label: {
             Image(systemName: "person.circle")
         }
+    }
+
+    private func statusLabel(_ status: String) -> String {
+        switch status {
+        case "online": return "Online"
+        case "idle": return "Idle"
+        case "dnd": return "Do not disturb"
+        default: return "Invisible"
+        }
+    }
+
+    private var addMenu: some View {
+        Menu {
+            Button("Join a guild", systemImage: "arrow.right.circle") {
+                showJoinPrompt = true
+            }
+            Button("Create a guild", systemImage: "plus.circle") {
+                showCreatePrompt = true
+            }
+        } label: {
+            Image(systemName: "plus")
+        }
+    }
+
+    /// Sheets and prompts shared by both layouts.
+    private func withOverlays<Content: View>(_ content: Content) -> some View {
+        content
+            .sheet(isPresented: $showSaved) {
+                NavigationStack {
+                    MessageFeedView(feed: .saved)
+                        .toolbar { Button("Done") { showSaved = false } }
+                }
+                #if os(macOS)
+                .frame(minWidth: 420, minHeight: 460)
+                #endif
+            }
+            .sheet(isPresented: $showMentions) {
+                NavigationStack {
+                    MessageFeedView(feed: .mentions)
+                        .toolbar { Button("Done") { showMentions = false } }
+                }
+                #if os(macOS)
+                .frame(minWidth: 420, minHeight: 460)
+                #endif
+            }
+            .sheet(isPresented: $showSessions) {
+                SessionsView()
+            }
+            .alert("Join a guild", isPresented: $showJoinPrompt) {
+                TextField("Invite code or link", text: $joinCode)
+                Button("Join") {
+                    let code = joinCode
+                    joinCode = ""
+                    Task { _ = await session.joinGuild(code: code) }
+                }
+                Button("Cancel", role: .cancel) { joinCode = "" }
+            }
+            .alert("Create a guild", isPresented: $showCreatePrompt) {
+                TextField("Guild name", text: $newGuildName)
+                Button("Create") {
+                    let name = newGuildName
+                    newGuildName = ""
+                    Task { _ = await session.createGuild(name: name) }
+                }
+                Button("Cancel", role: .cancel) { newGuildName = "" }
+            }
+            .alert(
+                "Leave \(guildToLeave?.name ?? "guild")?",
+                isPresented: Binding(
+                    get: { guildToLeave != nil },
+                    set: { if !$0 { guildToLeave = nil } }
+                )
+            ) {
+                Button("Leave", role: .destructive) {
+                    if let guild = guildToLeave {
+                        Task { await session.leaveGuild(guild) }
+                    }
+                    guildToLeave = nil
+                }
+                Button("Cancel", role: .cancel) { guildToLeave = nil }
+            }
     }
 
     private func dmRow(_ channel: Channel) -> some View {

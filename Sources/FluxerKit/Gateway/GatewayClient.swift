@@ -58,6 +58,20 @@ public actor GatewayClient {
         startReceiveLoop()
     }
 
+    /// Announces the user's own status: online, idle, dnd, or invisible.
+    public func updatePresence(status: String) async {
+        let payload = GatewayPayload(
+            op: .presenceUpdate,
+            d: .object([
+                "status": .string(status),
+                "since": .number(0),
+                "activities": .array([]),
+                "afk": .bool(false),
+            ])
+        )
+        await send(payload)
+    }
+
     public func disconnect() async {
         receiveLoop?.cancel()
         heartbeatLoop?.cancel()

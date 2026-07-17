@@ -9,6 +9,8 @@ struct ChannelListView: View {
     let guild: Guild
     var selectedChannel: Binding<Channel?>?
 
+    @State private var inviteCode: String?
+
     init(guild: Guild, selectedChannel: Binding<Channel?>? = nil) {
         self.guild = guild
         self.selectedChannel = selectedChannel
@@ -50,6 +52,32 @@ struct ChannelListView: View {
             }
         }
         .navigationTitle(guild.name)
+        .alert(
+            "Invite created",
+            isPresented: Binding(
+                get: { inviteCode != nil },
+                set: { if !$0 { inviteCode = nil } }
+            )
+        ) {
+            Button("Copy link") {
+                if let code = inviteCode {
+                    copyToClipboard("https://fluxer.gg/\(code)")
+                }
+                inviteCode = nil
+            }
+            Button("Done", role: .cancel) { inviteCode = nil }
+        } message: {
+            Text(inviteCode.map { "fluxer.gg/\($0)" } ?? "")
+        }
+    }
+
+    private func copyToClipboard(_ text: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #else
+        UIPasteboard.general.string = text
+        #endif
     }
 
     @ViewBuilder
@@ -72,9 +100,22 @@ struct ChannelListView: View {
                     )
             }
             .buttonStyle(.plain)
+            .contextMenu { inviteMenu(channel) }
         } else {
             NavigationLink(value: channel) {
                 label
+            }
+            .contextMenu { inviteMenu(channel) }
+        }
+    }
+
+    @ViewBuilder
+    private func inviteMenu(_ channel: Channel) -> some View {
+        if session.permissions(in: channel).contains(.createInstantInvite) {
+            Button("Create invite", systemImage: "person.crop.circle.badge.plus") {
+                Task {
+                    inviteCode = await session.createInvite(in: channel)
+                }
             }
         }
     }

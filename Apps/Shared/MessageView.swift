@@ -20,6 +20,8 @@ struct MessageView: View {
     @State private var messageToDelete: Message?
     @State private var isSending = false
     @State private var showMembers = false
+    @State private var showPins = false
+    @State private var showEmojiPicker = false
     @FocusState private var composerFocused: Bool
     #if os(iOS)
     @State private var photoItems: [PhotosPickerItem] = []
@@ -47,6 +49,7 @@ struct MessageView: View {
         let message: Message
         let showsHeader: Bool
         let dayLabel: String?
+        var isFirstUnread = false
         var id: Snowflake { message.id }
     }
 
@@ -58,6 +61,8 @@ struct MessageView: View {
         let formatter = Self.dayFormatter
         var result: [Entry] = []
         result.reserveCapacity(messages.count)
+        let unreadAfter = session.unreadMarkers[channel.id]
+        var markedUnread = false
         var previous: Message?
         for message in messages {
             var dayLabel: String?
@@ -84,7 +89,13 @@ struct MessageView: View {
                 else { return false }
                 return timestamp.timeIntervalSince(previousTimestamp) < 420
             }()
-            result.append(Entry(message: message, showsHeader: !groupsWithPrevious, dayLabel: dayLabel))
+            var entry = Entry(message: message, showsHeader: !groupsWithPrevious, dayLabel: dayLabel)
+            if !markedUnread, let unreadAfter, message.id > unreadAfter,
+               message.author?.id != session.currentUser?.id {
+                entry.isFirstUnread = true
+                markedUnread = true
+            }
+            result.append(entry)
             previous = message
         }
         return result
@@ -119,6 +130,9 @@ struct MessageView: View {
                         ForEach(entries) { entry in
                             if let dayLabel = entry.dayLabel {
                                 DayDivider(label: dayLabel)
+                            }
+                            if entry.isFirstUnread {
+                                NewMessagesDivider()
                             }
                             MessageRow(
                                 message: entry.message,
@@ -155,6 +169,7 @@ struct MessageView: View {
                 .task(id: channel.id) {
                     session.activeChannelId = channel.id
                     session.recordVisit(channel)
+                    session.captureUnreadMarker(channel)
                     await session.loadMessages(for: channel)
                     session.markChannelRead(channel)
                 }
@@ -177,6 +192,19 @@ struct MessageView: View {
                 HStack(spacing: 8) {
                     if session.canAttachFiles(in: channel) {
                         attachButton
+                    }
+                    Button {
+                        showEmojiPicker = true
+                    } label: {
+                        Image(systemName: "face.smiling")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .sheet(isPresented: $showEmojiPicker) {
+                        EmojiPickerSheet { emoji in
+                            draft += (draft.isEmpty || draft.hasSuffix(" ") ? "" : " ") + emoji.messageToken + " "
+                        }
                     }
                     TextField("Message \(channelTitle)", text: $draft, axis: .vertical)
                         .textFieldStyle(.plain)
@@ -214,6 +242,11 @@ struct MessageView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
+            Button {
+                showPins = true
+            } label: {
+                Image(systemName: "pin")
+            }
             if channel.guildId != nil,
                session.permissions(in: channel).contains(.viewChannelMembers) {
                 Button {
@@ -222,6 +255,9 @@ struct MessageView: View {
                     Image(systemName: "person.2")
                 }
             }
+        }
+        .sheet(isPresented: $showPins) {
+            PinsView(channel: channel)
         }
         .sheet(isPresented: $showMembers) {
             if let guildId = channel.guildId {
@@ -491,6 +527,20 @@ struct MessageView: View {
     }
 }
 
+private struct NewMessagesDivider: View {
+    var body: some View {
+        HStack {
+            Rectangle().fill(Color.red.opacity(0.6)).frame(height: 1)
+            Text("New messages")
+                .font(.caption2.bold())
+                .foregroundStyle(.red)
+                .fixedSize()
+            Rectangle().fill(Color.red.opacity(0.6)).frame(height: 1)
+        }
+        .padding(.vertical, 6)
+    }
+}
+
 private struct DayDivider: View {
     let label: String
 
@@ -531,6 +581,8 @@ private struct MessageContentText: View {
 }
 
 private struct MessageRow: View {
+    @Environment(AppSession.self) private var session
+
     let message: Message
     let showsHeader: Bool
     let isOwn: Bool
@@ -539,10 +591,15 @@ private struct MessageRow: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
 
+    @State private var profileUser: User?
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             if showsHeader {
                 AvatarView(user: message.author, diameter: 36)
+                    .onTapGesture {
+                        profileUser = message.author
+                    }
             } else {
                 Color.clear.frame(width: 36, height: 1)
             }
@@ -567,10 +624,41 @@ private struct MessageRow: View {
                     }
                 }
                 if let content = message.content, !content.isEmpty {
-                    MessageContentText(content: content)
+                    if let emojiIds = MessageMarkdown.emojiOnlyIds(content) {
+                        HStack(spacing: 4) {
+                            ForEach(Array(emojiIds.enumerated()), id: \.offset) { _, id in
+                                RemoteImage(url: MediaURLs.customEmoji(ReactionEmoji(id: id, name: "e"))) {
+                                    Color.clear
+                                }
+                                .frame(width: 40, height: 40)
+                            }
+                        }
+                        .padding(.top, 2)
+                    } else {
+                        ForEach(Array(MessageMarkdown.segments(content).enumerated()), id: \.offset) { _, segment in
+                            switch segment {
+                            case .text(let text):
+                                MessageContentText(content: text)
+                            case .codeBlock(let code):
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    Text(code)
+                                        .font(.system(.callout, design: .monospaced))
+                                        .textSelection(.enabled)
+                                        .padding(8)
+                                }
+                                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+                            }
+                        }
+                    }
                 }
                 ForEach(message.attachments ?? []) { attachment in
                     AttachmentContent(attachment: attachment)
+                }
+                ForEach(Array((message.embeds ?? []).prefix(3).enumerated()), id: \.offset) { _, embed in
+                    EmbedView(embed: embed)
+                }
+                ForEach(MessageMarkdown.inviteCodes(message.content ?? ""), id: \.self) { code in
+                    InviteCardView(code: code)
                 }
                 reactionPills
             }
@@ -578,6 +666,9 @@ private struct MessageRow: View {
         }
         .padding(.top, showsHeader ? 10 : 2)
         .contentShape(Rectangle())
+        .sheet(item: $profileUser) { user in
+            ProfileSheet(user: user)
+        }
         .contextMenu {
             ControlGroup {
                 ForEach(quickReactions.prefix(4), id: \.self) { emoji in
@@ -598,6 +689,20 @@ private struct MessageRow: View {
             }
             Button("Copy text", systemImage: "doc.on.doc") {
                 copyText()
+            }
+            Button("Save message", systemImage: "bookmark") {
+                Task { await session.setSaved(message, saved: true) }
+            }
+            if canPin {
+                if message.pinned == true {
+                    Button("Unpin", systemImage: "pin.slash") {
+                        Task { await session.setPinned(message, pinned: false) }
+                    }
+                } else {
+                    Button("Pin message", systemImage: "pin") {
+                        Task { await session.setPinned(message, pinned: true) }
+                    }
+                }
             }
             if isOwn {
                 Divider()
@@ -665,6 +770,12 @@ private struct MessageRow: View {
         }
     }
 
+    private var canPin: Bool {
+        guard let channel = session.findChannel(message.channelId) else { return false }
+        let perms = session.permissions(in: channel)
+        return perms.contains(.pinMessages) || perms.contains(.manageMessages)
+    }
+
     private func copyText() {
         guard let content = message.content else { return }
         #if os(macOS)
@@ -687,6 +798,8 @@ private struct AttachmentContent: View {
         (attachment.proxyUrl ?? attachment.url).flatMap(URL.init(string:))
     }
 
+    @State private var showViewer = false
+
     var body: some View {
         if isImage, let url = imageURL {
             RemoteImage(url: url) {
@@ -698,6 +811,10 @@ private struct AttachmentContent: View {
             .frame(maxWidth: 320, maxHeight: 320, alignment: .leading)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .padding(.top, 4)
+            .onTapGesture { showViewer = true }
+            .sheet(isPresented: $showViewer) {
+                ImageViewerSheet(url: url, filename: attachment.filename)
+            }
         } else {
             Label(attachment.filename, systemImage: "paperclip")
                 .font(.callout)

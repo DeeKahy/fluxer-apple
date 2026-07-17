@@ -41,6 +41,14 @@ final class AppSession {
     private(set) var guildMembers: [Snowflake: [GuildMember]] = [:]
     /// When slowmode allows the next message per channel.
     private(set) var slowmodeUntil: [Snowflake: Date] = [:]
+    /// DM channels pinned to the top of the sidebar.
+    private(set) var pinnedDMIds: Set<Snowflake> = []
+    /// Read position captured when a channel was opened, for the new
+    /// messages divider. Unlike readStates this doesn't advance while
+    /// the channel stays open.
+    private(set) var unreadMarkers: [Snowflake: Snowflake] = [:]
+    /// The user's own chosen status.
+    private(set) var myStatus = "online"
     var lastError: String?
 
     /// The channel currently on screen; new messages there are acked as read.
@@ -66,11 +74,54 @@ final class AppSession {
     /// Where the person completes a browser login for this instance.
     static let browserLoginURL = URL(string: "https://web.fluxer.app/login?handoff=1")!
 
+    /// The instance this app talks to, fluxer.app unless changed at login.
+    private(set) var instanceConfig: InstanceConfig = AppSession.loadStoredInstanceConfig()
+
+    private static let instanceDefaultsKey = "instanceConfig"
+
+    private static func loadStoredInstanceConfig() -> InstanceConfig {
+        guard let data = UserDefaults.standard.data(forKey: instanceDefaultsKey),
+              let config = try? JSONDecoder().decode(InstanceConfig.self, from: data)
+        else { return .fluxerApp }
+        return config
+    }
+
     init() {
-        self.client = APIClient()
+        let config = Self.loadStoredInstanceConfig()
+        self.instanceConfig = config
+        self.client = APIClient(baseURL: config.apiBase)
+        MediaURLs.configure(with: config)
         if let token = KeychainStore.loadToken() {
             Task { await self.restore(token: token) }
         }
+    }
+
+    /// Switches to a different Fluxer instance while logged out. Reads the
+    /// instance's bootstrap config and rebuilds the API client against it.
+    func useInstance(_ input: String) async -> Bool {
+        guard phase == .loggedOut else { return false }
+        do {
+            let config = try await InstanceConfig.load(from: input)
+            instanceConfig = config
+            if let data = try? JSONEncoder().encode(config) {
+                UserDefaults.standard.set(data, forKey: Self.instanceDefaultsKey)
+            }
+            client = APIClient(baseURL: config.apiBase)
+            MediaURLs.configure(with: config)
+            lastError = nil
+            return true
+        } catch {
+            lastError = "Couldn't read that instance: \(Self.describe(error))"
+            return false
+        }
+    }
+
+    func resetToDefaultInstance() {
+        guard phase == .loggedOut else { return }
+        instanceConfig = .fluxerApp
+        UserDefaults.standard.removeObject(forKey: Self.instanceDefaultsKey)
+        client = APIClient()
+        MediaURLs.configure(with: .fluxerApp)
     }
 
     private func restore(token: String) async {
@@ -143,10 +194,11 @@ final class AppSession {
             phase = .loggedOut
             return
         }
+        let provider = instanceConfig.captchaProvider == "turnstile" ? "turnstile" : "hcaptcha"
         await login(
             email: pending.email,
             password: pending.password,
-            captcha: CaptchaSolution(token: token)
+            captcha: CaptchaSolution(token: token, type: provider)
         )
     }
 
@@ -277,6 +329,9 @@ final class AppSession {
         myMembers = [:]
         guildMembers = [:]
         slowmodeUntil = [:]
+        pinnedDMIds = []
+        unreadMarkers = [:]
+        myStatus = "online"
         lastTypingSent = [:]
         activeChannelId = nil
         mfaTicket = nil
@@ -296,7 +351,7 @@ final class AppSession {
 
     private func connectGateway(token: String) {
         gatewayEventTask?.cancel()
-        let gateway = GatewayClient()
+        let gateway = GatewayClient(gatewayURL: instanceConfig.gatewayURL)
         self.gateway = gateway
         gatewayEventTask = Task { [weak self] in
             let events = await gateway.events()
@@ -721,8 +776,25 @@ final class AppSession {
                 }
             }
         }
+        pinnedDMIds = Set((data["pinned_dms"]?.arrayValue ?? []).compactMap {
+            $0.stringValue.flatMap(Snowflake.init(string:))
+        })
+        sortPrivateChannels()
         applyReadyPresences(data)
+        if myStatus != "online", let gateway {
+            Task { await gateway.updatePresence(status: myStatus) }
+        }
         gatewayLog.info("READY applied: \(self.guilds.count) guilds, \(self.privateChannels.count) DMs, \(self.relationships.count) relationships")
+    }
+
+    private func sortPrivateChannels() {
+        guard !pinnedDMIds.isEmpty else { return }
+        privateChannels.sort { a, b in
+            let aPinned = pinnedDMIds.contains(a.id)
+            let bPinned = pinnedDMIds.contains(b.id)
+            if aPinned != bPinned { return aPinned }
+            return (a.lastMessageId ?? a.id) > (b.lastMessageId ?? b.id)
+        }
     }
 
     // MARK: Presence
@@ -771,6 +843,19 @@ final class AppSession {
             memberRoleIds: myMembers[guildId]?.roles ?? [],
             guild: guild,
             channel: channel
+        )
+    }
+
+    /// Guild wide permissions, without channel overwrites.
+    func guildPermissions(in guildId: Snowflake) -> Permissions {
+        guard let me = currentUser,
+              let guild = guilds.first(where: { $0.id == guildId })
+        else { return [] }
+        return PermissionCalculator.permissions(
+            for: me.id,
+            memberRoleIds: myMembers[guildId]?.roles ?? [],
+            guild: guild,
+            channel: nil
         )
     }
 
@@ -856,6 +941,17 @@ final class AppSession {
         }
     }
 
+    /// Friend request to a user we already know the id of, from profiles.
+    func sendFriendRequest(to userId: Snowflake) async -> Bool {
+        do {
+            try await client.sendFriendRequest(to: userId)
+            return true
+        } catch {
+            lastError = Self.describe(error)
+            return false
+        }
+    }
+
     func acceptRequest(_ relationship: Relationship) async {
         do {
             try await client.acceptFriendRequest(from: relationship.id)
@@ -889,6 +985,255 @@ final class AppSession {
         } catch {
             lastError = Self.describe(error)
             return nil
+        }
+    }
+
+    // MARK: Status
+
+    func setStatus(_ status: String) async {
+        myStatus = status
+        if let gateway {
+            await gateway.updatePresence(status: status)
+        }
+        if let myId = currentUser?.id {
+            presences[myId] = status == "invisible" ? nil : status
+        }
+    }
+
+    // MARK: Pins and saved messages
+
+    func pinnedMessages(in channel: Channel) async -> [Message] {
+        do {
+            return try await client.pinnedMessages(in: channel.id)
+        } catch {
+            lastError = Self.describe(error)
+            return []
+        }
+    }
+
+    func setPinned(_ message: Message, pinned: Bool) async {
+        do {
+            if pinned {
+                try await client.pinMessage(message.id, in: message.channelId)
+            } else {
+                try await client.unpinMessage(message.id, in: message.channelId)
+            }
+            var updated = message
+            updated.pinned = pinned
+            update(updated)
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    func savedMessages() async -> [Message] {
+        do {
+            return try await client.savedMessages()
+        } catch {
+            lastError = Self.describe(error)
+            return []
+        }
+    }
+
+    func setSaved(_ message: Message, saved: Bool) async {
+        do {
+            if saved {
+                try await client.saveMessage(message.id)
+            } else {
+                try await client.unsaveMessage(message.id)
+            }
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    func recentMentions() async -> [Message] {
+        do {
+            return try await client.mentions()
+        } catch {
+            lastError = Self.describe(error)
+            return []
+        }
+    }
+
+    // MARK: Profiles
+
+    func profile(of userId: Snowflake) async -> APIClient.UserProfile? {
+        try? await client.profile(of: userId)
+    }
+
+    // MARK: Guild membership
+
+    func createInvite(in channel: Channel) async -> String? {
+        do {
+            return try await client.createInvite(in: channel.id).code
+        } catch {
+            lastError = Self.describe(error)
+            return nil
+        }
+    }
+
+    /// Joins a guild from an invite code or a full invite link.
+    func joinGuild(code rawCode: String) async -> Bool {
+        var code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let url = URL(string: code), url.host() != nil, let last = url.pathComponents.last, last != "/" {
+            code = last
+        }
+        guard !code.isEmpty else { return false }
+        do {
+            _ = try await client.acceptInvite(code)
+            return true
+        } catch {
+            lastError = Self.describe(error)
+            return false
+        }
+    }
+
+    /// Invite lookups cached per code; nil value means the code is invalid.
+    private var inviteCache: [String: APIClient.Invite?] = [:]
+
+    func inviteInfo(code: String) async -> APIClient.Invite? {
+        if let cached = inviteCache[code] {
+            return cached
+        }
+        let info = try? await client.inviteInfo(code)
+        inviteCache[code] = .some(info)
+        return info
+    }
+
+    func isMember(ofGuild guildId: Snowflake) -> Bool {
+        guilds.contains { $0.id == guildId }
+    }
+
+    /// Accepts an invite and navigates there once the guild arrives.
+    func joinAndJump(code: String) async {
+        guard await joinGuild(code: code) else { return }
+        let info = inviteCache[code].flatMap { $0 }
+        // The guild lands via GUILD_CREATE; give it a moment.
+        for _ in 0..<10 {
+            if let guildId = info?.guild?.id,
+               let guild = guilds.first(where: { $0.id == guildId }) {
+                let inviteChannelId = info?.channel?.id
+                let target = guild.channels?.first { $0.id == inviteChannelId }
+                    ?? defaultChannel(for: guild)
+                if let target {
+                    channelJump = target
+                }
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(300))
+        }
+    }
+
+    func createGuild(name: String) async -> Bool {
+        do {
+            let guild = try await client.createGuild(name: name)
+            if !guilds.contains(where: { $0.id == guild.id }) {
+                guilds.append(guild)
+                guilds.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            }
+            return true
+        } catch {
+            lastError = Self.describe(error)
+            return false
+        }
+    }
+
+    func leaveGuild(_ guild: Guild) async {
+        do {
+            try await client.leaveGuild(guild.id)
+            guilds.removeAll { $0.id == guild.id }
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    func kick(_ member: GuildMember, from guildId: Snowflake) async {
+        guard let userId = member.user?.id else { return }
+        do {
+            try await client.kickMember(userId, from: guildId)
+            guildMembers[guildId]?.removeAll { $0.user?.id == userId }
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    func ban(_ member: GuildMember, from guildId: Snowflake) async {
+        guard let userId = member.user?.id else { return }
+        do {
+            try await client.banMember(userId, from: guildId)
+            guildMembers[guildId]?.removeAll { $0.user?.id == userId }
+        } catch {
+            lastError = Self.describe(error)
+        }
+    }
+
+    // MARK: Pinned DMs
+
+    func isDMPinned(_ channel: Channel) -> Bool {
+        pinnedDMIds.contains(channel.id)
+    }
+
+    func toggleDMPinned(_ channel: Channel) async {
+        let pinned = !pinnedDMIds.contains(channel.id)
+        if pinned {
+            pinnedDMIds.insert(channel.id)
+        } else {
+            pinnedDMIds.remove(channel.id)
+        }
+        sortPrivateChannels()
+        try? await client.setDMPinned(channel.id, pinned: pinned)
+    }
+
+    // MARK: Unread marker
+
+    /// Captures where the new messages divider belongs, before the open
+    /// channel gets acked as read.
+    func captureUnreadMarker(_ channel: Channel) {
+        if isUnread(channel) {
+            unreadMarkers[channel.id] = readStates[channel.id]
+        } else {
+            unreadMarkers[channel.id] = nil
+        }
+    }
+
+    // MARK: Emoji
+
+    /// All custom emoji available to the user, grouped by guild.
+    var emojiByGuild: [(guild: Guild, emojis: [GuildEmoji])] {
+        guilds.compactMap { guild in
+            guard let emojis = guild.emojis, !emojis.isEmpty else { return nil }
+            return (guild, emojis)
+        }
+    }
+
+    func customEmoji(id: Snowflake) -> GuildEmoji? {
+        for guild in guilds {
+            if let emoji = guild.emojis?.first(where: { $0.id == id }) {
+                return emoji
+            }
+        }
+        return nil
+    }
+
+    // MARK: Sessions
+
+    func authSessions() async -> [APIClient.AuthSession] {
+        do {
+            return try await client.sessions()
+        } catch {
+            lastError = Self.describe(error)
+            return []
+        }
+    }
+
+    func revokeSession(_ session: APIClient.AuthSession) async -> Bool {
+        do {
+            try await client.logoutSessions(idHashes: [session.idHash])
+            return true
+        } catch {
+            lastError = Self.describe(error)
+            return false
         }
     }
 

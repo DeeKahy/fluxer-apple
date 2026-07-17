@@ -23,12 +23,14 @@
 		73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */; };
 		766F7FBE1E334CC61E6D4881 /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
 		879307989A18EE1B977364D4 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
+		91C7210FD43230799AA6127E /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B6C1625084B8B513AA51F5E /* SweepViews.swift */; };
 		A1C066C8BB95ECBBC9B20A23 /* ChannelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3920425BC39D63EECD07D72 /* ChannelListView.swift */; };
 		A2994F119944A491E195F7EE /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AC3A35D1CE4DB5A20689FC /* RootView.swift */; };
 		A31583CB9030418C32B89D9C /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933AEBE1E248E169E6C6371A /* MainView.swift */; };
 		AB6DA73141D205E5B1E5E37F /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
 		AD30210A2EF243341984B151 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
 		B5E5712786D8B7583BEF14C7 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
+		B5FCA27D71943CD210B16882 /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B6C1625084B8B513AA51F5E /* SweepViews.swift */; };
 		B74FF7E6BFD3448BDEF1B6BB /* MemberListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C98DC244799961A7D8C5C68 /* MemberListView.swift */; };
 		C2707F3CFFAF4427FBFC11E9 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */; };
 		C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
@@ -53,6 +55,7 @@
 		793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
 		79732C766EF19446FBEB0EA1 /* MessageMarkdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageMarkdown.swift; sourceTree = "<group>"; };
 		851AA6BF6493F3B3857262AE /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		8B6C1625084B8B513AA51F5E /* SweepViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SweepViews.swift; sourceTree = "<group>"; };
 		90B9527E570305AC9F43DFA8 /* FluxerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxerApp.swift; sourceTree = "<group>"; };
 		9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptchaView.swift; sourceTree = "<group>"; };
 		933AEBE1E248E169E6C6371A /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
@@ -113,6 +116,7 @@
 				3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */,
 				5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */,
 				01AC3A35D1CE4DB5A20689FC /* RootView.swift */,
+				8B6C1625084B8B513AA51F5E /* SweepViews.swift */,
 			);
 			name = Shared;
 			path = Apps/Shared;
@@ -237,6 +241,7 @@
 				766F7FBE1E334CC61E6D4881 /* MessageView.swift in Sources */,
 				C2707F3CFFAF4427FBFC11E9 /* RemoteImage.swift in Sources */,
 				0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */,
+				B5FCA27D71943CD210B16882 /* SweepViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +265,7 @@
 				AB6DA73141D205E5B1E5E37F /* MessageView.swift in Sources */,
 				73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */,
 				A2994F119944A491E195F7EE /* RootView.swift in Sources */,
+				91C7210FD43230799AA6127E /* SweepViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

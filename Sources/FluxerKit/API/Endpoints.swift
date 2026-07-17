@@ -34,4 +34,25 @@ enum Endpoint {
     static func ack(_ channelId: Snowflake, _ messageId: Snowflake) -> String {
         "/channels/\(channelId)/messages/\(messageId)/ack"
     }
+    static func pins(_ channelId: Snowflake) -> String { "/channels/\(channelId)/messages/pins" }
+    static func pin(_ channelId: Snowflake, _ messageId: Snowflake) -> String {
+        "/channels/\(channelId)/pins/\(messageId)"
+    }
+    static let savedMessages = "/users/@me/saved-messages"
+    static func savedMessage(_ messageId: Snowflake) -> String { "/users/@me/saved-messages/\(messageId)" }
+    static let mentions = "/users/@me/mentions"
+    static let sessions = "/auth/sessions"
+    static let sessionsLogout = "/auth/sessions/logout"
+    static func profile(_ userId: Snowflake) -> String { "/users/\(userId)/profile" }
+    static func channelInvites(_ channelId: Snowflake) -> String { "/channels/\(channelId)/invites" }
+    static func invite(_ code: String) -> String { "/invites/\(code)" }
+    static let guilds = "/guilds"
+    static func leaveGuild(_ guildId: Snowflake) -> String { "/users/@me/guilds/\(guildId)" }
+    static func guildMember(_ guildId: Snowflake, _ userId: Snowflake) -> String {
+        "/guilds/\(guildId)/members/\(userId)"
+    }
+    static func guildBan(_ guildId: Snowflake, _ userId: Snowflake) -> String {
+        "/guilds/\(guildId)/bans/\(userId)"
+    }
+    static func dmPin(_ channelId: Snowflake) -> String { "/users/@me/channels/\(channelId)/pin" }
 }
