@@ -116,14 +116,16 @@ struct MessageView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         if !session.canLoadOlderMessages(in: channel.id) {
-                            VStack(spacing: 12) {
-                                RoundedRectangle(cornerRadius: 18)
+                            // Mobile comp centers the hero; the desktop comp
+                            // left-aligns it with a bigger title.
+                            VStack(alignment: desktopChrome ? .leading : .center, spacing: 12) {
+                                RoundedRectangle(cornerRadius: desktopChrome ? 16 : 18)
                                     .fill(Theme.heroTile)
                                     .frame(width: 60, height: 60)
                                     .overlay {
                                         if channel.guildId != nil {
                                             Text("#")
-                                                .font(.system(size: 30))
+                                                .font(.system(size: desktopChrome ? 26 : 30, weight: desktopChrome ? .heavy : .regular))
                                                 .foregroundStyle(Theme.accentSoft)
                                         } else {
                                             Image(systemName: "bubble.left.and.bubble.right.fill")
@@ -132,22 +134,23 @@ struct MessageView: View {
                                         }
                                     }
                                 Text("Welcome to \(channelTitle)")
-                                    .font(.system(size: 22, weight: .heavy))
+                                    .font(.system(size: desktopChrome ? 26 : 22, weight: .heavy))
                                     .foregroundStyle(Theme.text)
-                                    .multilineTextAlignment(.center)
+                                    .multilineTextAlignment(desktopChrome ? .leading : .center)
                                 if let topic = channel.topic, !topic.isEmpty {
                                     Text(topic)
-                                        .font(.system(size: 14))
+                                        .font(.system(size: desktopChrome ? 15 : 14))
                                         .foregroundStyle(Theme.secondary)
-                                        .multilineTextAlignment(.center)
+                                        .multilineTextAlignment(desktopChrome ? .leading : .center)
                                 } else {
                                     Text("This is the very beginning of the conversation.")
-                                        .font(.system(size: 14))
+                                        .font(.system(size: desktopChrome ? 15 : 14))
                                         .foregroundStyle(Theme.secondary)
                                 }
                             }
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, alignment: desktopChrome ? .leading : .center)
                             .padding(.vertical, 22)
+                            .padding(.horizontal, desktopChrome ? 10 : 0)
                         }
                         if session.canLoadOlderMessages(in: channel.id),
                            !session.messages(in: channel.id).isEmpty {
@@ -217,7 +220,11 @@ struct MessageView: View {
 
             typingIndicator
 
-            Divider()
+            // The desktop comp's composer floats on the background with no
+            // separator line above it.
+            if !desktopChrome {
+                Divider()
+            }
 
             if session.canSendMessages(in: channel) {
                 composerBanner

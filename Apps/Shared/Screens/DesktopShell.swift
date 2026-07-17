@@ -261,6 +261,14 @@ private struct RailButton<Content: View>: View {
                 Spacer(minLength: 0)
                 Button(action: action) {
                     content(selected || hovered)
+                        .overlay {
+                            // Comp's white keyline around the active tile.
+                            if selected {
+                                RoundedRectangle(cornerRadius: 18)
+                                    .strokeBorder(.white.opacity(0.9), lineWidth: 2)
+                                    .padding(-2)
+                            }
+                        }
                         .overlay(alignment: .bottomTrailing) {
                             if badge > 0 {
                                 CountBadge(count: badge)
