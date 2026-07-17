@@ -317,6 +317,7 @@ private struct DesktopSidebar: View {
     @State private var showSaved = false
     @State private var showSessions = false
     @State private var showGuildInvite = false
+    @State private var showAccountMenu = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -732,10 +733,10 @@ private struct DesktopSidebar: View {
 
     private var selfBar: some View {
         HStack(spacing: 9) {
-            Menu {
-                Button("Sessions") { showSessions = true }
-                Divider()
-                Button("Log out", role: .destructive) { Task { await session.logout() } }
+            // Not a Menu label: AppKit flattens those to the image's
+            // intrinsic size, which blew the avatar up to full resolution.
+            Button {
+                showAccountMenu = true
             } label: {
                 AvatarView(user: session.currentUser, diameter: 32)
                     .overlay(alignment: .bottomTrailing) {
@@ -745,10 +746,36 @@ private struct DesktopSidebar: View {
                             .overlay { Circle().strokeBorder(Theme.selfBarBg, lineWidth: 2) }
                             .offset(x: 2, y: 2)
                     }
+                    .contentShape(Circle())
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
+            .buttonStyle(SquishButtonStyle())
+            .popover(isPresented: $showAccountMenu, arrowEdge: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Button {
+                        showAccountMenu = false
+                        showSessions = true
+                    } label: {
+                        Label("Sessions", systemImage: "laptopcomputer.and.iphone")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .contentShape(Rectangle())
+                    }
+                    Button(role: .destructive) {
+                        showAccountMenu = false
+                        Task { await session.logout() }
+                    } label: {
+                        Label("Log out", systemImage: "rectangle.portrait.and.arrow.right")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .contentShape(Rectangle())
+                    }
+                }
+                .buttonStyle(DeskRowStyle())
+                .padding(6)
+                .frame(width: 170)
+            }
             .frame(width: 36)
             VStack(alignment: .leading, spacing: 1) {
                 Text(session.currentUser?.displayName ?? "You")
