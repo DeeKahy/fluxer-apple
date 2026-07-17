@@ -60,6 +60,11 @@ final class AppSession {
     var lastTypingSent: [Snowflake: Date] = [:]
     var cacheSaveTask: Task<Void, Never>?
 
+    /// Voice connection owner.
+    let voice = VoiceManager()
+    /// Who is in which voice channel, kept from READY and voice updates.
+    var voiceChannelUsers: [Snowflake: Set<Snowflake>] = [:]
+
     var channelsWithFullHistory: Set<Snowflake> = []
     var channelsLoadingOlder: Set<Snowflake> = []
     var lastChannelByGuild: [Snowflake: Snowflake] = {
@@ -108,6 +113,17 @@ final class AppSession {
         self.instanceConfig = config
         self.client = APIClient(baseURL: config.apiBase)
         MediaURLs.configure(with: config)
+        voice.sendVoiceState = { [weak self] guildId, channelId, mute in
+            await self?.gateway?.updateVoiceState(
+                guildId: guildId,
+                channelId: channelId,
+                selfMute: mute
+            )
+        }
+        voice.heartbeat = { [weak self] channelId in
+            guard let self else { return }
+            try? await self.client.voiceHeartbeat(in: channelId)
+        }
         if let token = KeychainStore.loadToken() {
             loadCachedState()
             Task { await self.restore(token: token) }
@@ -323,6 +339,10 @@ final class AppSession {
     }
 
     func logout() async {
+        if voice.isActive {
+            await voice.leave()
+        }
+        voiceChannelUsers = [:]
         gatewayEventTask?.cancel()
         gatewayEventTask = nil
         if let gateway {

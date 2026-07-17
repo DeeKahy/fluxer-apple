@@ -180,6 +180,18 @@ extension AppSession {
         }
     }
 
+    // MARK: Calls
+
+    /// Joins voice on a DM channel and rings the other side.
+    func startCall(in channel: Channel) async {
+        await voice.join(channelId: channel.id, guildId: channel.guildId)
+        try? await client.ringCall(in: channel.id)
+    }
+
+    func joinVoice(_ channel: Channel) async {
+        await voice.join(channelId: channel.id, guildId: channel.guildId)
+    }
+
     // MARK: Pinned DMs
 
     func isDMPinned(_ channel: Channel) -> Bool {

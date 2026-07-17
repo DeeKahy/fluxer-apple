@@ -51,6 +51,15 @@ extension AppSession {
                 delta: event.name == "MESSAGE_REACTION_ADD" ? 1 : -1,
                 byMe: userId == currentUser?.id
             )
+        case "VOICE_SERVER_UPDATE":
+            guard let update = try? event.data?.decoded(as: VoiceServerUpdate.self) else {
+                gatewayLog.error("VOICE_SERVER_UPDATE decode failed")
+                return
+            }
+            await voice.handleServerUpdate(update)
+        case "VOICE_STATE_UPDATE":
+            guard let state = try? event.data?.decoded(as: VoiceState.self) else { return }
+            applyVoiceState(state)
         case "PRESENCE_UPDATE":
             applyPresence(event.data)
         case "PRESENCE_UPDATE_BULK":

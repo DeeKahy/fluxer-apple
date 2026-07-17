@@ -9,6 +9,7 @@ public struct ReadyGuild: Codable, Sendable {
     public var roles: [Role]?
     public var emojis: [GuildEmoji]?
     public var members: [GuildMember]?
+    public var voiceStates: [VoiceState]?
     public var memberCount: Int?
     public var unavailable: Bool?
 

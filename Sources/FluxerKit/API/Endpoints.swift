@@ -55,4 +55,9 @@ enum Endpoint {
         "/guilds/\(guildId)/bans/\(userId)"
     }
     static func dmPin(_ channelId: Snowflake) -> String { "/users/@me/channels/\(channelId)/pin" }
+    static func voiceHeartbeat(_ channelId: Snowflake) -> String {
+        "/channels/\(channelId)/voice-presence/heartbeat"
+    }
+    static func callRing(_ channelId: Snowflake) -> String { "/channels/\(channelId)/call/ring" }
+    static func callStopRinging(_ channelId: Snowflake) -> String { "/channels/\(channelId)/call/stop-ringing" }
 }

@@ -9,12 +9,15 @@
 /* Begin PBXBuildFile section */
 		0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AC3A35D1CE4DB5A20689FC /* RootView.swift */; };
 		0199EE78FC5BF492DC261DD6 /* AppSession+Gateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79B1F0954056D12EDFCE3F42 /* AppSession+Gateway.swift */; };
+		02997F0FEC196CAB854F0BFB /* VoiceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6770BB9C50A9AF0F13F0CC /* VoiceViews.swift */; };
 		0327EEEC16B4443864F98D4C /* AppSession+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB9EBD25600C33106AF9D08 /* AppSession+Social.swift */; };
+		03A21269379DBF71189CC987 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1DDD02FB88D1369EED487936 /* LiveKit */; };
 		03AF3392B9BE97882917CC45 /* DiskCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680A8C876981C954899B2436 /* DiskCache.swift */; };
 		05626B0589D6B44EAE173749 /* CaptchaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */; };
 		0666CE21E7962CC45B865E2F /* ChannelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3920425BC39D63EECD07D72 /* ChannelListView.swift */; };
 		1A27BF4A8064F911A0F8C050 /* AppSession+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A53A2B2B176143784FB6BBF /* AppSession+Messages.swift */; };
 		22848D3E88921967EF3F4E36 /* AppSession+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B3398DA4B1C24B44EDD8B2 /* AppSession+Navigation.swift */; };
+		2A90166765DF36759149B286 /* VoiceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6770BB9C50A9AF0F13F0CC /* VoiceViews.swift */; };
 		353A0EF40B2575AEBB93CF99 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */; };
 		39391AD3E2004C475822CADE /* HandoffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7B6BA74AF607C8D6BBD8C65 /* HandoffView.swift */; };
 		42108D6FEF008C4879D43084 /* AppSession+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1786FF8217257BDB7A532163 /* AppSession+Features.swift */; };
@@ -34,9 +37,11 @@
 		879307989A18EE1B977364D4 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
 		8ED5F7B552077CB894EA36E4 /* AppSession+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A53A2B2B176143784FB6BBF /* AppSession+Messages.swift */; };
 		91C7210FD43230799AA6127E /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B6C1625084B8B513AA51F5E /* SweepViews.swift */; };
+		94551FC5CA1770D2CE54FE2D /* VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */; };
 		A1C066C8BB95ECBBC9B20A23 /* ChannelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3920425BC39D63EECD07D72 /* ChannelListView.swift */; };
 		A2994F119944A491E195F7EE /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AC3A35D1CE4DB5A20689FC /* RootView.swift */; };
 		A31583CB9030418C32B89D9C /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933AEBE1E248E169E6C6371A /* MainView.swift */; };
+		A3EEB705834CEA2B54C25A17 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = DB6DCDC8927CFA483E3B300B /* LiveKit */; };
 		AB6DA73141D205E5B1E5E37F /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
 		AD30210A2EF243341984B151 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
 		B5E5712786D8B7583BEF14C7 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
@@ -46,6 +51,7 @@
 		C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
 		D704C447D019BCDC315481C7 /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79732C766EF19446FBEB0EA1 /* MessageMarkdown.swift */; };
 		D79B78FD03D89593DBE69344 /* AppSession+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB9EBD25600C33106AF9D08 /* AppSession+Social.swift */; };
+		D8593623F3947576EB0FCB28 /* VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */; };
 		DA24A6012598410F9C773764 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933AEBE1E248E169E6C6371A /* MainView.swift */; };
 		DC60D45BECB0A2B1AD551685 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0FF76EC0C0EEF129CA9382 /* FriendsView.swift */; };
 		DEEF089735F826AB89A39211 /* EmailConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */; };
@@ -63,6 +69,7 @@
 		0CB9EBD25600C33106AF9D08 /* AppSession+Social.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Social.swift"; sourceTree = "<group>"; };
 		157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Fluxer-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1786FF8217257BDB7A532163 /* AppSession+Features.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Features.swift"; sourceTree = "<group>"; };
+		1A6770BB9C50A9AF0F13F0CC /* VoiceViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceViews.swift; sourceTree = "<group>"; };
 		1C98DC244799961A7D8C5C68 /* MemberListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberListView.swift; sourceTree = "<group>"; };
 		3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
 		4A53A2B2B176143784FB6BBF /* AppSession+Messages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Messages.swift"; sourceTree = "<group>"; };
@@ -76,6 +83,7 @@
 		90B9527E570305AC9F43DFA8 /* FluxerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxerApp.swift; sourceTree = "<group>"; };
 		9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptchaView.swift; sourceTree = "<group>"; };
 		933AEBE1E248E169E6C6371A /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceManager.swift; sourceTree = "<group>"; };
 		A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		B7B6BA74AF607C8D6BBD8C65 /* HandoffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffView.swift; sourceTree = "<group>"; };
 		BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailConfirmationView.swift; sourceTree = "<group>"; };
@@ -92,6 +100,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6E93A864F966E06F84AB19A9 /* FluxerKit in Frameworks */,
+				A3EEB705834CEA2B54C25A17 /* LiveKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,6 +109,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FD64F07718204A0FE4FC1450 /* FluxerKit in Frameworks */,
+				03A21269379DBF71189CC987 /* LiveKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,6 +151,8 @@
 				5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */,
 				01AC3A35D1CE4DB5A20689FC /* RootView.swift */,
 				8B6C1625084B8B513AA51F5E /* SweepViews.swift */,
+				A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */,
+				1A6770BB9C50A9AF0F13F0CC /* VoiceViews.swift */,
 			);
 			name = Shared;
 			path = Apps/Shared;
@@ -180,6 +192,7 @@
 			name = "Fluxer-iOS";
 			packageProductDependencies = (
 				C033D75BAE3A91A96A9A7A53 /* FluxerKit */,
+				1DDD02FB88D1369EED487936 /* LiveKit */,
 			);
 			productName = "Fluxer-iOS";
 			productReference = C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */;
@@ -199,6 +212,7 @@
 			name = "Fluxer-macOS";
 			packageProductDependencies = (
 				B0DD205E3FEE92631EC5C284 /* FluxerKit */,
+				DB6DCDC8927CFA483E3B300B /* LiveKit */,
 			);
 			productName = "Fluxer-macOS";
 			productReference = 157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */;
@@ -231,6 +245,7 @@
 			mainGroup = A2C472C31752EC858F683EAA;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				39DAF3C9C05B7B99BF0160CD /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
 				29399FD5C22EF725BB5DF52B /* XCLocalSwiftPackageReference "." */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -272,6 +287,8 @@
 				C2707F3CFFAF4427FBFC11E9 /* RemoteImage.swift in Sources */,
 				0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */,
 				B5FCA27D71943CD210B16882 /* SweepViews.swift in Sources */,
+				94551FC5CA1770D2CE54FE2D /* VoiceManager.swift in Sources */,
+				02997F0FEC196CAB854F0BFB /* VoiceViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -302,6 +319,8 @@
 				73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */,
 				A2994F119944A491E195F7EE /* RootView.swift in Sources */,
 				91C7210FD43230799AA6127E /* SweepViews.swift in Sources */,
+				D8593623F3947576EB0FCB28 /* VoiceManager.swift in Sources */,
+				2A90166765DF36759149B286 /* VoiceViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -315,6 +334,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fluxer uses the microphone for voice channels and calls.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -332,6 +352,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fluxer uses the microphone for voice channels and calls.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -413,6 +434,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fluxer uses the microphone for voice channels and calls.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -490,6 +512,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fluxer uses the microphone for voice channels and calls.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -542,7 +565,23 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		39DAF3C9C05B7B99BF0160CD /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		1DDD02FB88D1369EED487936 /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 39DAF3C9C05B7B99BF0160CD /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
+		};
 		B0DD205E3FEE92631EC5C284 /* FluxerKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FluxerKit;
@@ -550,6 +589,11 @@
 		C033D75BAE3A91A96A9A7A53 /* FluxerKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FluxerKit;
+		};
+		DB6DCDC8927CFA483E3B300B /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 39DAF3C9C05B7B99BF0160CD /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -300,6 +300,14 @@ extension AppSession {
                 }
             }
         }
+        voiceChannelUsers = [:]
+        for guildEntry in data["guilds"]?.arrayValue ?? [] {
+            for entry in guildEntry["voice_states"]?.arrayValue ?? [] {
+                if let state = try? entry.decoded(as: VoiceState.self) {
+                    applyVoiceState(state)
+                }
+            }
+        }
         pinnedDMIds = Set((data["pinned_dms"]?.arrayValue ?? []).compactMap {
             $0.stringValue.flatMap(Snowflake.init(string:))
         })
@@ -309,6 +317,19 @@ extension AppSession {
             Task { await gateway.updatePresence(status: myStatus) }
         }
         gatewayLog.info("READY applied: \(self.guilds.count) guilds, \(self.privateChannels.count) DMs, \(self.relationships.count) relationships")
+    }
+
+    /// Moves a user between voice channel occupancy sets.
+    func applyVoiceState(_ state: VoiceState) {
+        for (channelId, users) in voiceChannelUsers where users.contains(state.userId) {
+            voiceChannelUsers[channelId]?.remove(state.userId)
+            if voiceChannelUsers[channelId]?.isEmpty == true {
+                voiceChannelUsers[channelId] = nil
+            }
+        }
+        if let channelId = state.channelId {
+            voiceChannelUsers[channelId, default: []].insert(state.userId)
+        }
     }
 
     func sortPrivateChannels() {

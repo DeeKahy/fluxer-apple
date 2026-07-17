@@ -242,6 +242,14 @@ struct MessageView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
+            if channel.type == .dm || channel.type == .groupDM {
+                Button {
+                    Task { await session.startCall(in: channel) }
+                } label: {
+                    Image(systemName: "phone")
+                }
+                .disabled(session.voice.connectedChannelId == channel.id)
+            }
             Button {
                 showPins = true
             } label: {
