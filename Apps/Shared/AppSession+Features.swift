@@ -184,7 +184,10 @@ extension AppSession {
 
     /// Joins voice on a DM channel and rings the other side.
     func startCall(in channel: Channel) async {
-        await voice.join(channelId: channel.id, guildId: channel.guildId)
+        await voice.join(channelId: channel.id, guildId: channel.guildId, ringing: true)
+        voice.onCallAnswered = { [weak self] in
+            Task { try? await self?.client.stopRinging(in: channel.id) }
+        }
         try? await client.ringCall(in: channel.id)
     }
 

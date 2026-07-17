@@ -23,11 +23,16 @@ final class VoiceManager {
     private(set) var muted = false
     private(set) var speakingUserIds: Set<Snowflake> = []
     private(set) var roomParticipantIds: Set<Snowflake> = []
+    /// Remote user ids currently in the room, to tell ringing from answered.
+    private(set) var remoteParticipantIds: Set<Snowflake> = []
+    /// True while a DM call is waiting for the other side to pick up.
+    private(set) var isRinging = false
     var lastError: String?
 
     private let room: Room
     private let delegateProxy = RoomDelegateProxy()
     private var heartbeatTask: Task<Void, Never>?
+    private var refreshTask: Task<Void, Never>?
     private var pendingGuildId: Snowflake?
 
     /// Wired by AppSession so the manager can drive gateway and REST.
@@ -57,12 +62,13 @@ final class VoiceManager {
 
     // MARK: Join and leave
 
-    func join(channelId: Snowflake, guildId: Snowflake?) async {
+    func join(channelId: Snowflake, guildId: Snowflake?, ringing: Bool = false) async {
         if connectedChannelId == channelId { return }
         if isActive {
             await leave()
         }
         lastError = nil
+        isRinging = ringing
         phase = .requesting(channelId: channelId)
         pendingGuildId = guildId
         await sendVoiceState?(guildId, channelId, muted)
@@ -90,6 +96,7 @@ final class VoiceManager {
             phase = .connected(channelId: channelId)
             refreshParticipants()
             startHeartbeat(channelId: channelId)
+            startRefreshLoop()
             voiceLog.info("Voice connected to channel \(channelId.stringValue)")
         } catch {
             voiceLog.error("Voice connect failed: \(String(describing: error))")
@@ -102,6 +109,10 @@ final class VoiceManager {
     func leave() async {
         heartbeatTask?.cancel()
         heartbeatTask = nil
+        refreshTask?.cancel()
+        refreshTask = nil
+        isRinging = false
+        remoteParticipantIds = []
         let guildId = pendingGuildId
         pendingGuildId = nil
         phase = .idle
@@ -120,24 +131,42 @@ final class VoiceManager {
 
     private func refreshParticipants() {
         var ids: Set<Snowflake> = []
-        var speaking: Set<Snowflake> = []
+        var remotes: Set<Snowflake> = []
         let participants = [room.localParticipant as Participant] + Array(room.remoteParticipants.values)
         for participant in participants {
             guard let id = Self.userId(of: participant) else { continue }
             ids.insert(id)
-            if participant.isSpeaking {
-                speaking.insert(id)
+            if participant is RemoteParticipant {
+                remotes.insert(id)
             }
         }
         roomParticipantIds = ids
-        speakingUserIds = speaking
+        remoteParticipantIds = remotes
+        speakingUserIds = Set(room.activeSpeakers.compactMap(Self.userId(of:)))
+        if isRinging && !remotes.isEmpty {
+            isRinging = false
+            onCallAnswered?()
+        }
     }
+
+    /// Called once when a rung DM call gets picked up.
+    var onCallAnswered: (() -> Void)?
 
     private static func userId(of participant: Participant) -> Snowflake? {
         guard let identity = participant.identity?.stringValue else { return nil }
         // Identities are user ids, possibly with a suffix after a colon.
         let base = identity.split(separator: ":").first.map(String.init) ?? identity
         return Snowflake(string: base)
+    }
+
+    private func startRefreshLoop() {
+        refreshTask?.cancel()
+        refreshTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                self.refreshParticipants()
+            }
+        }
     }
 
     private func startHeartbeat(channelId: Snowflake) {
@@ -163,7 +192,7 @@ private final class RoomDelegateProxy: RoomDelegate, @unchecked Sendable {
         onChange?()
     }
 
-    func room(_ room: Room, participant: Participant, didUpdateIsSpeaking isSpeaking: Bool) {
+    func room(_ room: Room, didUpdateSpeakingParticipants participants: [Participant]) {
         onChange?()
     }
 

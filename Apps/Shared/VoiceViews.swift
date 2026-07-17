@@ -8,8 +8,9 @@ struct VoiceBar: View {
     var body: some View {
         if session.voice.isActive {
             HStack(spacing: 12) {
-                Image(systemName: "waveform")
+                Image(systemName: session.voice.isRinging ? "phone.arrow.up.right" : "waveform")
                     .foregroundStyle(phaseColor)
+                    .symbolEffect(.pulse, isActive: session.voice.isRinging)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(channelName)
                         .font(.callout.bold())
@@ -18,6 +19,7 @@ struct VoiceBar: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                participantStrip
                 Spacer()
                 Button {
                     Task { await session.voice.toggleMute() }
@@ -60,12 +62,49 @@ struct VoiceBar: View {
         case .idle: return ""
         case .requesting, .connecting: return "Connecting"
         case .connected:
+            if session.voice.isRinging {
+                return "Calling, waiting for an answer"
+            }
             let count = session.voice.roomParticipantIds.count
             return count == 1 ? "Connected, just you" : "Connected, \(count) in voice"
         }
     }
 
+    /// Everyone in the room, speaking shown as a green ring.
+    @ViewBuilder
+    private var participantStrip: some View {
+        let ids = session.voice.roomParticipantIds.sorted()
+        if !ids.isEmpty {
+            HStack(spacing: -6) {
+                ForEach(ids.prefix(5), id: \.self) { userId in
+                    AvatarView(user: participantUser(userId), diameter: 26)
+                        .overlay {
+                            Circle().strokeBorder(
+                                session.voice.speakingUserIds.contains(userId) ? Color.green : Color.clear,
+                                lineWidth: 2.5
+                            )
+                        }
+                        .background(Circle().fill(.background))
+                }
+                if ids.count > 5 {
+                    Text("+\(ids.count - 5)")
+                        .font(.caption2)
+                        .padding(.leading, 10)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func participantUser(_ userId: Snowflake) -> User? {
+        if userId == session.currentUser?.id {
+            return session.currentUser
+        }
+        return session.knownUsers[userId]
+    }
+
     private var phaseColor: Color {
+        if session.voice.isRinging { return .orange }
         if case .connected = session.voice.phase { return .green }
         return .orange
     }
