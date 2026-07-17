@@ -65,16 +65,23 @@ struct VoiceStageView: View {
     }
 
     private func videoTile(_ tile: VoiceManager.VideoTile) -> some View {
-        SwiftUIVideoView(tile.track, layoutMode: tile.isScreenShare ? .fit : .fill)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(alignment: .bottomLeading) {
-                nameBadge(tile.userId, suffix: tile.isScreenShare ? "screen" : nil)
+        // The renderer only scales correctly when handed a concrete frame;
+        // left to implicit layout it draws at native size in a corner.
+        GeometryReader { geometry in
+            SwiftUIVideoView(tile.track, layoutMode: tile.isScreenShare ? .fit : .fill)
+                .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .id(tile.id)
+        .background(.black)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(alignment: .bottomLeading) {
+            nameBadge(tile.userId, suffix: tile.isScreenShare ? "screen" : nil)
+        }
+        .overlay {
+            if let userId = tile.userId, session.voice.speakingUserIds.contains(userId), !tile.isScreenShare {
+                RoundedRectangle(cornerRadius: 10).strokeBorder(.green, lineWidth: 2.5)
             }
-            .overlay {
-                if let userId = tile.userId, session.voice.speakingUserIds.contains(userId), !tile.isScreenShare {
-                    RoundedRectangle(cornerRadius: 10).strokeBorder(.green, lineWidth: 2.5)
-                }
-            }
+        }
     }
 
     private func avatarTile(_ userId: Snowflake) -> some View {
