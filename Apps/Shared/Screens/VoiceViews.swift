@@ -11,15 +11,16 @@ struct VoiceBar: View {
         if session.voice.isActive {
             HStack(spacing: 12) {
                 Image(systemName: session.voice.isRinging ? "phone.arrow.up.right" : "waveform")
-                    .foregroundStyle(phaseColor)
+                    .foregroundStyle(.white)
                     .symbolEffect(.pulse, isActive: session.voice.isRinging)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(channelName)
-                        .font(.callout.bold())
+                        .font(.system(size: 13, weight: .heavy))
+                        .foregroundStyle(.white)
                         .lineLimit(1)
                     Text(session.voice.lastError ?? statusText)
-                        .font(.caption)
-                        .foregroundStyle(session.voice.lastError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+                        .font(.system(size: 11))
+                        .foregroundStyle(session.voice.lastError == nil ? AnyShapeStyle(.white.opacity(0.85)) : AnyShapeStyle(Theme.red))
                 }
                 participantStrip
                 Spacer()
@@ -46,12 +47,11 @@ struct VoiceBar: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(Theme.sheet)
-            .overlay(alignment: .top) {
-                Theme.hairline.frame(height: 1)
-            }
+            .background(Color(hex: 0x2C9E53), in: RoundedRectangle(cornerRadius: 15))
+            .padding(.horizontal, 12)
+            .padding(.bottom, 6)
             .contentShape(Rectangle())
             .onTapGesture {
                 showStage = true
