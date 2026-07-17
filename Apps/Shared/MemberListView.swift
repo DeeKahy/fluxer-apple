@@ -31,6 +31,7 @@ struct MemberListView: View {
     let guildId: Snowflake
 
     @State private var filter = ""
+    @State private var memberToModerate: (member: GuildMember, ban: Bool)?
 
     private var guild: Guild? {
         session.guilds.first { $0.id == guildId }
@@ -78,6 +79,17 @@ struct MemberListView: View {
                                     }
                                 }
                             }
+                            let perms = session.guildPermissions(in: guildId)
+                            if perms.contains(.kickMembers) {
+                                Button("Kick", systemImage: "figure.walk.departure", role: .destructive) {
+                                    memberToModerate = (member, false)
+                                }
+                            }
+                            if perms.contains(.banMembers) {
+                                Button("Ban", systemImage: "hammer", role: .destructive) {
+                                    memberToModerate = (member, true)
+                                }
+                            }
                         }
                     }
                 }
@@ -93,6 +105,27 @@ struct MemberListView: View {
             .task {
                 if let guild {
                     await session.loadMembers(for: guild)
+                }
+            }
+            .confirmationDialog(
+                memberToModerate.map { "\($0.ban ? "Ban" : "Kick") \($0.member.displayName)?" } ?? "",
+                isPresented: Binding(
+                    get: { memberToModerate != nil },
+                    set: { if !$0 { memberToModerate = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button(memberToModerate?.ban == true ? "Ban" : "Kick", role: .destructive) {
+                    if let action = memberToModerate {
+                        Task {
+                            if action.ban {
+                                await session.ban(action.member, from: guildId)
+                            } else {
+                                await session.kick(action.member, from: guildId)
+                            }
+                        }
+                    }
+                    memberToModerate = nil
                 }
             }
         }

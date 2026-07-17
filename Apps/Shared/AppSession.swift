@@ -846,6 +846,19 @@ final class AppSession {
         )
     }
 
+    /// Guild wide permissions, without channel overwrites.
+    func guildPermissions(in guildId: Snowflake) -> Permissions {
+        guard let me = currentUser,
+              let guild = guilds.first(where: { $0.id == guildId })
+        else { return [] }
+        return PermissionCalculator.permissions(
+            for: me.id,
+            memberRoleIds: myMembers[guildId]?.roles ?? [],
+            guild: guild,
+            channel: nil
+        )
+    }
+
     func canSendMessages(in channel: Channel) -> Bool {
         permissions(in: channel).contains(.sendMessages)
     }
