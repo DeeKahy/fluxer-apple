@@ -15,7 +15,7 @@ settings:
     SWIFT_VERSION: "6.0"
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_STYLE: Automatic
-    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: Y3MVULKQ9P
 targets:
   Fluxer-iOS:
     type: application
@@ -30,6 +30,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: dev.deekahy.fluxer
         PRODUCT_NAME: Fluxer
         INFOPLIST_KEY_NSMicrophoneUsageDescription: Fluxer uses the microphone for voice channels and calls.
+        INFOPLIST_KEY_NSCameraUsageDescription: Fluxer uses the camera for video calls.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -44,7 +45,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.deekahy.fluxer.mac
+        CODE_SIGN_IDENTITY: "-" 
         INFOPLIST_KEY_NSMicrophoneUsageDescription: Fluxer uses the microphone for voice channels and calls.
+        INFOPLIST_KEY_NSCameraUsageDescription: Fluxer uses the camera for video calls.
         PRODUCT_NAME: Fluxer
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         ENABLE_HARDENED_RUNTIME: NO

@@ -114,6 +114,40 @@ struct MessageView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
+                        if !session.canLoadOlderMessages(in: channel.id) {
+                            VStack(spacing: 12) {
+                                RoundedRectangle(cornerRadius: 18)
+                                    .fill(Theme.heroTile)
+                                    .frame(width: 60, height: 60)
+                                    .overlay {
+                                        if channel.guildId != nil {
+                                            Text("#")
+                                                .font(.system(size: 30))
+                                                .foregroundStyle(Theme.accentSoft)
+                                        } else {
+                                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                                .font(.system(size: 24))
+                                                .foregroundStyle(Theme.accentSoft)
+                                        }
+                                    }
+                                Text("Welcome to \(channelTitle)")
+                                    .font(.system(size: 22, weight: .heavy))
+                                    .foregroundStyle(Theme.text)
+                                    .multilineTextAlignment(.center)
+                                if let topic = channel.topic, !topic.isEmpty {
+                                    Text(topic)
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Theme.secondary)
+                                        .multilineTextAlignment(.center)
+                                } else {
+                                    Text("This is the very beginning of the conversation.")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Theme.secondary)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 22)
+                        }
                         if session.canLoadOlderMessages(in: channel.id),
                            !session.messages(in: channel.id).isEmpty {
                             ProgressView()
@@ -189,42 +223,58 @@ struct MessageView: View {
                 pendingFilesRow
                 slowmodeNotice
 
-                HStack(spacing: 8) {
+                HStack(alignment: .bottom, spacing: 8) {
                     if session.canAttachFiles(in: channel) {
                         attachButton
                     }
-                    Button {
-                        showEmojiPicker = true
-                    } label: {
-                        Image(systemName: "face.smiling")
-                            .font(.title2)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .sheet(isPresented: $showEmojiPicker) {
-                        EmojiPickerSheet { emoji in
-                            draft += (draft.isEmpty || draft.hasSuffix(" ") ? "" : " ") + emoji.messageToken + " "
-                        }
-                    }
-                    TextField("Message \(channelTitle)", text: $draft, axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .lineLimit(1...6)
-                        .focused($composerFocused)
-                        .onSubmit(send)
-                        .onChange(of: draft) { _, newValue in
-                            if !newValue.isEmpty && editing == nil {
-                                session.composerTyping(in: channel)
+                    HStack(alignment: .bottom, spacing: 4) {
+                        TextField("Message \(channelTitle)", text: $draft, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .lineLimit(1...6)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Theme.text)
+                            .padding(.leading, 14)
+                            .padding(.vertical, 9)
+                            .focused($composerFocused)
+                            .onSubmit(send)
+                            .onChange(of: draft) { _, newValue in
+                                if !newValue.isEmpty && editing == nil {
+                                    session.composerTyping(in: channel)
+                                }
                             }
+                        Button {
+                            showEmojiPicker = true
+                        } label: {
+                            Image(systemName: "face.smiling")
+                                .font(.system(size: 19))
+                                .foregroundStyle(Theme.icon)
+                                .padding(.trailing, 10)
+                                .padding(.bottom, 9)
                         }
-                    Button(action: send) {
-                        Image(systemName: editing != nil ? "checkmark.circle.fill" : "arrow.up.circle.fill")
-                            .font(.title2)
+                        .buttonStyle(SquishButtonStyle())
+                        .sheet(isPresented: $showEmojiPicker) {
+                            EmojiPickerSheet { emoji in
+                                draft += (draft.isEmpty || draft.hasSuffix(" ") ? "" : " ") + emoji.messageToken + " "
+                            }
+                            .preferredColorScheme(.dark)
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.tint)
+                    .background(Theme.field, in: RoundedRectangle(cornerRadius: 18))
+                    Button(action: send) {
+                        Image(systemName: editing != nil ? "checkmark" : "arrow.up")
+                            .font(.system(size: 16, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                canSend && slowmodeRemaining <= 0 ? Theme.accent : Theme.bubble,
+                                in: Circle()
+                            )
+                    }
+                    .buttonStyle(SquishButtonStyle())
                     .disabled(!canSend || isSending || slowmodeRemaining > 0)
                 }
-                .padding(12)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "lock.fill")
@@ -350,11 +400,13 @@ struct MessageView: View {
     private var attachButton: some View {
         #if os(iOS)
         PhotosPicker(selection: $photoItems, maxSelectionCount: 10, matching: .images) {
-            Image(systemName: "plus.circle")
-                .font(.title2)
+            Image(systemName: "plus")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Theme.icon)
+                .frame(width: 36, height: 36)
+                .background(Theme.bubble, in: Circle())
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
+        .buttonStyle(SquishButtonStyle())
         .onChange(of: photoItems) { _, items in
             guard !items.isEmpty else { return }
             photoItems = []
@@ -378,11 +430,13 @@ struct MessageView: View {
         Button {
             showFileImporter = true
         } label: {
-            Image(systemName: "plus.circle")
-                .font(.title2)
+            Image(systemName: "plus")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Theme.icon)
+                .frame(width: 36, height: 36)
+                .background(Theme.bubble, in: Circle())
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
+        .buttonStyle(SquishButtonStyle())
         #endif
     }
 
@@ -572,6 +626,8 @@ private struct MessageContentText: View {
 
     var body: some View {
         Text(session.renderMessageContent(content))
+            .font(.system(size: 15))
+            .foregroundStyle(Theme.messageText)
             .textSelection(.enabled)
             .environment(\.openURL, OpenURLAction { url in
                 guard url.scheme == MessageMarkdown.channelURLScheme,
@@ -604,10 +660,13 @@ private struct MessageRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             if showsHeader {
-                AvatarView(user: message.author, diameter: 36)
-                    .onTapGesture {
-                        profileUser = message.author
-                    }
+                Button {
+                    profileUser = message.author
+                } label: {
+                    AvatarView(user: message.author, diameter: 36)
+                }
+                .buttonStyle(SquishButtonStyle())
+                .tapTarget()
             } else {
                 Color.clear.frame(width: 36, height: 1)
             }
@@ -616,18 +675,23 @@ private struct MessageRow: View {
                     replyPreview(referenced)
                 }
                 if showsHeader {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
                         Text(message.author?.displayName ?? "Unknown")
-                            .font(.subheadline.bold())
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Theme.nameColor(for: message.author?.id))
+                            .contentShape(Rectangle().inset(by: -4))
+                            .onTapGesture {
+                                profileUser = message.author
+                            }
                         if let timestamp = message.timestamp {
                             Text(timestamp, style: .time)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.system(size: 11))
+                                .foregroundStyle(Theme.muted)
                         }
                         if message.editedTimestamp != nil {
                             Text("edited")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .font(.system(size: 10))
+                                .foregroundStyle(Theme.muted)
                         }
                     }
                 }
@@ -759,16 +823,17 @@ private struct MessageRow: View {
                             Text("\(reaction.count)")
                                 .font(.caption.monospacedDigit())
                         }
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, 9)
                         .padding(.vertical, 3)
                         .background(
-                            reaction.me == true ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.12),
+                            reaction.me == true ? Theme.accent.opacity(0.18) : Theme.surface,
                             in: Capsule()
                         )
                         .overlay {
-                            if reaction.me == true {
-                                Capsule().strokeBorder(Color.accentColor.opacity(0.5), lineWidth: 1)
-                            }
+                            Capsule().strokeBorder(
+                                reaction.me == true ? Theme.accent.opacity(0.55) : Theme.hairline,
+                                lineWidth: 1
+                            )
                         }
                     }
                     .buttonStyle(.plain)

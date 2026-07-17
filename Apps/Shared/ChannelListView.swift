@@ -100,15 +100,12 @@ struct ChannelListView: View {
             }
         }
         if let selectedChannel {
-            Button {
+            RowTap(isSelected: selectedChannel.wrappedValue?.id == channel.id) {
                 selectedChannel.wrappedValue = channel
             } label: {
                 label
-                    .foregroundStyle(
-                        selectedChannel.wrappedValue?.id == channel.id ? Color.accentColor : Color.primary
-                    )
             }
-            .buttonStyle(.plain)
+            .rowTapInsets()
             .contextMenu { inviteMenu(channel) }
         } else {
             NavigationLink(value: channel) {

@@ -27,6 +27,8 @@ final class AppSession {
     var gatewayConnected = false
     /// Last read message per channel.
     var readStates: [Snowflake: Snowflake] = [:]
+    /// Unread mention counts per channel, from read states and live mentions.
+    var mentionCounts: [Snowflake: Int] = [:]
     /// Users currently typing per channel, with when their indicator expires.
     var typingUsers: [Snowflake: [Snowflake: Date]] = [:]
     /// Users seen in READY, message authors, and DM recipients, for name lookups.
@@ -59,6 +61,9 @@ final class AppSession {
 
     var lastTypingSent: [Snowflake: Date] = [:]
     var cacheSaveTask: Task<Void, Never>?
+    /// Channels whose in-memory messages came from cache or predate a
+    /// reconnect, needing a server refresh next time they're viewed.
+    var staleChannels: Set<Snowflake> = []
 
     /// Voice connection owner.
     let voice = VoiceManager()
@@ -365,6 +370,7 @@ final class AppSession {
         messages = [:]
         channelsWithFullHistory = []
         channelsLoadingOlder = []
+        staleChannels = []
         readStates = [:]
         typingUsers = [:]
         knownUsers = [:]

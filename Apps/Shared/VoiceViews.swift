@@ -5,6 +5,8 @@ import FluxerKit
 struct VoiceBar: View {
     @Environment(AppSession.self) private var session
 
+    @State private var showStage = false
+
     var body: some View {
         if session.voice.isActive {
             HStack(spacing: 12) {
@@ -29,6 +31,13 @@ struct VoiceBar: View {
                 }
                 .buttonStyle(.bordered)
                 Button {
+                    Task { await session.voice.toggleCamera() }
+                } label: {
+                    Image(systemName: session.voice.cameraEnabled ? "video.fill" : "video.slash")
+                        .foregroundStyle(session.voice.cameraEnabled ? .green : .primary)
+                }
+                .buttonStyle(.bordered)
+                Button {
                     Task { await session.voice.leave() }
                 } label: {
                     Image(systemName: "phone.down.fill")
@@ -39,9 +48,22 @@ struct VoiceBar: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(.regularMaterial)
+            .background(Theme.sheet)
             .overlay(alignment: .top) {
-                Divider()
+                Theme.hairline.frame(height: 1)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                showStage = true
+            }
+            .sheet(isPresented: $showStage) {
+                VoiceStageView()
+            }
+            // Pop the stage open when video appears in the room.
+            .onChange(of: session.voice.videoTiles.isEmpty) { wasEmpty, isEmpty in
+                if wasEmpty && !isEmpty {
+                    showStage = true
+                }
             }
         }
     }
@@ -65,7 +87,7 @@ struct VoiceBar: View {
             if session.voice.isRinging {
                 return "Calling, waiting for an answer"
             }
-            let count = session.voice.roomParticipantIds.count
+            let count = max(session.voice.participantCount, 1)
             return count == 1 ? "Connected, just you" : "Connected, \(count) in voice"
         }
     }
@@ -146,9 +168,9 @@ struct IncomingCallBanner: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(.regularMaterial)
+            .background(Theme.sheet)
             .overlay(alignment: .bottom) {
-                Divider()
+                Theme.hairline.frame(height: 1)
             }
         }
     }
@@ -165,7 +187,7 @@ struct VoiceChannelRow: View {
     }
 
     var body: some View {
-        Button {
+        RowTap(isSelected: session.voice.connectedChannelId == channel.id) {
             Task { await session.joinVoice(channel) }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
@@ -202,6 +224,6 @@ struct VoiceChannelRow: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .rowTapInsets()
     }
 }

@@ -14,17 +14,25 @@ extension AppSession {
         !channelsWithFullHistory.contains(channelId)
     }
 
-    /// Loads history the first time a channel is opened. Later messages
+    /// Loads history the first time a channel is opened, and re-fetches
+    /// the newest page for channels whose content is cache-stale, so gaps
+    /// from offline time or reconnects can't survive. Later messages
     /// arrive through the gateway, older pages through loadOlderMessages.
     func loadMessages(for channel: Channel) async {
-        guard messages[channel.id] == nil else { return }
+        if messages[channel.id] != nil && !staleChannels.contains(channel.id) { return }
         do {
             let history = try await client.messages(in: channel.id, limit: Self.historyPageSize)
             if history.count < Self.historyPageSize {
                 channelsWithFullHistory.insert(channel.id)
+            } else {
+                channelsWithFullHistory.remove(channel.id)
             }
             // The API returns newest first, the UI wants oldest first.
+            // Replacing wholesale removes any hole between cached history
+            // and the present; older pages refetch on scroll.
             messages[channel.id] = history.sorted { $0.id < $1.id }
+            staleChannels.remove(channel.id)
+            scheduleCacheSave()
         } catch {
             lastError = Self.describe(error)
         }
@@ -218,6 +226,7 @@ extension AppSession {
 
     /// Optimistically records the read position and tells the server.
     func markRead(channelId: Snowflake, messageId: Snowflake) {
+        mentionCounts[channelId] = nil
         if let current = readStates[channelId], current >= messageId { return }
         readStates[channelId] = messageId
         Task {
@@ -270,6 +279,11 @@ extension AppSession {
         for entry in data["read_states"]?.arrayValue ?? [] {
             if let state = try? entry.decoded(as: ReadState.self) {
                 readStates[state.id] = state.lastMessageId
+                if let mentions = state.mentionCount, mentions > 0 {
+                    mentionCounts[state.id] = mentions
+                } else {
+                    mentionCounts[state.id] = nil
+                }
             }
         }
         for entry in data["users"]?.arrayValue ?? [] {
@@ -308,6 +322,12 @@ extension AppSession {
                 }
             }
         }
+        // A new session means the gateway replayed nothing: everything
+        // loaded before is suspect until refetched.
+        staleChannels.formUnion(messages.keys)
+        if let activeId = activeChannelId, let activeChannel = findChannel(activeId) {
+            Task { await loadMessages(for: activeChannel) }
+        }
         pinnedDMIds = Set((data["pinned_dms"]?.arrayValue ?? []).compactMap {
             $0.stringValue.flatMap(Snowflake.init(string:))
         })
@@ -317,6 +337,34 @@ extension AppSession {
             Task { await gateway.updatePresence(status: myStatus) }
         }
         gatewayLog.info("READY applied: \(self.guilds.count) guilds, \(self.privateChannels.count) DMs, \(self.relationships.count) relationships")
+    }
+
+    /// Fires a native notification for DMs and mentions from others.
+    func notifyIfNeeded(_ message: Message, raw: JSONValue?) {
+        guard let myId = currentUser?.id, message.author?.id != myId else { return }
+        guard let channel = findChannel(message.channelId) else { return }
+        let isDM = channel.type == .dm || channel.type == .groupDM
+        let mentioned = (raw?["mentions"]?.arrayValue ?? []).contains {
+            $0["id"]?.stringValue == myId.stringValue
+        } || raw?["mention_everyone"]?.boolValue == true
+        let title = channel.name.map { "#\($0)" }
+            ?? (channel.recipients ?? []).filter { $0.id != myId }.map(\.displayName).joined(separator: ", ")
+        if mentioned && activeChannelId != message.channelId {
+            mentionCounts[message.channelId, default: 0] += 1
+        }
+        NotificationManager.shared.notifyMessage(
+            message,
+            channelTitle: title,
+            isDM: isDM,
+            mentionsMe: mentioned,
+            isActiveChannel: activeChannelId == message.channelId
+        )
+    }
+
+    /// Dock and app icon badge: unread direct conversations.
+    func updateBadge() {
+        let unreadDMs = privateChannels.filter { isUnread($0) }.count
+        NotificationManager.shared.updateBadge(unreadCount: unreadDMs)
     }
 
     /// Moves a user between voice channel occupancy sets.

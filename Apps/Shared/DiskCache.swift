@@ -46,7 +46,9 @@ extension AppSession {
         }
         for (channelId, cached) in snapshot.messages where messages[channelId] == nil {
             messages[channelId] = cached
-            // History beyond the cache must be refetchable.
+            // Cached content is a placeholder until the server confirms
+            // what actually happened since it was written.
+            staleChannels.insert(channelId)
             channelsWithFullHistory.remove(channelId)
         }
         for (id, user) in snapshot.knownUsers where knownUsers[id] == nil {

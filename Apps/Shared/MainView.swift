@@ -35,12 +35,6 @@ struct MainView: View {
             splitLayout
             #endif
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            IncomingCallBanner()
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VoiceBar()
-        }
         .onChange(of: session.channelJump) { _, jump in
             guard let jump else { return }
             session.channelJump = nil
@@ -62,7 +56,7 @@ struct MainView: View {
     // MARK: Compact (iPhone)
 
     private var compactLayout: some View {
-        withOverlays(compactStack)
+        TabShell()
     }
 
     private var compactStack: some View {
@@ -97,7 +91,7 @@ struct MainView: View {
                             .foregroundStyle(.secondary)
                     }
                     ForEach(session.guilds) { guild in
-                        Button {
+                        RowTap {
                             // Land in the last visited channel (or the first
                             // one), with the channel list a back tap away.
                             compactPath.append(guild)
@@ -113,7 +107,7 @@ struct MainView: View {
                                     .foregroundStyle(.tertiary)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .rowTapInsets()
                         .contextMenu {
                             if guild.ownerId != session.currentUser?.id {
                                 Button("Leave guild", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
@@ -146,19 +140,19 @@ struct MainView: View {
     // MARK: Split (Mac, iPad)
 
     private var splitLayout: some View {
-        withOverlays(splitView)
+        DesktopShell()
     }
 
     private var splitView: some View {
         NavigationSplitView {
             List {
                 connectionRow
-                Button {
+                RowTap {
                     showFriends = true
                 } label: {
                     Label("Friends", systemImage: "person.2.fill")
                 }
-                .buttonStyle(.plain)
+                .rowTapInsets()
                 .sheet(isPresented: $showFriends) {
                     NavigationStack {
                         FriendsView()
@@ -174,13 +168,13 @@ struct MainView: View {
                             .foregroundStyle(.secondary)
                     }
                     ForEach(session.privateChannels) { channel in
-                        Button {
+                        RowTap(isSelected: selectedChannel?.id == channel.id && selectedGuild == nil) {
                             selectedGuild = nil
                             selectedChannel = channel
                         } label: {
                             dmRow(channel)
                         }
-                        .buttonStyle(.plain)
+                        .rowTapInsets()
                         .contextMenu {
                             Button(
                                 session.isDMPinned(channel) ? "Unpin conversation" : "Pin conversation",
@@ -197,13 +191,13 @@ struct MainView: View {
                             .foregroundStyle(.secondary)
                     }
                     ForEach(session.guilds) { guild in
-                        Button {
+                        RowTap(isSelected: selectedGuild?.id == guild.id) {
                             selectedGuild = guild
                             selectedChannel = session.defaultChannel(for: guild)
                         } label: {
                             guildRow(guild)
                         }
-                        .buttonStyle(.plain)
+                        .rowTapInsets()
                         .contextMenu {
                             if guild.ownerId != session.currentUser?.id {
                                 Button("Leave guild", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
@@ -223,11 +217,17 @@ struct MainView: View {
             if let guild = selectedGuild {
                 ChannelListView(guild: guild, selectedChannel: $selectedChannel)
             } else {
-                ContentUnavailableView(
-                    "Pick a guild",
-                    systemImage: "rectangle.3.group",
-                    description: Text("Choose a guild or a conversation from the sidebar.")
-                )
+                List {
+                    ForEach(session.privateChannels) { channel in
+                        RowTap(isSelected: selectedChannel?.id == channel.id) {
+                            selectedChannel = channel
+                        } label: {
+                            dmRow(channel)
+                        }
+                        .rowTapInsets()
+                    }
+                }
+                .navigationTitle("Direct messages")
             }
         } detail: {
             if let channel = selectedChannel {
