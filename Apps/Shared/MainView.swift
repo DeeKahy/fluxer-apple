@@ -223,11 +223,20 @@ struct MainView: View {
             if let guild = selectedGuild {
                 ChannelListView(guild: guild, selectedChannel: $selectedChannel)
             } else {
-                ContentUnavailableView(
-                    "Pick a guild",
-                    systemImage: "rectangle.3.group",
-                    description: Text("Choose a guild or a conversation from the sidebar.")
-                )
+                List {
+                    ForEach(session.privateChannels) { channel in
+                        Button {
+                            selectedChannel = channel
+                        } label: {
+                            dmRow(channel)
+                                .foregroundStyle(
+                                    selectedChannel?.id == channel.id ? Color.accentColor : Color.primary
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .navigationTitle("Direct messages")
             }
         } detail: {
             if let channel = selectedChannel {
