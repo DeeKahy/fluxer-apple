@@ -35,10 +35,18 @@ public struct InstanceConfig: Codable, Sendable, Equatable {
             throw APIError.invalidURL(input)
         }
         let (data, _) = try await session.data(from: origin)
-        guard let html = String(data: data, encoding: .utf8),
+        guard let html = String(data: data, encoding: .utf8) else {
+            throw APIError.decodingFailed(underlying: "No Fluxer bootstrap found at \(host)")
+        }
+        return try parse(html: html, origin: origin)
+    }
+
+    /// Parses the bootstrap JSON out of the web app's HTML.
+    public static func parse(html: String, origin: URL) throws -> InstanceConfig {
+        guard let host = origin.host(),
               let range = html.range(of: "__FLUXER_BOOTSTRAP__=")
         else {
-            throw APIError.decodingFailed(underlying: "No Fluxer bootstrap found at \(host)")
+            throw APIError.decodingFailed(underlying: "No Fluxer bootstrap found at \(origin)")
         }
         // The JSON object runs to the closing script tag.
         let tail = html[range.upperBound...]
