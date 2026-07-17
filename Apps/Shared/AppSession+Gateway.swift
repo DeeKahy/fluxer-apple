@@ -40,6 +40,7 @@ extension AppSession {
                   let messageId = event.data?["message_id"]?.stringValue.flatMap(Snowflake.init(string:))
             else { return }
             readStates[channelId] = messageId
+            mentionCounts[channelId] = nil
             updateBadge()
         case "MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE":
             guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),

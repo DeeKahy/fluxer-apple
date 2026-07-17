@@ -48,9 +48,9 @@ struct VoiceBar: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(.regularMaterial)
+            .background(Theme.sheet)
             .overlay(alignment: .top) {
-                Divider()
+                Theme.hairline.frame(height: 1)
             }
             .contentShape(Rectangle())
             .onTapGesture {
@@ -168,9 +168,9 @@ struct IncomingCallBanner: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(.regularMaterial)
+            .background(Theme.sheet)
             .overlay(alignment: .bottom) {
-                Divider()
+                Theme.hairline.frame(height: 1)
             }
         }
     }

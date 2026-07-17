@@ -32,6 +32,7 @@
 		5ACCA3443856FBD8558540B7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B9527E570305AC9F43DFA8 /* FluxerApp.swift */; };
 		5C5872AA707FBC0DB4D2E7DC /* MemberListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C98DC244799961A7D8C5C68 /* MemberListView.swift */; };
 		5CFF6E3149F1397405D7B236 /* AppSession+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1786FF8217257BDB7A532163 /* AppSession+Features.swift */; };
+		67A781A636CB67CE35397849 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62A32D166986B76A0A6D8C6 /* Theme.swift */; };
 		6E63117BBDF5F9A13A207070 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
 		6E93A864F966E06F84AB19A9 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = B0DD205E3FEE92631EC5C284 /* FluxerKit */; };
 		73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */; };
@@ -48,11 +49,13 @@
 		A3EEB705834CEA2B54C25A17 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = DB6DCDC8927CFA483E3B300B /* LiveKit */; };
 		AB6DA73141D205E5B1E5E37F /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
 		AD30210A2EF243341984B151 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
+		AF6B8534D50D9C47C51C4225 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62A32D166986B76A0A6D8C6 /* Theme.swift */; };
 		B5E5712786D8B7583BEF14C7 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
 		B5FCA27D71943CD210B16882 /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B6C1625084B8B513AA51F5E /* SweepViews.swift */; };
 		B74FF7E6BFD3448BDEF1B6BB /* MemberListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C98DC244799961A7D8C5C68 /* MemberListView.swift */; };
 		C2707F3CFFAF4427FBFC11E9 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */; };
 		C3ECDA9A69AF968D74638EDB /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */; };
+		CB4BD2FD1830D0A6123FC66A /* TabShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE3B676E528514D6B3CEC841 /* TabShell.swift */; };
 		CD733688376D87945EBCE120 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F43325EE37E253ADC7985F /* NotificationManager.swift */; };
 		D704C447D019BCDC315481C7 /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79732C766EF19446FBEB0EA1 /* MessageMarkdown.swift */; };
 		D79B78FD03D89593DBE69344 /* AppSession+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB9EBD25600C33106AF9D08 /* AppSession+Social.swift */; };
@@ -65,6 +68,7 @@
 		F1F699778EAF114B042BA5B9 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B9527E570305AC9F43DFA8 /* FluxerApp.swift */; };
 		F281790907E86ED64E6D8D75 /* UIStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBA1B4E19A71DA1A05E187F /* UIStyles.swift */; };
 		F2AD951B58CE12E29B6C81D6 /* AppSession+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B3398DA4B1C24B44EDD8B2 /* AppSession+Navigation.swift */; };
+		F871B01F38463C4F1A7BB586 /* TabShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE3B676E528514D6B3CEC841 /* TabShell.swift */; };
 		FD64F07718204A0FE4FC1450 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = C033D75BAE3A91A96A9A7A53 /* FluxerKit */; };
 		FFA47C70F88CB8CE1EE7B7F7 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0FF76EC0C0EEF129CA9382 /* FriendsView.swift */; };
 /* End PBXBuildFile section */
@@ -91,6 +95,7 @@
 		933AEBE1E248E169E6C6371A /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceManager.swift; sourceTree = "<group>"; };
 		A693F001C44911C2F4D2CBE6 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		AE3B676E528514D6B3CEC841 /* TabShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabShell.swift; sourceTree = "<group>"; };
 		B2F43325EE37E253ADC7985F /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		B7B6BA74AF607C8D6BBD8C65 /* HandoffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffView.swift; sourceTree = "<group>"; };
 		BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailConfirmationView.swift; sourceTree = "<group>"; };
@@ -98,6 +103,7 @@
 		C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Fluxer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStageView.swift; sourceTree = "<group>"; };
 		CDBA1B4E19A71DA1A05E187F /* UIStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIStyles.swift; sourceTree = "<group>"; };
+		D62A32D166986B76A0A6D8C6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		D64738FE6F72259636FA76F8 /* fluxer-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fluxer-apple"; path = .; sourceTree = SOURCE_ROOT; };
 		DD0FF76EC0C0EEF129CA9382 /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		E3920425BC39D63EECD07D72 /* ChannelListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelListView.swift; sourceTree = "<group>"; };
@@ -161,6 +167,8 @@
 				5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */,
 				01AC3A35D1CE4DB5A20689FC /* RootView.swift */,
 				8B6C1625084B8B513AA51F5E /* SweepViews.swift */,
+				AE3B676E528514D6B3CEC841 /* TabShell.swift */,
+				D62A32D166986B76A0A6D8C6 /* Theme.swift */,
 				CDBA1B4E19A71DA1A05E187F /* UIStyles.swift */,
 				A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */,
 				C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */,
@@ -302,6 +310,8 @@
 				C2707F3CFFAF4427FBFC11E9 /* RemoteImage.swift in Sources */,
 				0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */,
 				B5FCA27D71943CD210B16882 /* SweepViews.swift in Sources */,
+				F871B01F38463C4F1A7BB586 /* TabShell.swift in Sources */,
+				AF6B8534D50D9C47C51C4225 /* Theme.swift in Sources */,
 				F281790907E86ED64E6D8D75 /* UIStyles.swift in Sources */,
 				94551FC5CA1770D2CE54FE2D /* VoiceManager.swift in Sources */,
 				037AEFF7F046A0B31F860985 /* VoiceStageView.swift in Sources */,
@@ -337,6 +347,8 @@
 				73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */,
 				A2994F119944A491E195F7EE /* RootView.swift in Sources */,
 				91C7210FD43230799AA6127E /* SweepViews.swift in Sources */,
+				CB4BD2FD1830D0A6123FC66A /* TabShell.swift in Sources */,
+				67A781A636CB67CE35397849 /* Theme.swift in Sources */,
 				7F6ACDC4016D7CB858E4EAAF /* UIStyles.swift in Sources */,
 				D8593623F3947576EB0FCB28 /* VoiceManager.swift in Sources */,
 				23FE977D716EE4BD48007C14 /* VoiceStageView.swift in Sources */,

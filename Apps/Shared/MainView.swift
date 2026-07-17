@@ -62,7 +62,7 @@ struct MainView: View {
     // MARK: Compact (iPhone)
 
     private var compactLayout: some View {
-        withOverlays(compactStack)
+        TabShell()
     }
 
     private var compactStack: some View {

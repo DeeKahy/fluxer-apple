@@ -27,6 +27,8 @@ final class AppSession {
     var gatewayConnected = false
     /// Last read message per channel.
     var readStates: [Snowflake: Snowflake] = [:]
+    /// Unread mention counts per channel, from read states and live mentions.
+    var mentionCounts: [Snowflake: Int] = [:]
     /// Users currently typing per channel, with when their indicator expires.
     var typingUsers: [Snowflake: [Snowflake: Date]] = [:]
     /// Users seen in READY, message authors, and DM recipients, for name lookups.

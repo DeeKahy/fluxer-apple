@@ -226,6 +226,7 @@ extension AppSession {
 
     /// Optimistically records the read position and tells the server.
     func markRead(channelId: Snowflake, messageId: Snowflake) {
+        mentionCounts[channelId] = nil
         if let current = readStates[channelId], current >= messageId { return }
         readStates[channelId] = messageId
         Task {
@@ -278,6 +279,11 @@ extension AppSession {
         for entry in data["read_states"]?.arrayValue ?? [] {
             if let state = try? entry.decoded(as: ReadState.self) {
                 readStates[state.id] = state.lastMessageId
+                if let mentions = state.mentionCount, mentions > 0 {
+                    mentionCounts[state.id] = mentions
+                } else {
+                    mentionCounts[state.id] = nil
+                }
             }
         }
         for entry in data["users"]?.arrayValue ?? [] {
@@ -343,6 +349,9 @@ extension AppSession {
         } || raw?["mention_everyone"]?.boolValue == true
         let title = channel.name.map { "#\($0)" }
             ?? (channel.recipients ?? []).filter { $0.id != myId }.map(\.displayName).joined(separator: ", ")
+        if mentioned && activeChannelId != message.channelId {
+            mentionCounts[message.channelId, default: 0] += 1
+        }
         NotificationManager.shared.notifyMessage(
             message,
             channelTitle: title,
