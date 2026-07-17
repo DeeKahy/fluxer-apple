@@ -97,7 +97,7 @@ struct MainView: View {
                             .foregroundStyle(.secondary)
                     }
                     ForEach(session.guilds) { guild in
-                        Button {
+                        RowTap {
                             // Land in the last visited channel (or the first
                             // one), with the channel list a back tap away.
                             compactPath.append(guild)
@@ -113,7 +113,7 @@ struct MainView: View {
                                     .foregroundStyle(.tertiary)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .rowTapInsets()
                         .contextMenu {
                             if guild.ownerId != session.currentUser?.id {
                                 Button("Leave guild", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
@@ -153,12 +153,12 @@ struct MainView: View {
         NavigationSplitView {
             List {
                 connectionRow
-                Button {
+                RowTap {
                     showFriends = true
                 } label: {
                     Label("Friends", systemImage: "person.2.fill")
                 }
-                .buttonStyle(.plain)
+                .rowTapInsets()
                 .sheet(isPresented: $showFriends) {
                     NavigationStack {
                         FriendsView()
@@ -174,13 +174,13 @@ struct MainView: View {
                             .foregroundStyle(.secondary)
                     }
                     ForEach(session.privateChannels) { channel in
-                        Button {
+                        RowTap(isSelected: selectedChannel?.id == channel.id && selectedGuild == nil) {
                             selectedGuild = nil
                             selectedChannel = channel
                         } label: {
                             dmRow(channel)
                         }
-                        .buttonStyle(.plain)
+                        .rowTapInsets()
                         .contextMenu {
                             Button(
                                 session.isDMPinned(channel) ? "Unpin conversation" : "Pin conversation",
@@ -197,13 +197,13 @@ struct MainView: View {
                             .foregroundStyle(.secondary)
                     }
                     ForEach(session.guilds) { guild in
-                        Button {
+                        RowTap(isSelected: selectedGuild?.id == guild.id) {
                             selectedGuild = guild
                             selectedChannel = session.defaultChannel(for: guild)
                         } label: {
                             guildRow(guild)
                         }
-                        .buttonStyle(.plain)
+                        .rowTapInsets()
                         .contextMenu {
                             if guild.ownerId != session.currentUser?.id {
                                 Button("Leave guild", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
@@ -225,15 +225,12 @@ struct MainView: View {
             } else {
                 List {
                     ForEach(session.privateChannels) { channel in
-                        Button {
+                        RowTap(isSelected: selectedChannel?.id == channel.id) {
                             selectedChannel = channel
                         } label: {
                             dmRow(channel)
-                                .foregroundStyle(
-                                    selectedChannel?.id == channel.id ? Color.accentColor : Color.primary
-                                )
                         }
-                        .buttonStyle(.plain)
+                        .rowTapInsets()
                     }
                 }
                 .navigationTitle("Direct messages")

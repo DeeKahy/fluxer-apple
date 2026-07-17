@@ -13,6 +13,7 @@ struct FriendsView: View {
     @State private var section: Section = .friends
     @State private var addUsername = ""
     @State private var addResult: String?
+    @State private var profileUser: User?
 
     var body: some View {
         List {
@@ -87,6 +88,23 @@ struct FriendsView: View {
     }
 
     private func row(_ relationship: Relationship) -> some View {
+        RowTap {
+            if let user = relationship.user ?? session.knownUsers[relationship.id] {
+                profileUser = user
+            }
+        } label: {
+            rowContent(relationship)
+        }
+        .rowTapInsets()
+        .sheet(item: $profileUser) { user in
+            ProfileSheet(user: user)
+        }
+        .contextMenu {
+            contextItems(relationship)
+        }
+    }
+
+    private func rowContent(_ relationship: Relationship) -> some View {
         HStack(spacing: 10) {
             AvatarView(user: relationship.user ?? session.knownUsers[relationship.id], diameter: 32)
                 .overlay(alignment: .bottomTrailing) {
@@ -128,27 +146,29 @@ struct FriendsView: View {
                 .controlSize(.small)
             }
         }
-        .contextMenu {
-            switch relationship.type {
-            case .friend:
-                Button("Remove friend", systemImage: "person.badge.minus", role: .destructive) {
-                    Task { await session.removeRelationship(relationship) }
-                }
-            case .incomingRequest:
-                Button("Ignore request", systemImage: "xmark") {
-                    Task { await session.removeRelationship(relationship) }
-                }
-            case .outgoingRequest:
-                Button("Cancel request", systemImage: "xmark") {
-                    Task { await session.removeRelationship(relationship) }
-                }
-            case .blocked:
-                Button("Unblock", systemImage: "hand.raised.slash") {
-                    Task { await session.removeRelationship(relationship) }
-                }
-            case .unknown:
-                EmptyView()
+    }
+
+    @ViewBuilder
+    private func contextItems(_ relationship: Relationship) -> some View {
+        switch relationship.type {
+        case .friend:
+            Button("Remove friend", systemImage: "person.badge.minus", role: .destructive) {
+                Task { await session.removeRelationship(relationship) }
             }
+        case .incomingRequest:
+            Button("Ignore request", systemImage: "xmark") {
+                Task { await session.removeRelationship(relationship) }
+            }
+        case .outgoingRequest:
+            Button("Cancel request", systemImage: "xmark") {
+                Task { await session.removeRelationship(relationship) }
+            }
+        case .blocked:
+            Button("Unblock", systemImage: "hand.raised.slash") {
+                Task { await session.removeRelationship(relationship) }
+            }
+        case .unknown:
+            EmptyView()
         }
     }
 }

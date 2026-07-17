@@ -36,6 +36,7 @@
 		6E93A864F966E06F84AB19A9 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = B0DD205E3FEE92631EC5C284 /* FluxerKit */; };
 		73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */; };
 		766F7FBE1E334CC61E6D4881 /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
+		7F6ACDC4016D7CB858E4EAAF /* UIStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBA1B4E19A71DA1A05E187F /* UIStyles.swift */; };
 		8281EF13B82F6670B927D199 /* AppSession+Gateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79B1F0954056D12EDFCE3F42 /* AppSession+Gateway.swift */; };
 		879307989A18EE1B977364D4 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
 		8ED5F7B552077CB894EA36E4 /* AppSession+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A53A2B2B176143784FB6BBF /* AppSession+Messages.swift */; };
@@ -62,6 +63,7 @@
 		E745FA31C9FADC222CA7CE44 /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79732C766EF19446FBEB0EA1 /* MessageMarkdown.swift */; };
 		EC692CFA49866A54A34BDED1 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
 		F1F699778EAF114B042BA5B9 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90B9527E570305AC9F43DFA8 /* FluxerApp.swift */; };
+		F281790907E86ED64E6D8D75 /* UIStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBA1B4E19A71DA1A05E187F /* UIStyles.swift */; };
 		F2AD951B58CE12E29B6C81D6 /* AppSession+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B3398DA4B1C24B44EDD8B2 /* AppSession+Navigation.swift */; };
 		FD64F07718204A0FE4FC1450 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = C033D75BAE3A91A96A9A7A53 /* FluxerKit */; };
 		FFA47C70F88CB8CE1EE7B7F7 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0FF76EC0C0EEF129CA9382 /* FriendsView.swift */; };
@@ -95,6 +97,7 @@
 		C6B3398DA4B1C24B44EDD8B2 /* AppSession+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Navigation.swift"; sourceTree = "<group>"; };
 		C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Fluxer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStageView.swift; sourceTree = "<group>"; };
+		CDBA1B4E19A71DA1A05E187F /* UIStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIStyles.swift; sourceTree = "<group>"; };
 		D64738FE6F72259636FA76F8 /* fluxer-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fluxer-apple"; path = .; sourceTree = SOURCE_ROOT; };
 		DD0FF76EC0C0EEF129CA9382 /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		E3920425BC39D63EECD07D72 /* ChannelListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelListView.swift; sourceTree = "<group>"; };
@@ -158,6 +161,7 @@
 				5FF31706AFB82B8F7EC3D4FE /* RemoteImage.swift */,
 				01AC3A35D1CE4DB5A20689FC /* RootView.swift */,
 				8B6C1625084B8B513AA51F5E /* SweepViews.swift */,
+				CDBA1B4E19A71DA1A05E187F /* UIStyles.swift */,
 				A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */,
 				C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */,
 				1A6770BB9C50A9AF0F13F0CC /* VoiceViews.swift */,
@@ -298,6 +302,7 @@
 				C2707F3CFFAF4427FBFC11E9 /* RemoteImage.swift in Sources */,
 				0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */,
 				B5FCA27D71943CD210B16882 /* SweepViews.swift in Sources */,
+				F281790907E86ED64E6D8D75 /* UIStyles.swift in Sources */,
 				94551FC5CA1770D2CE54FE2D /* VoiceManager.swift in Sources */,
 				037AEFF7F046A0B31F860985 /* VoiceStageView.swift in Sources */,
 				02997F0FEC196CAB854F0BFB /* VoiceViews.swift in Sources */,
@@ -332,6 +337,7 @@
 				73A89AFBA18F8649236A6F35 /* RemoteImage.swift in Sources */,
 				A2994F119944A491E195F7EE /* RootView.swift in Sources */,
 				91C7210FD43230799AA6127E /* SweepViews.swift in Sources */,
+				7F6ACDC4016D7CB858E4EAAF /* UIStyles.swift in Sources */,
 				D8593623F3947576EB0FCB28 /* VoiceManager.swift in Sources */,
 				23FE977D716EE4BD48007C14 /* VoiceStageView.swift in Sources */,
 				2A90166765DF36759149B286 /* VoiceViews.swift in Sources */,

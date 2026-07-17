@@ -32,6 +32,7 @@ struct MemberListView: View {
 
     @State private var filter = ""
     @State private var memberToModerate: (member: GuildMember, ban: Bool)?
+    @State private var profileUser: User?
 
     private var guild: Guild? {
         session.guilds.first { $0.id == guildId }
@@ -54,21 +55,28 @@ struct MemberListView: View {
                     }
                 }
                 ForEach(Array(members.enumerated()), id: \.offset) { _, member in
-                    HStack(spacing: 10) {
-                        AvatarView(user: member.user, diameter: 32)
-                            .overlay(alignment: .bottomTrailing) {
-                                PresenceDot(status: session.presenceStatus(for: member.user?.id))
-                            }
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(member.displayName)
-                            if let username = member.user?.username, username != member.displayName {
-                                Text(username)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                    RowTap {
+                        if let user = member.user {
+                            profileUser = user
                         }
-                        Spacer()
+                    } label: {
+                        HStack(spacing: 10) {
+                            AvatarView(user: member.user, diameter: 32)
+                                .overlay(alignment: .bottomTrailing) {
+                                    PresenceDot(status: session.presenceStatus(for: member.user?.id))
+                                }
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(member.displayName)
+                                if let username = member.user?.username, username != member.displayName {
+                                    Text(username)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                        }
                     }
+                    .rowTapInsets()
                     .contextMenu {
                         if let userId = member.user?.id, userId != session.currentUser?.id {
                             Button("Message", systemImage: "bubble.left") {
@@ -93,6 +101,9 @@ struct MemberListView: View {
                         }
                     }
                 }
+            }
+            .sheet(item: $profileUser) { user in
+                ProfileSheet(user: user)
             }
             .searchable(text: $filter, prompt: "Filter members")
             .navigationTitle(guild.map { "Members of \($0.name)" } ?? "Members")

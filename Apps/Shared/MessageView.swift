@@ -604,10 +604,13 @@ private struct MessageRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             if showsHeader {
-                AvatarView(user: message.author, diameter: 36)
-                    .onTapGesture {
-                        profileUser = message.author
-                    }
+                Button {
+                    profileUser = message.author
+                } label: {
+                    AvatarView(user: message.author, diameter: 36)
+                }
+                .buttonStyle(SquishButtonStyle())
+                .tapTarget()
             } else {
                 Color.clear.frame(width: 36, height: 1)
             }
@@ -619,6 +622,10 @@ private struct MessageRow: View {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(message.author?.displayName ?? "Unknown")
                             .font(.subheadline.bold())
+                            .contentShape(Rectangle().inset(by: -4))
+                            .onTapGesture {
+                                profileUser = message.author
+                            }
                         if let timestamp = message.timestamp {
                             Text(timestamp, style: .time)
                                 .font(.caption)

@@ -187,7 +187,7 @@ struct VoiceChannelRow: View {
     }
 
     var body: some View {
-        Button {
+        RowTap(isSelected: session.voice.connectedChannelId == channel.id) {
             Task { await session.joinVoice(channel) }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
@@ -224,6 +224,6 @@ struct VoiceChannelRow: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .rowTapInsets()
     }
 }
