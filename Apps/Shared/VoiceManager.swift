@@ -26,6 +26,8 @@ final class VoiceManager {
     private(set) var roomParticipantIds: Set<Snowflake> = []
     /// Remote user ids currently in the room, to tell ringing from answered.
     private(set) var remoteParticipantIds: Set<Snowflake> = []
+    /// Raw room population, independent of identity parsing.
+    private(set) var participantCount = 0
     /// True while a DM call is waiting for the other side to pick up.
     private(set) var isRinging = false
     private(set) var cameraEnabled = false
@@ -226,11 +228,13 @@ final class VoiceManager {
                 remotes.insert(id)
             }
         }
+        participantCount = participants.count
         roomParticipantIds = ids
         remoteParticipantIds = remotes
         speakingUserIds = Set(room.activeSpeakers.compactMap(Self.userId(of:)))
         rebuildVideoTiles()
-        if isRinging && !remotes.isEmpty {
+        // Answer detection works even when identities don't parse.
+        if isRinging && (!remotes.isEmpty || !room.remoteParticipants.isEmpty) {
             isRinging = false
             onCallAnswered?()
         }
@@ -272,9 +276,10 @@ final class VoiceManager {
 
     private static func userId(of participant: Participant) -> Snowflake? {
         guard let identity = participant.identity?.stringValue else { return nil }
-        // Identities are user ids, possibly with a suffix after a colon.
-        let base = identity.split(separator: ":").first.map(String.init) ?? identity
-        return Snowflake(string: base)
+        // Identity formats vary; the user id is the longest digit run.
+        let runs = identity.split { !$0.isNumber }
+        guard let longest = runs.max(by: { $0.count < $1.count }) else { return nil }
+        return Snowflake(string: String(longest))
     }
 
     private func startRefreshLoop() {

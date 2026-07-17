@@ -87,7 +87,7 @@ struct VoiceBar: View {
             if session.voice.isRinging {
                 return "Calling, waiting for an answer"
             }
-            let count = session.voice.roomParticipantIds.count
+            let count = max(session.voice.participantCount, 1)
             return count == 1 ? "Connected, just you" : "Connected, \(count) in voice"
         }
     }
