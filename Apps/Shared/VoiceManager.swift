@@ -27,7 +27,18 @@ final class VoiceManager {
     private(set) var remoteParticipantIds: Set<Snowflake> = []
     /// True while a DM call is waiting for the other side to pick up.
     private(set) var isRinging = false
+    private(set) var cameraEnabled = false
+    /// Live video in the room: cameras and screen shares, local and remote.
+    private(set) var videoTiles: [VideoTile] = []
     var lastError: String?
+
+    struct VideoTile: Identifiable {
+        let id: String
+        let userId: Snowflake?
+        let track: VideoTrack
+        let isScreenShare: Bool
+        let isLocal: Bool
+    }
 
     private let room: Room
     private let delegateProxy = RoomDelegateProxy()
@@ -127,6 +138,8 @@ final class VoiceManager {
         refreshTask = nil
         isRinging = false
         remoteParticipantIds = []
+        cameraEnabled = false
+        videoTiles = []
         let guildId = pendingGuildId
         pendingGuildId = nil
         phase = .idle
@@ -139,6 +152,17 @@ final class VoiceManager {
     func toggleMute() async {
         muted.toggle()
         try? await room.localParticipant.setMicrophone(enabled: !muted)
+    }
+
+    func toggleCamera() async {
+        do {
+            try await room.localParticipant.setCamera(enabled: !cameraEnabled)
+            cameraEnabled.toggle()
+            refreshParticipants()
+        } catch {
+            voiceLog.error("Camera toggle failed: \(String(describing: error))")
+            lastError = "Camera unavailable."
+        }
     }
 
     // MARK: Room state
@@ -157,9 +181,37 @@ final class VoiceManager {
         roomParticipantIds = ids
         remoteParticipantIds = remotes
         speakingUserIds = Set(room.activeSpeakers.compactMap(Self.userId(of:)))
+        rebuildVideoTiles()
         if isRinging && !remotes.isEmpty {
             isRinging = false
             onCallAnswered?()
+        }
+    }
+
+    private func rebuildVideoTiles() {
+        var tiles: [VideoTile] = []
+        let participants = [room.localParticipant as Participant] + Array(room.remoteParticipants.values)
+        for participant in participants {
+            let userId = Self.userId(of: participant)
+            let isLocal = participant is LocalParticipant
+            for publication in participant.videoTracks {
+                guard let track = publication.track as? VideoTrack, !publication.isMuted else { continue }
+                tiles.append(
+                    VideoTile(
+                        id: "\(participant.identity?.stringValue ?? "?")-\(publication.sid.stringValue)",
+                        userId: userId,
+                        track: track,
+                        isScreenShare: publication.source == .screenShareVideo,
+                        isLocal: isLocal
+                    )
+                )
+            }
+        }
+        // Screen shares first, then remote cameras, own camera last.
+        videoTiles = tiles.sorted {
+            if $0.isScreenShare != $1.isScreenShare { return $0.isScreenShare }
+            if $0.isLocal != $1.isLocal { return !$0.isLocal }
+            return $0.id < $1.id
         }
     }
 
@@ -215,6 +267,18 @@ private final class RoomDelegateProxy: RoomDelegate, @unchecked Sendable {
     }
 
     func room(_ room: Room, didUpdateConnectionState connectionState: ConnectionState, from oldConnectionState: ConnectionState) {
+        onChange?()
+    }
+
+    func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
+        onChange?()
+    }
+
+    func room(_ room: Room, participant: RemoteParticipant, didUnsubscribeTrack publication: RemoteTrackPublication) {
+        onChange?()
+    }
+
+    func room(_ room: Room, participant: Participant, trackPublication: TrackPublication, didUpdateIsMuted isMuted: Bool) {
         onChange?()
     }
 }

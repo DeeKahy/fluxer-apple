@@ -11,12 +11,14 @@
 		0199EE78FC5BF492DC261DD6 /* AppSession+Gateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79B1F0954056D12EDFCE3F42 /* AppSession+Gateway.swift */; };
 		02997F0FEC196CAB854F0BFB /* VoiceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6770BB9C50A9AF0F13F0CC /* VoiceViews.swift */; };
 		0327EEEC16B4443864F98D4C /* AppSession+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB9EBD25600C33106AF9D08 /* AppSession+Social.swift */; };
+		037AEFF7F046A0B31F860985 /* VoiceStageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */; };
 		03A21269379DBF71189CC987 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1DDD02FB88D1369EED487936 /* LiveKit */; };
 		03AF3392B9BE97882917CC45 /* DiskCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680A8C876981C954899B2436 /* DiskCache.swift */; };
 		05626B0589D6B44EAE173749 /* CaptchaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */; };
 		0666CE21E7962CC45B865E2F /* ChannelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3920425BC39D63EECD07D72 /* ChannelListView.swift */; };
 		1A27BF4A8064F911A0F8C050 /* AppSession+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A53A2B2B176143784FB6BBF /* AppSession+Messages.swift */; };
 		22848D3E88921967EF3F4E36 /* AppSession+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B3398DA4B1C24B44EDD8B2 /* AppSession+Navigation.swift */; };
+		23FE977D716EE4BD48007C14 /* VoiceStageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */; };
 		2A90166765DF36759149B286 /* VoiceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6770BB9C50A9AF0F13F0CC /* VoiceViews.swift */; };
 		353A0EF40B2575AEBB93CF99 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793FFF4DFCA3B834A5FBF8CD /* AppSession.swift */; };
 		39391AD3E2004C475822CADE /* HandoffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7B6BA74AF607C8D6BBD8C65 /* HandoffView.swift */; };
@@ -89,6 +91,7 @@
 		BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailConfirmationView.swift; sourceTree = "<group>"; };
 		C6B3398DA4B1C24B44EDD8B2 /* AppSession+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Navigation.swift"; sourceTree = "<group>"; };
 		C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Fluxer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStageView.swift; sourceTree = "<group>"; };
 		D64738FE6F72259636FA76F8 /* fluxer-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fluxer-apple"; path = .; sourceTree = SOURCE_ROOT; };
 		DD0FF76EC0C0EEF129CA9382 /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		E3920425BC39D63EECD07D72 /* ChannelListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelListView.swift; sourceTree = "<group>"; };
@@ -152,6 +155,7 @@
 				01AC3A35D1CE4DB5A20689FC /* RootView.swift */,
 				8B6C1625084B8B513AA51F5E /* SweepViews.swift */,
 				A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */,
+				C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */,
 				1A6770BB9C50A9AF0F13F0CC /* VoiceViews.swift */,
 			);
 			name = Shared;
@@ -288,6 +292,7 @@
 				0046D30C08E80F8EA09C2A1E /* RootView.swift in Sources */,
 				B5FCA27D71943CD210B16882 /* SweepViews.swift in Sources */,
 				94551FC5CA1770D2CE54FE2D /* VoiceManager.swift in Sources */,
+				037AEFF7F046A0B31F860985 /* VoiceStageView.swift in Sources */,
 				02997F0FEC196CAB854F0BFB /* VoiceViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -320,6 +325,7 @@
 				A2994F119944A491E195F7EE /* RootView.swift in Sources */,
 				91C7210FD43230799AA6127E /* SweepViews.swift in Sources */,
 				D8593623F3947576EB0FCB28 /* VoiceManager.swift in Sources */,
+				23FE977D716EE4BD48007C14 /* VoiceStageView.swift in Sources */,
 				2A90166765DF36759149B286 /* VoiceViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -333,6 +339,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fluxer uses the camera for video calls.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fluxer uses the microphone for voice channels and calls.";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -351,6 +358,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fluxer uses the camera for video calls.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fluxer uses the microphone for voice channels and calls.";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -434,6 +442,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fluxer uses the camera for video calls.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fluxer uses the microphone for voice channels and calls.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -512,6 +521,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fluxer uses the camera for video calls.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Fluxer uses the microphone for voice channels and calls.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

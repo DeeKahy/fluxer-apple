@@ -5,6 +5,8 @@ import FluxerKit
 struct VoiceBar: View {
     @Environment(AppSession.self) private var session
 
+    @State private var showStage = false
+
     var body: some View {
         if session.voice.isActive {
             HStack(spacing: 12) {
@@ -29,6 +31,13 @@ struct VoiceBar: View {
                 }
                 .buttonStyle(.bordered)
                 Button {
+                    Task { await session.voice.toggleCamera() }
+                } label: {
+                    Image(systemName: session.voice.cameraEnabled ? "video.fill" : "video.slash")
+                        .foregroundStyle(session.voice.cameraEnabled ? .green : .primary)
+                }
+                .buttonStyle(.bordered)
+                Button {
                     Task { await session.voice.leave() }
                 } label: {
                     Image(systemName: "phone.down.fill")
@@ -42,6 +51,19 @@ struct VoiceBar: View {
             .background(.regularMaterial)
             .overlay(alignment: .top) {
                 Divider()
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                showStage = true
+            }
+            .sheet(isPresented: $showStage) {
+                VoiceStageView()
+            }
+            // Pop the stage open when video appears in the room.
+            .onChange(of: session.voice.videoTiles.isEmpty) { wasEmpty, isEmpty in
+                if wasEmpty && !isEmpty {
+                    showStage = true
+                }
             }
         }
     }
