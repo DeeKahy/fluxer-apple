@@ -69,14 +69,18 @@ upstream). Checked items are built and QA'd in the app.
 - [ ] Guild settings: notifications per guild (/users/@me/guilds/{id}/settings)
 - [ ] Discovery: browse public guilds (/discovery/guilds), join
 
-## Voice and video (big)
+## Voice and video
 
-- [ ] Voice state tracking: who is in which voice channel (voice_states in READY,
-      VOICE_STATE_UPDATE)
-- [ ] Join voice: gateway op 4, VOICE_SERVER_UPDATE, WebRTC media engine
-- [ ] DM calls: /channels/{id}/call, ring, stop-ringing
-- [ ] CallKit integration: native incoming call UI, PushKit wake
-- [ ] Screen share viewing (stream previews exist in the API)
+- [x] Voice state tracking: occupancy from READY and VOICE_STATE_UPDATE, avatars
+      with speaking rings in channel rows
+- [x] Join voice: op 4, VOICE_SERVER_UPDATE, LiveKit room, mic publish, presence
+      heartbeat, mute, voice bar with participants and speaking indicators
+- [x] DM calls: ring after connect (order matters, server rejects early rings),
+      outgoing calling state, incoming call banner with accept and decline
+- [ ] Ring sounds: ringtone while banner shows, ringback while calling
+- [ ] CallKit integration: native incoming call UI, PushKit wake (needs real device)
+- [ ] Video: camera tracks and screen share viewing over the same LiveKit room
+- [ ] Deafen, output device picker, e2ee_key handling for encrypted calls
 - [ ] Entrance sounds (they exist and they are funny)
 
 ## Notifications
