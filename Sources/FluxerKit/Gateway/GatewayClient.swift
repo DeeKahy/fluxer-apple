@@ -58,6 +58,25 @@ public actor GatewayClient {
         startReceiveLoop()
     }
 
+    /// Asks to join, move, or leave voice. A nil channel leaves.
+    public func updateVoiceState(
+        guildId: Snowflake?,
+        channelId: Snowflake?,
+        selfMute: Bool = false,
+        selfDeaf: Bool = false
+    ) async {
+        let payload = GatewayPayload(
+            op: .voiceStateUpdate,
+            d: .object([
+                "guild_id": guildId.map { JSONValue.string($0.stringValue) } ?? .null,
+                "channel_id": channelId.map { JSONValue.string($0.stringValue) } ?? .null,
+                "self_mute": .bool(selfMute),
+                "self_deaf": .bool(selfDeaf),
+            ])
+        )
+        await send(payload)
+    }
+
     /// Announces the user's own status: online, idle, dnd, or invisible.
     public func updatePresence(status: String) async {
         let payload = GatewayPayload(

@@ -581,6 +581,32 @@ public actor APIClient {
         _ = try await executeRaw(request)
     }
 
+    // MARK: Voice
+
+    /// Keeps the server's voice presence alive; the official client pings
+    /// every fifteen seconds while connected.
+    public func voiceHeartbeat(in channelId: Snowflake) async throws {
+        let data = Data("{}".utf8)
+        let request = try makeRequest("POST", Endpoint.voiceHeartbeat(channelId), bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
+    /// Rings the other side of a DM call.
+    public func ringCall(in channelId: Snowflake) async throws {
+        let data = Data("{}".utf8)
+        let request = try makeRequest("POST", Endpoint.callRing(channelId), bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
+    public func stopRinging(in channelId: Snowflake, recipients: [Snowflake]? = nil) async throws {
+        struct Body: Encodable {
+            let recipients: [Snowflake]?
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(recipients: recipients))
+        let request = try makeRequest("POST", Endpoint.callStopRinging(channelId), bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
     public func setDMPinned(_ channelId: Snowflake, pinned: Bool) async throws {
         let request = try makeRequest(pinned ? "PUT" : "DELETE", Endpoint.dmPin(channelId))
         _ = try await executeRaw(request)

@@ -35,6 +35,12 @@ struct MainView: View {
             splitLayout
             #endif
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            IncomingCallBanner()
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VoiceBar()
+        }
         .onChange(of: session.channelJump) { _, jump in
             guard let jump else { return }
             session.channelJump = nil

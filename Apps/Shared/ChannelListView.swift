@@ -19,7 +19,7 @@ struct ChannelListView: View {
     private var sections: [(category: Channel?, channels: [Channel])] {
         let all = (guild.channels ?? []).sorted { ($0.position ?? 0, $0.id) < ($1.position ?? 0, $1.id) }
         let categories = all.filter { $0.type == .guildCategory }
-        let textChannels = all.filter { $0.type == .guildText }
+        let textChannels = all.filter { $0.type == .guildText || $0.type == .guildVoice }
         var grouped: [(Channel?, [Channel])] = []
         let uncategorized = textChannels.filter { channel in
             channel.parentId == nil || !categories.contains { $0.id == channel.parentId }
@@ -82,6 +82,15 @@ struct ChannelListView: View {
 
     @ViewBuilder
     private func row(for channel: Channel) -> some View {
+        if channel.type == .guildVoice {
+            VoiceChannelRow(channel: channel)
+        } else {
+            textRow(for: channel)
+        }
+    }
+
+    @ViewBuilder
+    private func textRow(for channel: Channel) -> some View {
         let label = HStack {
             Label(channel.name ?? "channel", systemImage: "number")
                 .fontWeight(session.isUnread(channel) ? .bold : .regular)
