@@ -319,6 +319,31 @@ extension AppSession {
         gatewayLog.info("READY applied: \(self.guilds.count) guilds, \(self.privateChannels.count) DMs, \(self.relationships.count) relationships")
     }
 
+    /// Fires a native notification for DMs and mentions from others.
+    func notifyIfNeeded(_ message: Message, raw: JSONValue?) {
+        guard let myId = currentUser?.id, message.author?.id != myId else { return }
+        guard let channel = findChannel(message.channelId) else { return }
+        let isDM = channel.type == .dm || channel.type == .groupDM
+        let mentioned = (raw?["mentions"]?.arrayValue ?? []).contains {
+            $0["id"]?.stringValue == myId.stringValue
+        } || raw?["mention_everyone"]?.boolValue == true
+        let title = channel.name.map { "#\($0)" }
+            ?? (channel.recipients ?? []).filter { $0.id != myId }.map(\.displayName).joined(separator: ", ")
+        NotificationManager.shared.notifyMessage(
+            message,
+            channelTitle: title,
+            isDM: isDM,
+            mentionsMe: mentioned,
+            isActiveChannel: activeChannelId == message.channelId
+        )
+    }
+
+    /// Dock and app icon badge: unread direct conversations.
+    func updateBadge() {
+        let unreadDMs = privateChannels.filter { isUnread($0) }.count
+        NotificationManager.shared.updateBadge(unreadCount: unreadDMs)
+    }
+
     /// Moves a user between voice channel occupancy sets.
     func applyVoiceState(_ state: VoiceState) {
         for (channelId, users) in voiceChannelUsers where users.contains(state.userId) {

@@ -33,11 +33,14 @@ extension AppSession {
             if message.channelId == activeChannelId || message.author?.id == currentUser?.id {
                 markRead(channelId: message.channelId, messageId: message.id)
             }
+            notifyIfNeeded(message, raw: event.data)
+            updateBadge()
         case "MESSAGE_ACK":
             guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
                   let messageId = event.data?["message_id"]?.stringValue.flatMap(Snowflake.init(string:))
             else { return }
             readStates[channelId] = messageId
+            updateBadge()
         case "MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE":
             guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
                   let messageId = event.data?["message_id"]?.stringValue.flatMap(Snowflake.init(string:)),
@@ -63,15 +66,23 @@ extension AppSession {
                 }
             }
             if ringing.contains(myId), voice.connectedChannelId != channelId {
-                incomingCall = findChannel(channelId)
+                let channel = findChannel(channelId)
+                incomingCall = channel
+                let caller = (channel?.recipients ?? []).first { $0.id != myId }
+                NotificationManager.shared.notifyIncomingCall(
+                    from: caller?.displayName ?? channel?.name ?? "Fluxer",
+                    channelId: channelId
+                )
             } else if incomingCall?.id == channelId {
                 incomingCall = nil
+                NotificationManager.shared.clearCallNotification(channelId: channelId)
             }
         case "CALL_DELETE":
             guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)) else { return }
             if incomingCall?.id == channelId {
                 incomingCall = nil
             }
+            NotificationManager.shared.clearCallNotification(channelId: channelId)
         case "VOICE_SERVER_UPDATE":
             guard let update = try? event.data?.decoded(as: VoiceServerUpdate.self) else {
                 gatewayLog.error("VOICE_SERVER_UPDATE decode failed")
