@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Observation
 import os
@@ -164,6 +165,53 @@ final class VoiceManager {
             lastError = "Camera unavailable."
         }
     }
+
+    /// Switches between front and back camera while publishing.
+    func flipCamera() async {
+        guard let publication = room.localParticipant.videoTracks.first(where: { $0.source == .camera }),
+              let track = publication.track as? LocalVideoTrack,
+              let capturer = track.capturer as? CameraCapturer
+        else { return }
+        _ = try? await capturer.switchCameraPosition()
+    }
+
+    #if os(macOS)
+    private(set) var screenSharing = false
+
+    func toggleScreenShare() async {
+        do {
+            _ = try await room.localParticipant.setScreenShare(enabled: !screenSharing)
+            screenSharing.toggle()
+            refreshParticipants()
+        } catch {
+            voiceLog.error("Screen share failed: \(String(describing: error))")
+            lastError = "Screen share failed. Grant screen recording permission in System Settings."
+        }
+    }
+
+    /// Cameras available on this machine.
+    func cameraDevices() async -> [AVCaptureDevice] {
+        (try? await CameraCapturer.captureDevices()) ?? []
+    }
+
+    /// Republishes the camera from a specific device.
+    func useCamera(device: AVCaptureDevice) async {
+        do {
+            if cameraEnabled {
+                try await room.localParticipant.setCamera(enabled: false)
+            }
+            try await room.localParticipant.setCamera(
+                enabled: true,
+                captureOptions: CameraCaptureOptions(device: device)
+            )
+            cameraEnabled = true
+            refreshParticipants()
+        } catch {
+            voiceLog.error("Camera device switch failed: \(String(describing: error))")
+            lastError = "Couldn't use that camera."
+        }
+    }
+    #endif
 
     // MARK: Room state
 
