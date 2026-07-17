@@ -51,6 +51,27 @@ extension AppSession {
                 delta: event.name == "MESSAGE_REACTION_ADD" ? 1 : -1,
                 byMe: userId == currentUser?.id
             )
+        case "CALL_CREATE", "CALL_UPDATE":
+            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+                  let myId = currentUser?.id
+            else { return }
+            let ringing = (event.data?["ringing"]?.arrayValue ?? [])
+                .compactMap { $0.stringValue.flatMap(Snowflake.init(string:)) }
+            for entry in event.data?["voice_states"]?.arrayValue ?? [] {
+                if let state = try? entry.decoded(as: VoiceState.self) {
+                    applyVoiceState(state)
+                }
+            }
+            if ringing.contains(myId), voice.connectedChannelId != channelId {
+                incomingCall = findChannel(channelId)
+            } else if incomingCall?.id == channelId {
+                incomingCall = nil
+            }
+        case "CALL_DELETE":
+            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)) else { return }
+            if incomingCall?.id == channelId {
+                incomingCall = nil
+            }
         case "VOICE_SERVER_UPDATE":
             guard let update = try? event.data?.decoded(as: VoiceServerUpdate.self) else {
                 gatewayLog.error("VOICE_SERVER_UPDATE decode failed")

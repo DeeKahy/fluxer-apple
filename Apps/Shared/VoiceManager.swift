@@ -97,6 +97,8 @@ final class VoiceManager {
             refreshParticipants()
             startHeartbeat(channelId: channelId)
             startRefreshLoop()
+            onConnected?()
+            onConnected = nil
             voiceLog.info("Voice connected to channel \(channelId.stringValue)")
         } catch {
             voiceLog.error("Voice connect failed: \(String(describing: error))")
@@ -151,6 +153,10 @@ final class VoiceManager {
 
     /// Called once when a rung DM call gets picked up.
     var onCallAnswered: (() -> Void)?
+
+    /// Called once after the room connects, used to ring after the call
+    /// exists server side, the same order the official client uses.
+    var onConnected: (() -> Void)?
 
     private static func userId(of participant: Participant) -> Snowflake? {
         guard let identity = participant.identity?.stringValue else { return nil }

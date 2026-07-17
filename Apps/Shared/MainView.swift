@@ -35,6 +35,9 @@ struct MainView: View {
             splitLayout
             #endif
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            IncomingCallBanner()
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VoiceBar()
         }

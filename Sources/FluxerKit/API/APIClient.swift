@@ -598,8 +598,11 @@ public actor APIClient {
         _ = try await executeRaw(request)
     }
 
-    public func stopRinging(in channelId: Snowflake) async throws {
-        let data = Data("{}".utf8)
+    public func stopRinging(in channelId: Snowflake, recipients: [Snowflake]? = nil) async throws {
+        struct Body: Encodable {
+            let recipients: [Snowflake]?
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(recipients: recipients))
         let request = try makeRequest("POST", Endpoint.callStopRinging(channelId), bodyData: data)
         _ = try await executeRaw(request)
     }

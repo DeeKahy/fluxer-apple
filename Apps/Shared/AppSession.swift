@@ -62,6 +62,8 @@ final class AppSession {
 
     /// Voice connection owner.
     let voice = VoiceManager()
+    /// A DM call currently ringing this account.
+    var incomingCall: Channel?
     /// Who is in which voice channel, kept from READY and voice updates.
     var voiceChannelUsers: [Snowflake: Set<Snowflake>] = [:]
 

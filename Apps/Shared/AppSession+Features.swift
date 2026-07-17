@@ -182,13 +182,30 @@ extension AppSession {
 
     // MARK: Calls
 
-    /// Joins voice on a DM channel and rings the other side.
+    /// Joins voice on a DM channel, then rings once the call exists.
+    /// Ringing before the room connects is rejected by the server.
     func startCall(in channel: Channel) async {
-        await voice.join(channelId: channel.id, guildId: channel.guildId, ringing: true)
+        voice.onConnected = { [weak self] in
+            Task { try? await self?.client.ringCall(in: channel.id) }
+        }
         voice.onCallAnswered = { [weak self] in
             Task { try? await self?.client.stopRinging(in: channel.id) }
         }
-        try? await client.ringCall(in: channel.id)
+        await voice.join(channelId: channel.id, guildId: channel.guildId, ringing: true)
+    }
+
+    func acceptIncomingCall() async {
+        guard let channel = incomingCall else { return }
+        incomingCall = nil
+        await voice.join(channelId: channel.id, guildId: channel.guildId)
+    }
+
+    func declineIncomingCall() async {
+        guard let channel = incomingCall else { return }
+        incomingCall = nil
+        if let myId = currentUser?.id {
+            try? await client.stopRinging(in: channel.id, recipients: [myId])
+        }
     }
 
     func joinVoice(_ channel: Channel) async {

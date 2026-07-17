@@ -110,6 +110,50 @@ struct VoiceBar: View {
     }
 }
 
+/// Banner shown when someone is calling this account.
+struct IncomingCallBanner: View {
+    @Environment(AppSession.self) private var session
+
+    var body: some View {
+        if let channel = session.incomingCall {
+            HStack(spacing: 12) {
+                let caller = (channel.recipients ?? []).first { $0.id != session.currentUser?.id }
+                AvatarView(user: caller, diameter: 36)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(caller?.displayName ?? channel.name ?? "Incoming call")
+                        .font(.callout.bold())
+                    Text("Incoming call")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button {
+                    Task { await session.declineIncomingCall() }
+                } label: {
+                    Image(systemName: "phone.down.fill")
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                Button {
+                    Task { await session.acceptIncomingCall() }
+                } label: {
+                    Image(systemName: "phone.fill")
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(.regularMaterial)
+            .overlay(alignment: .bottom) {
+                Divider()
+            }
+        }
+    }
+}
+
 /// A voice channel row: occupants listed under the name, tap to join.
 struct VoiceChannelRow: View {
     @Environment(AppSession.self) private var session
