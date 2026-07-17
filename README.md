@@ -50,15 +50,15 @@ standard Web Push with client-chosen endpoints: the plan is a small self-hosted
 relay that receives Fluxer's encrypted pushes and forwards them through APNs to
 wake the app, end to end encrypted, without ever holding the account token.
 This requires a paid Apple Developer membership for the push entitlement, so it
-is parked until the project earns it. The same membership would enable CallKit
+is parked until the project earns it or i can afford it. The same membership would enable CallKit
 ringing on the lock screen and remove the seven day resigning cycle for
 sideloaded builds.
 
 ## Is there demand for this?
 
-One thing gates the next era of this app: the Apple Developer Program
-membership, 99 USD per year. Everything below is already technically mapped
-out and becomes buildable the moment the membership exists:
+One thing preventing me from improving this more is the lack of money to afford the Apple Developer Program
+membership. Everything below is already probably mapped
+out correctly and hopefully becomes buildable the moment the membership exists:
 
 - Push notifications and calls arriving with the app closed on iPhone.
   Fluxer uses standard Web Push, so a small relay can forward the encrypted
@@ -95,9 +95,7 @@ Free Apple accounts work; apps expire after seven days and need a rebuild.
 ## Relation to Fluxer
 
 This is an unofficial community client. Custom clients are explicitly
-welcomed by the Fluxer team: asked whether custom or modified clients and
-non-malicious user token automation are allowed, a Fluxer lead answered with
-a plain yes. The app uses the same documented HTTP and websocket APIs as the
+welcomed by the Fluxer. The app uses the same documented HTTP and websocket APIs as the
 official web client, and LiveKit for media, matching upstream.
 
 ## License
