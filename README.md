@@ -54,7 +54,7 @@ is parked until the project earns it. The same membership would enable CallKit
 ringing on the lock screen and remove the seven day resigning cycle for
 sideloaded builds.
 
-## Funding goal: notifications and a public release
+## Is there demand for this?
 
 One thing gates the next era of this app: the Apple Developer Program
 membership, 99 USD per year. Everything below is already technically mapped
@@ -71,8 +71,11 @@ out and becomes buildable the moment the membership exists:
   could install the app without owning a Mac.
 - An eventual App Store release, and no more seven day expiry on builds.
 
-If you'd like to help, use the Sponsor button on this repository. The goal
-is exactly one membership; anything past it goes to keeping it renewed.
+Before setting up any donation infrastructure I want to know people actually
+want this. If you'd use the app, give a thumbs up on
+[the CallKit and push issue](https://github.com/DeeKahy/fluxer-apple/issues/20)
+or open an issue and say hi. If enough people show up, funding the membership
+comes next.
 
 ## Building
 
