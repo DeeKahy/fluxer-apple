@@ -54,6 +54,22 @@ is parked until the project earns it. The same membership would enable CallKit
 ringing on the lock screen and remove the seven day resigning cycle for
 sideloaded builds.
 
+## Supporting the project
+
+The next milestone is real push notifications and lock screen call ringing.
+The technical path is clear (Fluxer uses standard Web Push, so a small relay
+can forward encrypted pushes through Apple's push service), but Apple only
+grants push entitlements to paid developer accounts. The funding goal is the
+Apple Developer Program membership, 99 USD per year, which unlocks:
+
+- Notifications and calls arriving with the app closed on iPhone
+- CallKit: incoming Fluxer calls ring like phone calls, answerable from
+  the lock screen
+- TestFlight distribution, so anyone can install without a Mac
+- No more seven day expiry on installed builds
+
+If you'd like to help, use the Sponsor button on this repository.
+
 ## Building
 
 Requirements: Xcode 26+, [XcodeGen](https://github.com/yonaskolb/XcodeGen).
