@@ -55,11 +55,20 @@ struct TabShell: View {
                 MessageView(channel: channel)
                     .background(Theme.bg)
             }
+            #if os(iOS)
             .toolbarBackground(Theme.bg, for: .navigationBar)
+            #endif
         }
+        #if os(iOS)
         .fullScreenCover(isPresented: $showWorkspaces) {
             WorkspaceSwitcherView(currentId: $currentWorkspaceId)
         }
+        #else
+        .sheet(isPresented: $showWorkspaces) {
+            WorkspaceSwitcherView(currentId: $currentWorkspaceId)
+                .frame(minWidth: 520, minHeight: 480)
+        }
+        #endif
         .onChange(of: session.channelJump) { _, jump in
             guard let jump else { return }
             session.channelJump = nil
