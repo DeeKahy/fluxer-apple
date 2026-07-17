@@ -41,12 +41,14 @@
 		8281EF13B82F6670B927D199 /* AppSession+Gateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79B1F0954056D12EDFCE3F42 /* AppSession+Gateway.swift */; };
 		879307989A18EE1B977364D4 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 851AA6BF6493F3B3857262AE /* LoginView.swift */; };
 		8ED5F7B552077CB894EA36E4 /* AppSession+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A53A2B2B176143784FB6BBF /* AppSession+Messages.swift */; };
+		905E86BC686CDCE740E7BACA /* DesktopShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46E852DE0321E528C59E0AA /* DesktopShell.swift */; };
 		91C7210FD43230799AA6127E /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B6C1625084B8B513AA51F5E /* SweepViews.swift */; };
 		94551FC5CA1770D2CE54FE2D /* VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3BB74A6ED981E83AA9793C5 /* VoiceManager.swift */; };
 		A1C066C8BB95ECBBC9B20A23 /* ChannelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3920425BC39D63EECD07D72 /* ChannelListView.swift */; };
 		A2994F119944A491E195F7EE /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AC3A35D1CE4DB5A20689FC /* RootView.swift */; };
 		A31583CB9030418C32B89D9C /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933AEBE1E248E169E6C6371A /* MainView.swift */; };
 		A3EEB705834CEA2B54C25A17 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = DB6DCDC8927CFA483E3B300B /* LiveKit */; };
+		A41CC5AD321D5A8F37633987 /* DesktopShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46E852DE0321E528C59E0AA /* DesktopShell.swift */; };
 		AB6DA73141D205E5B1E5E37F /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6D31550B0C4B6CF0F07CA7 /* MessageView.swift */; };
 		AD30210A2EF243341984B151 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E0FF137422B943D63FA25 /* AvatarView.swift */; };
 		AF6B8534D50D9C47C51C4225 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62A32D166986B76A0A6D8C6 /* Theme.swift */; };
@@ -99,6 +101,7 @@
 		B2F43325EE37E253ADC7985F /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		B7B6BA74AF607C8D6BBD8C65 /* HandoffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffView.swift; sourceTree = "<group>"; };
 		BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailConfirmationView.swift; sourceTree = "<group>"; };
+		C46E852DE0321E528C59E0AA /* DesktopShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopShell.swift; sourceTree = "<group>"; };
 		C6B3398DA4B1C24B44EDD8B2 /* AppSession+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Navigation.swift"; sourceTree = "<group>"; };
 		C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Fluxer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8F00DBD9B852E2EB73F2E19 /* VoiceStageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStageView.swift; sourceTree = "<group>"; };
@@ -152,6 +155,7 @@
 				021E0FF137422B943D63FA25 /* AvatarView.swift */,
 				9300655EE86CEB2D2E5D1164 /* CaptchaView.swift */,
 				E3920425BC39D63EECD07D72 /* ChannelListView.swift */,
+				C46E852DE0321E528C59E0AA /* DesktopShell.swift */,
 				680A8C876981C954899B2436 /* DiskCache.swift */,
 				BAA17525C32074FC22D2CA9B /* EmailConfirmationView.swift */,
 				90B9527E570305AC9F43DFA8 /* FluxerApp.swift */,
@@ -295,6 +299,7 @@
 				B5E5712786D8B7583BEF14C7 /* AvatarView.swift in Sources */,
 				489AC99EFB5FCBE3F2929A71 /* CaptchaView.swift in Sources */,
 				0666CE21E7962CC45B865E2F /* ChannelListView.swift in Sources */,
+				A41CC5AD321D5A8F37633987 /* DesktopShell.swift in Sources */,
 				5971BA4CEE0EA635B3B42D44 /* DiskCache.swift in Sources */,
 				DEEF089735F826AB89A39211 /* EmailConfirmationView.swift in Sources */,
 				5ACCA3443856FBD8558540B7 /* FluxerApp.swift in Sources */,
@@ -332,6 +337,7 @@
 				AD30210A2EF243341984B151 /* AvatarView.swift in Sources */,
 				05626B0589D6B44EAE173749 /* CaptchaView.swift in Sources */,
 				A1C066C8BB95ECBBC9B20A23 /* ChannelListView.swift in Sources */,
+				905E86BC686CDCE740E7BACA /* DesktopShell.swift in Sources */,
 				03AF3392B9BE97882917CC45 /* DiskCache.swift in Sources */,
 				4F6C27BB5379678A2173F5F3 /* EmailConfirmationView.swift in Sources */,
 				F1F699778EAF114B042BA5B9 /* FluxerApp.swift in Sources */,

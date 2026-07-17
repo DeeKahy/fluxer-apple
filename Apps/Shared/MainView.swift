@@ -146,7 +146,7 @@ struct MainView: View {
     // MARK: Split (Mac, iPad)
 
     private var splitLayout: some View {
-        withOverlays(splitView)
+        DesktopShell()
     }
 
     private var splitView: some View {
