@@ -59,6 +59,9 @@ final class AppSession {
 
     var lastTypingSent: [Snowflake: Date] = [:]
     var cacheSaveTask: Task<Void, Never>?
+    /// Channels whose in-memory messages came from cache or predate a
+    /// reconnect, needing a server refresh next time they're viewed.
+    var staleChannels: Set<Snowflake> = []
 
     /// Voice connection owner.
     let voice = VoiceManager()
@@ -365,6 +368,7 @@ final class AppSession {
         messages = [:]
         channelsWithFullHistory = []
         channelsLoadingOlder = []
+        staleChannels = []
         readStates = [:]
         typingUsers = [:]
         knownUsers = [:]

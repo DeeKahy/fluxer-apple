@@ -14,17 +14,25 @@ extension AppSession {
         !channelsWithFullHistory.contains(channelId)
     }
 
-    /// Loads history the first time a channel is opened. Later messages
+    /// Loads history the first time a channel is opened, and re-fetches
+    /// the newest page for channels whose content is cache-stale, so gaps
+    /// from offline time or reconnects can't survive. Later messages
     /// arrive through the gateway, older pages through loadOlderMessages.
     func loadMessages(for channel: Channel) async {
-        guard messages[channel.id] == nil else { return }
+        if messages[channel.id] != nil && !staleChannels.contains(channel.id) { return }
         do {
             let history = try await client.messages(in: channel.id, limit: Self.historyPageSize)
             if history.count < Self.historyPageSize {
                 channelsWithFullHistory.insert(channel.id)
+            } else {
+                channelsWithFullHistory.remove(channel.id)
             }
             // The API returns newest first, the UI wants oldest first.
+            // Replacing wholesale removes any hole between cached history
+            // and the present; older pages refetch on scroll.
             messages[channel.id] = history.sorted { $0.id < $1.id }
+            staleChannels.remove(channel.id)
+            scheduleCacheSave()
         } catch {
             lastError = Self.describe(error)
         }
@@ -307,6 +315,12 @@ extension AppSession {
                     applyVoiceState(state)
                 }
             }
+        }
+        // A new session means the gateway replayed nothing: everything
+        // loaded before is suspect until refetched.
+        staleChannels.formUnion(messages.keys)
+        if let activeId = activeChannelId, let activeChannel = findChannel(activeId) {
+            Task { await loadMessages(for: activeChannel) }
         }
         pinnedDMIds = Set((data["pinned_dms"]?.arrayValue ?? []).compactMap {
             $0.stringValue.flatMap(Snowflake.init(string:))
