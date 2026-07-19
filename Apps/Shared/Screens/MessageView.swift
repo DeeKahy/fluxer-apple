@@ -181,7 +181,9 @@ struct MessageView: View {
                                     .id(Self.unreadDividerId)
                                     // Once the divider has been on screen the
                                     // jump pill has nothing left to offer.
-                                    .onAppear { unreadJumpDismissed = true }
+                                    .onAppear {
+                                        withAnimation { unreadJumpDismissed = true }
+                                    }
                             }
                             MessageRow(
                                 message: entry.message,
@@ -741,8 +743,8 @@ struct MessageView: View {
         if unreadCount > 0, !unreadJumpDismissed {
             HStack(spacing: 10) {
                 Button {
-                    unreadJumpDismissed = true
                     withAnimation {
+                        unreadJumpDismissed = true
                         proxy.scrollTo(Self.unreadDividerId, anchor: .top)
                     }
                 } label: {
@@ -756,7 +758,7 @@ struct MessageView: View {
                 }
                 .buttonStyle(.plain)
                 Button {
-                    unreadJumpDismissed = true
+                    withAnimation { unreadJumpDismissed = true }
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .bold))
@@ -770,6 +772,14 @@ struct MessageView: View {
             .background(Theme.accent, in: Capsule())
             .shadow(color: .black.opacity(0.3), radius: 8, y: 3)
             .padding(.top, 8)
+            .transition(.opacity.combined(with: .move(edge: .top)))
+            // The pill is an offer at the moment of opening, not a badge;
+            // if it goes untouched it clears itself.
+            .task {
+                try? await Task.sleep(for: .seconds(8))
+                guard !Task.isCancelled else { return }
+                withAnimation { unreadJumpDismissed = true }
+            }
         }
     }
 
