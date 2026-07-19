@@ -27,6 +27,8 @@ struct MessageView: View {
     /// scroll position binding and mirrored into session.scrollAnchors.
     @State private var scrolledId: Snowflake?
     @State private var unreadJumpDismissed = false
+    /// Whether the sentinel row after the newest message is on screen.
+    @State private var bottomVisible = true
     @FocusState private var composerFocused: Bool
     #if os(iOS)
     @State private var photoItems: [PhotosPickerItem] = []
@@ -109,6 +111,15 @@ struct MessageView: View {
     /// Scroll target for the new messages divider, distinct from message ids.
     private static let unreadDividerId = "new-messages-divider"
 
+    /// Invisible row after the newest message; its visibility is the
+    /// reliable "at the bottom" signal.
+    private static let bottomSentinelId = "bottom-sentinel"
+
+    /// How many messages above the newest counts as far enough away to
+    /// save a resume spot (and show the jump-to-bottom button). Anything
+    /// closer reopens pinned to the newest message.
+    private static let resumeThreshold = 12
+
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -166,8 +177,15 @@ struct MessageView: View {
                                 .padding(.vertical, 8)
                                 .onAppear {
                                     Task {
-                                        if let anchor = await session.loadOlderMessages(for: channel) {
-                                            proxy.scrollTo(anchor, anchor: .top)
+                                        // Keep the message that was at the
+                                        // bottom edge exactly there, so the
+                                        // prepend doesn't shift the reading
+                                        // spot the way pinning the old top
+                                        // row used to.
+                                        let keep = scrolledId
+                                        if await session.loadOlderMessages(for: channel) != nil, let keep {
+                                            try? await Task.sleep(for: .milliseconds(50))
+                                            proxy.scrollTo(keep, anchor: .bottom)
                                         }
                                     }
                                 }
@@ -198,6 +216,15 @@ struct MessageView: View {
                             )
                             .id(entry.message.id)
                         }
+                        // Ground truth for "parked at the newest message",
+                        // instead of guessing from the scroll position id,
+                        // which often reports a row near the bottom rather
+                        // than the actual last one.
+                        Color.clear
+                            .frame(height: 1)
+                            .id(Self.bottomSentinelId)
+                            .onAppear { bottomVisible = true }
+                            .onDisappear { bottomVisible = false }
                     }
                     .scrollTargetLayout()
                     .padding(.horizontal)
@@ -213,12 +240,22 @@ struct MessageView: View {
                 .overlay(alignment: .top) {
                     unreadJumpPill(proxy)
                 }
+                .overlay(alignment: .bottomTrailing) {
+                    jumpToBottomButton(proxy)
+                        .animation(.easeOut(duration: 0.2), value: session.scrollAnchors[channel.id] != nil)
+                }
                 .onChange(of: scrolledId) { _, newValue in
                     guard let newValue else { return }
-                    if newValue == session.messages(in: channel.id).last?.id {
-                        session.scrollAnchors[channel.id] = nil
-                    } else {
+                    // Only positions meaningfully far from the bottom are
+                    // worth resuming; the old exact-last-id comparison saved
+                    // an anchor for being one row off, which is why channels
+                    // kept reopening half a screen up.
+                    let channelMessages = session.messages(in: channel.id)
+                    if let index = channelMessages.firstIndex(where: { $0.id == newValue }),
+                       channelMessages.count - index > Self.resumeThreshold {
                         session.scrollAnchors[channel.id] = newValue
+                    } else {
+                        session.scrollAnchors[channel.id] = nil
                     }
                 }
                 // Keyed on the newest id, not the count, so prepending
@@ -228,7 +265,10 @@ struct MessageView: View {
                 // reading older history, unless the new message is our own.
                 .onChange(of: session.messages(in: channel.id).last?.id) { oldLast, _ in
                     let last = session.messages(in: channel.id).last
-                    let wasAtBottom = scrolledId == nil || scrolledId == oldLast
+                    // The sentinel is the real signal; the id comparisons
+                    // stay as a fallback for the moments the lazy stack
+                    // hasn't instantiated it.
+                    let wasAtBottom = bottomVisible || scrolledId == nil || scrolledId == oldLast
                     let ownMessage = last?.author?.id == session.currentUser?.id
                     guard wasAtBottom || ownMessage else { return }
                     Task { @MainActor in
@@ -240,6 +280,7 @@ struct MessageView: View {
                 }
                 .task(id: channel.id) {
                     scrolledId = nil
+                    bottomVisible = true
                     unreadJumpDismissed = false
                     session.activeChannelId = channel.id
                     session.recordVisit(channel)
@@ -726,6 +767,35 @@ struct MessageView: View {
                 await session.sendMessage(content, in: channel, replyTo: reply, files: files)
             }
             isSending = false
+        }
+    }
+
+    /// Floating jump back to the newest message. Appears exactly when the
+    /// resume-spot saving arms, so its presence doubles as the signal that
+    /// you are no longer reading the latest messages.
+    @ViewBuilder
+    private func jumpToBottomButton(_ proxy: ScrollViewProxy) -> some View {
+        if session.scrollAnchors[channel.id] != nil {
+            Button {
+                session.scrollAnchors[channel.id] = nil
+                scrolledId = nil
+                if let last = session.messages(in: channel.id).last {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
+                }
+                session.markChannelRead(channel)
+            } label: {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Theme.text)
+                    .frame(width: 40, height: 40)
+                    .liquidGlassCircle()
+            }
+            .buttonStyle(SquishButtonStyle())
+            .padding(.trailing, 14)
+            .padding(.bottom, 10)
+            .transition(.opacity.combined(with: .scale(scale: 0.8)))
         }
     }
 
