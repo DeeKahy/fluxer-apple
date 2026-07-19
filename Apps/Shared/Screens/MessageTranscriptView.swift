@@ -21,13 +21,21 @@ struct MessageTranscriptView: View {
     let onDelete: (Message) -> Void
 
     @State private var position = ScrollPosition(idType: Snowflake.self)
-    /// Points between the viewport's bottom edge and the end of the content.
-    @State private var distanceFromBottom: CGFloat = 0
-    @State private var viewportHeight: CGFloat = 0
     @State private var unreadJumpDismissed = false
 
+    /// Live scroll metrics, deliberately kept in a plain reference box
+    /// instead of @State: they change on every scrolled pixel, nothing in
+    /// the rendered body reads them, and routing them through SwiftUI
+    /// state re-rendered the transcript per frame (the reply-gesture
+    /// freezes). Only event closures read these.
+    private final class MetricsBox {
+        var distanceFromBottom: CGFloat = 0
+        var viewportHeight: CGFloat = 0
+    }
+    @State private var metrics = MetricsBox()
+
     /// Close enough to the newest message to count as reading live.
-    private var isAtBottom: Bool { distanceFromBottom < 40 }
+    private var isAtBottom: Bool { metrics.distanceFromBottom < 40 }
 
     /// Scroll target for the new messages divider, distinct from message ids.
     private static let unreadDividerId = "new-messages-divider"
@@ -99,12 +107,21 @@ struct MessageTranscriptView: View {
                 viewportHeight: geometry.containerSize.height
             )
         } action: { old, new in
-            distanceFromBottom = new.distanceFromBottom
-            viewportHeight = new.viewportHeight
+            // This fires for every scrolled pixel and every frame of a
+            // keyboard or composer animation. Anything here that touches
+            // observable state unconditionally re-renders the whole
+            // transcript per frame and freezes the UI, so the metrics go
+            // into the plain box and the remaining writes are guarded.
+            metrics.distanceFromBottom = new.distanceFromBottom
+            metrics.viewportHeight = new.viewportHeight
             // Belt and braces for viewport shrinks (composer growing a
-            // line, banners appearing): if we were at the bottom, stay
-            // there even when the size-change anchor doesn't cover it.
-            if new.viewportHeight < old.viewportHeight, old.distanceFromBottom < 40 {
+            // line, banners appearing): if we were at the bottom and the
+            // size-change anchor did NOT keep us pinned, re-pin. When the
+            // anchor does its job the distance stays at zero and this
+            // never runs.
+            if new.viewportHeight < old.viewportHeight,
+               old.distanceFromBottom < 40,
+               new.distanceFromBottom > 1 {
                 position.scrollTo(edge: .bottom)
             }
             updateResumeAnchor()
@@ -150,11 +167,15 @@ struct MessageTranscriptView: View {
     /// closer reopens pinned to the bottom, and the saved anchor doubles
     /// as the jump-to-bottom button's visibility.
     private func updateResumeAnchor() {
-        if distanceFromBottom > max(viewportHeight * 1.5, 400) {
-            if let id = position.viewID(type: Snowflake.self) {
+        // Writing to the session invalidates every view observing it, so
+        // only touch it when the anchor genuinely changes; this runs on
+        // every scroll tick.
+        if metrics.distanceFromBottom > max(metrics.viewportHeight * 1.5, 400) {
+            if let id = position.viewID(type: Snowflake.self),
+               session.scrollAnchors[channel.id] != id {
                 session.scrollAnchors[channel.id] = id
             }
-        } else {
+        } else if session.scrollAnchors[channel.id] != nil {
             session.scrollAnchors[channel.id] = nil
         }
     }
