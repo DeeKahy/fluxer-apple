@@ -1,8 +1,9 @@
 import SwiftUI
 import FluxerKit
 
-/// iPhone shell in the redesigned look: five tabs over an ink background
-/// with a blurred custom tab bar, guilds presented as workspaces.
+/// iPhone shell on native navigation: a system TabView (Liquid Glass bar on
+/// iOS 26), large titles, and a native search field. Guilds are workspaces,
+/// switched from the home title menu or the grid switcher.
 struct TabShell: View {
     @Environment(AppSession.self) private var session
 
@@ -11,72 +12,15 @@ struct TabShell: View {
     }
 
     @State private var tab: Tab = .home
-    @State private var path = NavigationPath()
+    @State private var homePath = NavigationPath()
+    @State private var dmsPath = NavigationPath()
+    @State private var searchPath = NavigationPath()
     @State private var showWorkspaces = false
     @AppStorage("currentWorkspace") private var currentWorkspaceId = ""
 
     private var currentGuild: Guild? {
         session.guilds.first { $0.id.stringValue == currentWorkspaceId } ?? session.guilds.first
     }
-
-    var body: some View {
-        NavigationStack(path: $path) {
-            ZStack {
-                Theme.bg.ignoresSafeArea()
-                switch tab {
-                case .home:
-                    HomeTab(guild: currentGuild, openWorkspaces: { showWorkspaces = true }) { channel in
-                        path.append(channel)
-                    }
-                case .dms:
-                    DMsTab { channel in
-                        path.append(channel)
-                    }
-                case .activity:
-                    ActivityTab()
-                case .search:
-                    SearchTab { channel in
-                        path.append(channel)
-                    }
-                case .you:
-                    YouTab()
-                }
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                VStack(spacing: 0) {
-                    VoiceBar()
-                    tabBar
-                }
-            }
-            .safeAreaInset(edge: .top, spacing: 0) {
-                IncomingCallBanner()
-            }
-            .navigationDestination(for: Channel.self) { channel in
-                MessageView(channel: channel)
-                    .background(Theme.bg)
-            }
-            #if os(iOS)
-            .toolbarBackground(Theme.bg, for: .navigationBar)
-            #endif
-        }
-        #if os(iOS)
-        .fullScreenCover(isPresented: $showWorkspaces) {
-            WorkspaceSwitcherView(currentId: $currentWorkspaceId)
-        }
-        #else
-        .sheet(isPresented: $showWorkspaces) {
-            WorkspaceSwitcherView(currentId: $currentWorkspaceId)
-                .frame(minWidth: 520, minHeight: 480)
-        }
-        #endif
-        .onChange(of: session.channelJump) { _, jump in
-            guard let jump else { return }
-            session.channelJump = nil
-            path.append(jump)
-        }
-    }
-
-    // MARK: Tab bar
 
     private var unreadDMCount: Int {
         session.privateChannels.filter { session.isUnread($0) }.count
@@ -86,47 +30,126 @@ struct TabShell: View {
         session.mentionCounts.values.reduce(0, +)
     }
 
-    private var tabBar: some View {
-        HStack(spacing: 0) {
-            tabItem(.home, icon: "house", label: "Home", badge: 0)
-            tabItem(.dms, icon: "bubble.left", label: "DMs", badge: unreadDMCount)
-            tabItem(.activity, icon: "bell", label: "Activity", badge: mentionTotal)
-            tabItem(.search, icon: "magnifyingglass", label: "Search", badge: 0)
-            tabItem(.you, icon: "person", label: "You", badge: 0)
-        }
-        .padding(.top, 8)
-        .padding(.bottom, 2)
-        .background(.ultraThinMaterial)
-        .overlay(alignment: .top) {
-            Theme.hairline.frame(height: 1)
+    /// Re-tapping the home tab brings up the workspace switcher.
+    private var tabSelection: Binding<Tab> {
+        Binding {
+            tab
+        } set: { newValue in
+            if newValue == tab, newValue == .home {
+                showWorkspaces = true
+            }
+            tab = newValue
         }
     }
 
-    private func tabItem(_ target: Tab, icon: String, label: String, badge: Int) -> some View {
-        Button {
-            // Re-tapping the home tab brings up the workspace switcher.
-            if tab == target, target == .home {
-                showWorkspaces = true
-            } else {
-                tab = target
+    var body: some View {
+        decoratedTabView
+            .safeAreaInset(edge: .top, spacing: 0) {
+                IncomingCallBanner()
             }
-        } label: {
-            VStack(spacing: 3) {
-                Image(systemName: tab == target ? icon + ".fill" : icon)
-                    .font(.system(size: 21, weight: .regular))
-                    .overlay(alignment: .topTrailing) {
-                        if badge > 0 {
-                            CountBadge(count: badge)
-                                .offset(x: 12, y: -6)
-                        }
+            #if os(iOS)
+            .fullScreenCover(isPresented: $showWorkspaces) {
+                WorkspaceSwitcherView(currentId: $currentWorkspaceId)
+            }
+            #else
+            .sheet(isPresented: $showWorkspaces) {
+                WorkspaceSwitcherView(currentId: $currentWorkspaceId)
+                    .frame(minWidth: 520, minHeight: 480)
+            }
+            #endif
+            .onChange(of: session.channelJump) { _, jump in
+                guard let jump else { return }
+                session.channelJump = nil
+                if jump.type == .dm || jump.type == .groupDM {
+                    tab = .dms
+                    dmsPath.append(jump)
+                } else {
+                    tab = .home
+                    homePath.append(jump)
+                }
+            }
+    }
+
+    /// The voice pill rides in the iOS 26 bottom accessory slot (the Music
+    /// mini-player treatment); older systems get an inset bar above the tabs.
+    @ViewBuilder
+    private var decoratedTabView: some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            // The accessory capsule renders even when its content is empty,
+            // so only attach it while a call is live.
+            if session.voice.isActive {
+                tabView
+                    .tabBarMinimizeBehavior(.onScrollDown)
+                    .tabViewBottomAccessory {
+                        VoiceAccessoryBar()
                     }
-                Text(label)
-                    .font(.system(size: 10, weight: .semibold))
+            } else {
+                tabView
+                    .tabBarMinimizeBehavior(.onScrollDown)
             }
-            .foregroundStyle(tab == target ? Theme.text : Theme.muted)
-            .frame(maxWidth: .infinity)
+        } else {
+            tabView
+                .safeAreaInset(edge: .bottom, spacing: 0) { VoiceBar() }
         }
-        .buttonStyle(SquishButtonStyle())
+        #else
+        tabView
+            .safeAreaInset(edge: .bottom, spacing: 0) { VoiceBar() }
+        #endif
+    }
+
+    private var tabView: some View {
+        TabView(selection: tabSelection) {
+            NavigationStack(path: $homePath) {
+                HomeTab(guild: currentGuild, openWorkspaces: { showWorkspaces = true }) { channel in
+                    homePath.append(channel)
+                }
+                .navigationDestination(for: Channel.self) { channel in
+                    MessageView(channel: channel)
+                        .background(Theme.bg)
+                }
+            }
+            .tabItem { Label("Home", systemImage: "house") }
+            .tag(Tab.home)
+
+            NavigationStack(path: $dmsPath) {
+                DMsTab { channel in
+                    dmsPath.append(channel)
+                }
+                .navigationDestination(for: Channel.self) { channel in
+                    MessageView(channel: channel)
+                        .background(Theme.bg)
+                }
+            }
+            .tabItem { Label("DMs", systemImage: "bubble.left") }
+            .badge(unreadDMCount)
+            .tag(Tab.dms)
+
+            NavigationStack {
+                ActivityTab()
+            }
+            .tabItem { Label("Activity", systemImage: "bell") }
+            .badge(mentionTotal)
+            .tag(Tab.activity)
+
+            NavigationStack(path: $searchPath) {
+                SearchTab { channel in
+                    searchPath.append(channel)
+                }
+                .navigationDestination(for: Channel.self) { channel in
+                    MessageView(channel: channel)
+                        .background(Theme.bg)
+                }
+            }
+            .tabItem { Label("Search", systemImage: "magnifyingglass") }
+            .tag(Tab.search)
+
+            NavigationStack {
+                YouTab()
+            }
+            .tabItem { Label("You", systemImage: "person") }
+            .tag(Tab.you)
+        }
     }
 }
 
@@ -144,21 +167,42 @@ struct HomeTab: View {
     @State private var showSaved = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            ScrollView {
-                VStack(spacing: 0) {
-                    quickRows
-                    if let guild {
-                        channelSections(guild)
-                    } else {
-                        Text("Join a guild to get started")
-                            .foregroundStyle(Theme.muted)
-                            .padding(.top, 60)
-                    }
+        ScrollView {
+            VStack(spacing: 0) {
+                quickRows
+                if let guild {
+                    channelSections(guild)
+                } else {
+                    Text("Join a guild to get started")
+                        .foregroundStyle(Theme.muted)
+                        .padding(.top, 60)
                 }
-                .padding(.horizontal, 8)
-                .padding(.bottom, 24)
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 24)
+        }
+        .background(Theme.bg)
+        .navigationTitle(guild?.name ?? "Fluxer")
+        .toolbarTitleMenu {
+            ForEach(session.guilds) { g in
+                Button {
+                    openWorkspace(g)
+                } label: {
+                    Label(g.name, systemImage: g.id == guild?.id ? "checkmark" : "square.grid.2x2")
+                }
+            }
+            Divider()
+            Button("All workspaces", systemImage: "square.grid.2x2") {
+                openWorkspaces()
+            }
+        }
+        .toolbar {
+            if guild != nil {
+                Button {
+                    showMembers = true
+                } label: {
+                    Image(systemName: "person.2")
+                }
             }
         }
         .sheet(isPresented: $showMembers) {
@@ -169,35 +213,8 @@ struct HomeTab: View {
         }
     }
 
-    private var header: some View {
-        HStack(spacing: 11) {
-            if let guild {
-                Button(action: openWorkspaces) {
-                    HStack(spacing: 11) {
-                        GuildTile(guild: guild)
-                        Text(guild.name)
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(Theme.text)
-                            .lineLimit(1)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .heavy))
-                            .foregroundStyle(Theme.secondary)
-                    }
-                }
-                .buttonStyle(SquishButtonStyle())
-            } else {
-                Text("Fluxer")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Theme.text)
-            }
-            Spacer()
-            CircleIconButton(systemImage: "person.2") {
-                showMembers = true
-            }
-        }
-        .padding(.horizontal, 18)
-        .padding(.top, 6)
-        .padding(.bottom, 12)
+    private func openWorkspace(_ guild: Guild) {
+        UserDefaults.standard.set(guild.id.stringValue, forKey: "currentWorkspace")
     }
 
     private var quickRows: some View {
@@ -348,39 +365,32 @@ struct DMsTab: View {
     @State private var showFriends = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Direct Messages")
-                    .font(.system(size: 26, weight: .heavy))
-                    .foregroundStyle(Theme.text)
-                if !session.readStatesSynced {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(Theme.muted)
-                        .padding(.leading, 4)
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(session.privateChannels) { channel in
+                    dmRow(channel)
                 }
-                Spacer()
-                CircleIconButton(systemImage: "square.and.pencil") {
-                    showFriends = true
+                if session.privateChannels.isEmpty {
+                    Text("No conversations yet")
+                        .foregroundStyle(Theme.muted)
+                        .padding(.top, 60)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 6)
-            .padding(.bottom, 10)
-
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(session.privateChannels) { channel in
-                        dmRow(channel)
-                    }
-                    if session.privateChannels.isEmpty {
-                        Text("No conversations yet")
-                            .foregroundStyle(Theme.muted)
-                            .padding(.top, 60)
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.bottom, 24)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 24)
+        }
+        .background(Theme.bg)
+        .navigationTitle("Messages")
+        .toolbar {
+            if !session.readStatesSynced {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(Theme.muted)
+            }
+            Button {
+                showFriends = true
+            } label: {
+                Image(systemName: "square.and.pencil")
             }
         }
         .sheet(isPresented: $showFriends) {
@@ -487,19 +497,10 @@ struct DMsTab: View {
 
 struct ActivityTab: View {
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Activity")
-                    .font(.system(size: 26, weight: .heavy))
-                    .foregroundStyle(Theme.text)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 6)
-            .padding(.bottom, 4)
-            MessageFeedView(feed: .mentions)
-                .scrollContentBackground(.hidden)
-        }
+        MessageFeedView(feed: .mentions)
+            .scrollContentBackground(.hidden)
+            .background(Theme.bg)
+            .navigationTitle("Activity")
     }
 }
 
@@ -513,44 +514,22 @@ struct SearchTab: View {
     @State private var query = ""
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Search")
-                    .font(.system(size: 26, weight: .heavy))
-                    .foregroundStyle(Theme.text)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 6)
-
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.muted)
-                TextField("Channels, people, guilds", text: $query)
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(Theme.text)
-            }
-            .padding(.horizontal, 12)
-            .frame(height: 38)
-            .background(Theme.field, in: RoundedRectangle(cornerRadius: 11))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    if !query.isEmpty {
-                        results
-                    } else {
-                        Text("Search channels, conversations, and friends by name.")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Theme.muted)
-                            .padding(20)
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                if !query.isEmpty {
+                    results
+                } else {
+                    Text("Search channels, conversations, and friends by name.")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.muted)
+                        .padding(20)
                 }
-                .padding(.horizontal, 8)
             }
+            .padding(.horizontal, 8)
         }
+        .background(Theme.bg)
+        .navigationTitle("Search")
+        .searchable(text: $query, prompt: "Channels, people, guilds")
     }
 
     @ViewBuilder
@@ -639,12 +618,6 @@ struct YouTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("You")
-                    .font(.system(size: 26, weight: .heavy))
-                    .foregroundStyle(Theme.text)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 6)
-
                 HStack(spacing: 14) {
                     AvatarView(user: session.currentUser, diameter: 66)
                         .overlay(alignment: .bottomTrailing) {
@@ -722,6 +695,8 @@ struct YouTab: View {
                     .padding(.vertical, 22)
             }
         }
+        .background(Theme.bg)
+        .navigationTitle("You")
         .sheet(isPresented: $showSessions) {
             SessionsView()
                 .preferredColorScheme(.dark)
@@ -786,9 +761,16 @@ struct WorkspaceSwitcherView: View {
                         .font(.system(size: 24, weight: .heavy))
                         .foregroundStyle(Theme.text)
                     Spacer()
-                    Button("Done") { dismiss() }
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(Theme.accent)
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(Theme.text)
+                            .frame(width: 34, height: 34)
+                    }
+                    .buttonStyle(SquishButtonStyle())
+                    .liquidGlassCircle()
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 16)

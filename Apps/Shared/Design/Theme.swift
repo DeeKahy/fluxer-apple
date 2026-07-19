@@ -121,7 +121,7 @@ struct CircleIconButton: View {
                 .font(.system(size: size * 0.44, weight: .semibold))
                 .foregroundStyle(Theme.text)
                 .frame(width: size, height: size)
-                .background(Theme.bubble, in: Circle())
+                .liquidGlassCircle()
         }
         .buttonStyle(SquishButtonStyle())
     }

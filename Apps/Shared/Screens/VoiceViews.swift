@@ -1,6 +1,64 @@
 import SwiftUI
 import FluxerKit
 
+/// Compact voice pill for the iOS 26 tab bar accessory slot. The system
+/// draws the Liquid Glass capsule around it, so this is content only.
+struct VoiceAccessoryBar: View {
+    @Environment(AppSession.self) private var session
+
+    @State private var showStage = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: session.voice.isRinging ? "phone.arrow.up.right" : "waveform")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.green)
+                .symbolEffect(.pulse, isActive: session.voice.isRinging)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(VoiceBar.channelName(session))
+                    .font(.system(size: 13, weight: .bold))
+                    .lineLimit(1)
+                Text(session.voice.lastError ?? VoiceBar.statusText(session))
+                    .font(.system(size: 11))
+                    .foregroundStyle(session.voice.lastError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Theme.red))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 6)
+            Button {
+                Task { await session.voice.toggleMute() }
+            } label: {
+                Image(systemName: session.voice.muted ? "mic.slash.fill" : "mic.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(session.voice.muted ? Theme.red : .primary)
+                    .frame(width: 34, height: 34)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(SquishButtonStyle())
+            Button {
+                Task { await session.voice.leave() }
+            } label: {
+                Image(systemName: "phone.down.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 34, height: 34)
+                    .background(Theme.red, in: Circle())
+            }
+            .buttonStyle(SquishButtonStyle())
+        }
+        .padding(.horizontal, 12)
+        .contentShape(Rectangle())
+        .onTapGesture { showStage = true }
+        .sheet(isPresented: $showStage) {
+            VoiceStageView()
+        }
+        .onChange(of: session.voice.videoTiles.isEmpty) { wasEmpty, isEmpty in
+            if wasEmpty && !isEmpty {
+                showStage = true
+            }
+        }
+    }
+}
+
 /// Bottom bar shown while voice is active anywhere in the app.
 struct VoiceBar: View {
     @Environment(AppSession.self) private var session
@@ -49,7 +107,7 @@ struct VoiceBar: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(Color(hex: 0x2C9E53), in: RoundedRectangle(cornerRadius: 15))
+            .liquidGlass(tint: Color(hex: 0x2C9E53), cornerRadius: 22)
             .padding(.horizontal, 12)
             .padding(.bottom, 6)
             .contentShape(Rectangle())
@@ -68,7 +126,11 @@ struct VoiceBar: View {
         }
     }
 
-    private var channelName: String {
+    private var channelName: String { Self.channelName(session) }
+
+    private var statusText: String { Self.statusText(session) }
+
+    static func channelName(_ session: AppSession) -> String {
         guard let channelId = session.voice.connectedChannelId,
               let channel = session.findChannel(channelId)
         else { return "Voice" }
@@ -79,7 +141,7 @@ struct VoiceBar: View {
         return others.map(\.displayName).joined(separator: ", ")
     }
 
-    private var statusText: String {
+    static func statusText(_ session: AppSession) -> String {
         switch session.voice.phase {
         case .idle: return ""
         case .requesting, .connecting: return "Connecting"

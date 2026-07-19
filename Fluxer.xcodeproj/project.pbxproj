@@ -18,6 +18,7 @@
 		218AFECD428DC97DFD8971B7 /* DesktopCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF51E7329A15AFA7849205D /* DesktopCallView.swift */; };
 		298DA37D180F9F0AD925F9AF /* CaptchaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12D0494483EF2AF4F9294E6 /* CaptchaView.swift */; };
 		29DD7F1A895C38A12DAF7EF0 /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B213DD2CD1F1C0B06F0DF5 /* SweepViews.swift */; };
+		2BEC2D0C6BD1C10DA4D32F1B /* Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13846D495C322AEDC513C555 /* Glass.swift */; };
 		30BB9131D7A136458979CCAF /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC0563281F663523448325E /* MessageView.swift */; };
 		31CD8F0FD3617195B2E1843E /* VoiceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F56A696266AD6F6FD209FA0 /* VoiceViews.swift */; };
 		3344D3A814232F3BF867D6DD /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7CB7EC2355215CD97F0EEA /* FriendsView.swift */; };
@@ -52,6 +53,7 @@
 		A3EEB705834CEA2B54C25A17 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = DB6DCDC8927CFA483E3B300B /* LiveKit */; };
 		A6E4053C15486ED08484F41F /* DiskCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9462E4B192B836A61C04BD91 /* DiskCache.swift */; };
 		A9A36F200BA49A4624C3CAC2 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7CB7EC2355215CD97F0EEA /* FriendsView.swift */; };
+		AB95E5005F74514A80303739 /* Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13846D495C322AEDC513C555 /* Glass.swift */; };
 		B0349DE6D3A7767CE8774BC7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1569297C4C0181A49661B6D /* FluxerApp.swift */; };
 		B12DD59165BA99D5F90B2DBC /* AppSession+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70203A20387F5C2A79638EB1 /* AppSession+Social.swift */; };
 		B8622AA8B2D7775855DC99C5 /* AppSession+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AF74D397909ABE5E83A36DE /* AppSession+Messages.swift */; };
@@ -79,6 +81,7 @@
 		036C7BBE2C54143101965729 /* HandoffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffView.swift; sourceTree = "<group>"; };
 		086581378BB70D816FB3E614 /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		0B8E5A1AAC07EC10FE5EC037 /* UIStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIStyles.swift; sourceTree = "<group>"; };
+		13846D495C322AEDC513C555 /* Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass.swift; sourceTree = "<group>"; };
 		157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Fluxer-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		35760DB8E41F00840B94EB6E /* TabShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabShell.swift; sourceTree = "<group>"; };
 		3FEAB51248F8DB3408850581 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -179,6 +182,7 @@
 			isa = PBXGroup;
 			children = (
 				086581378BB70D816FB3E614 /* AvatarView.swift */,
+				13846D495C322AEDC513C555 /* Glass.swift */,
 				6CEBC3F1D1661ADFD6703D70 /* RemoteImage.swift */,
 				B800819ED6C65A12153EF532 /* Theme.swift */,
 				0B8E5A1AAC07EC10FE5EC037 /* UIStyles.swift */,
@@ -336,6 +340,7 @@
 				8DE0D45FD488DE5EAC291C31 /* EmailConfirmationView.swift in Sources */,
 				B0349DE6D3A7767CE8774BC7 /* FluxerApp.swift in Sources */,
 				3344D3A814232F3BF867D6DD /* FriendsView.swift in Sources */,
+				AB95E5005F74514A80303739 /* Glass.swift in Sources */,
 				36753134535E92C938A55434 /* HandoffView.swift in Sources */,
 				49DD7DC67E6F27EFCD5DF3EA /* KeychainStore.swift in Sources */,
 				F2A4ED5F30165916BC449861 /* LoginView.swift in Sources */,
@@ -374,6 +379,7 @@
 				4BE856A21BD6F4631FED6E20 /* EmailConfirmationView.swift in Sources */,
 				63A69801C14B9F149710B8C7 /* FluxerApp.swift in Sources */,
 				A9A36F200BA49A4624C3CAC2 /* FriendsView.swift in Sources */,
+				2BEC2D0C6BD1C10DA4D32F1B /* Glass.swift in Sources */,
 				9764510235091F922B55F159 /* HandoffView.swift in Sources */,
 				D9DC1F96557CF02D9BA1DA85 /* KeychainStore.swift in Sources */,
 				BBF2244B1086D95E3947EA39 /* LoginView.swift in Sources */,

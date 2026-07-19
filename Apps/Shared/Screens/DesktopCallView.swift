@@ -440,7 +440,7 @@ struct DesktopCallView: View {
                 .font(.system(size: 18))
                 .foregroundStyle(active ? .white : Theme.text)
                 .frame(width: 52, height: 52)
-                .background(active ? activeColor : Theme.deskTile, in: Circle())
+                .liquidGlassCircle(tint: active ? activeColor : nil)
                 .contentShape(Circle())
         }
         .buttonStyle(SquishButtonStyle())
@@ -507,12 +507,8 @@ struct DesktopCallPill: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.5), radius: 20, y: 16)
+        .liquidGlass(cornerRadius: 20)
+        .shadow(color: .black.opacity(0.35), radius: 20, y: 16)
     }
 
     private var channelName: String {
