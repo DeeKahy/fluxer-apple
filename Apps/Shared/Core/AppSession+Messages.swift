@@ -152,6 +152,14 @@ extension AppSession {
         }
     }
 
+    /// True while a message is a local placeholder still waiting on its
+    /// server confirmation, so the view can render it dimmed.
+    func isPendingSend(_ message: Message) -> Bool {
+        pendingSends.values.contains {
+            $0.placeholderId == message.id && $0.channelId == message.channelId
+        }
+    }
+
     /// Removes a failed send's placeholder so a phantom message doesn't
     /// linger in the transcript.
     private func dropPendingSend(nonce: String) {

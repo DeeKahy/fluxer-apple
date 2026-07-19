@@ -874,6 +874,12 @@ private struct MessageRow: View {
     @State private var profileUser: User?
     @State private var hovering = false
 
+    /// Local placeholder that hasn't been confirmed by the server yet;
+    /// rendered dimmed with a clock until the echo swaps it out.
+    private var isPending: Bool {
+        session.isPendingSend(message)
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             if showsHeader {
@@ -920,6 +926,11 @@ private struct MessageRow: View {
                                 .font(.system(size: 10))
                                 .foregroundStyle(Theme.muted)
                         }
+                        if isPending {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Theme.muted)
+                        }
                     }
                 }
                 if let content = message.content, !content.isEmpty {
@@ -963,6 +974,8 @@ private struct MessageRow: View {
             }
             Spacer(minLength: 0)
         }
+        .opacity(isPending ? 0.45 : 1)
+        .animation(.easeOut(duration: 0.25), value: isPending)
         .padding(.top, desktopChrome ? (showsHeader ? 8 : 1) : (showsHeader ? 10 : 2))
         .padding(.horizontal, desktopChrome ? 6 : 0)
         .padding(.bottom, desktopChrome ? 1 : 0)
