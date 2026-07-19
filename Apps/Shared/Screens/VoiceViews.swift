@@ -181,6 +181,10 @@ struct VoiceChannelRow: View {
     @Environment(AppSession.self) private var session
 
     let channel: Channel
+    /// When set, tapping the row opens the channel's text chat and the
+    /// trailing phone button joins voice. Without it the row keeps the
+    /// old tap-to-join behavior.
+    var onOpenChat: (() -> Void)? = nil
 
     private var occupants: [Snowflake] {
         Array(session.voiceChannelUsers[channel.id] ?? [])
@@ -188,7 +192,11 @@ struct VoiceChannelRow: View {
 
     var body: some View {
         RowTap(isSelected: session.voice.connectedChannelId == channel.id) {
-            Task { await session.joinVoice(channel) }
+            if let onOpenChat {
+                onOpenChat()
+            } else {
+                Task { await session.joinVoice(channel) }
+            }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -197,10 +205,24 @@ struct VoiceChannelRow: View {
                     if session.voice.connectedChannelId == channel.id {
                         Image(systemName: "waveform")
                             .foregroundStyle(.green)
-                    } else if !occupants.isEmpty {
-                        Text("\(occupants.count)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    } else {
+                        if !occupants.isEmpty {
+                            Text("\(occupants.count)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        if onOpenChat != nil {
+                            Button {
+                                Task { await session.joinVoice(channel) }
+                            } label: {
+                                Image(systemName: "phone")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(Theme.secondary)
+                                    .frame(width: 30, height: 30)
+                                    .contentShape(Circle())
+                            }
+                            .buttonStyle(SquishButtonStyle())
+                        }
                     }
                 }
                 if !occupants.isEmpty {

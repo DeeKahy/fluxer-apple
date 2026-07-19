@@ -275,7 +275,7 @@ struct HomeTab: View {
             .padding(.bottom, 4)
             ForEach(channels) { channel in
                 if channel.type == .guildVoice {
-                    VoiceChannelRow(channel: channel)
+                    VoiceChannelRow(channel: channel, onOpenChat: { openChannel(channel) })
                 } else {
                     channelRow(channel)
                 }

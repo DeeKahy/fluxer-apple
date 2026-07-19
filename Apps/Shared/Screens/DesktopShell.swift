@@ -539,24 +539,34 @@ private struct DesktopSidebar: View {
     @ViewBuilder
     private func voiceChannelRow(_ channel: Channel) -> some View {
         let joined = session.voice.connectedChannelId == channel.id
+        let selected = selectedChannel?.id == channel.id
+        let unread = session.isUnread(channel)
+        let mentions = session.mentionCounts[channel.id] ?? 0
         let occupants = Array(session.voiceChannelUsers[channel.id] ?? []).sorted()
+        // Voice channels are text channels in Fluxer: clicking one opens
+        // its chat, the phone button (or the header's) joins the call.
         Button {
             if joined {
                 onRestoreCall()
             } else {
-                Task { await session.joinVoice(channel) }
+                selectedChannel = channel
+                searchText = ""
+                session.recordVisit(channel)
             }
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "speaker.wave.2")
                     .font(.system(size: 13))
-                    .foregroundStyle(joined ? Theme.green : Theme.sectionMuted)
+                    .foregroundStyle(joined ? Theme.green : (selected ? Theme.text : Theme.sectionMuted))
                     .frame(width: 16)
                 Text(channel.name ?? "voice")
-                    .font(.system(size: 14))
-                    .foregroundStyle(joined ? Theme.text : Color(hex: 0x9A9AA8))
+                    .font(.system(size: 14, weight: selected || unread ? .semibold : .regular))
+                    .foregroundStyle(joined || selected ? Theme.text : (unread ? Theme.text : Color(hex: 0x9A9AA8)))
                     .lineLimit(1)
                 Spacer()
+                if mentions > 0 {
+                    CountBadge(count: mentions)
+                }
                 if joined {
                     Text("LIVE")
                         .font(.system(size: 9, weight: .heavy))
@@ -565,12 +575,24 @@ private struct DesktopSidebar: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Theme.green.opacity(0.15), in: RoundedRectangle(cornerRadius: 5))
+                } else {
+                    Button {
+                        Task { await session.joinVoice(channel) }
+                    } label: {
+                        Image(systemName: "phone")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.sectionMuted)
+                            .frame(width: 22, height: 22)
+                            .contentShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(SquishButtonStyle())
+                    .help("Join voice")
                 }
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 10)
             .background(
-                joined ? Theme.green.opacity(0.14) : .clear,
+                joined ? Theme.green.opacity(0.14) : (selected ? Theme.accent.opacity(0.22) : .clear),
                 in: RoundedRectangle(cornerRadius: 8)
             )
             .contentShape(RoundedRectangle(cornerRadius: 8))
@@ -853,6 +875,10 @@ private struct DesktopConversationHeader: View {
                                     .overlay { Circle().strokeBorder(Theme.deskBg, lineWidth: 2) }
                                     .offset(x: 2, y: 2)
                             }
+                    } else if channel.type == .guildVoice {
+                        Image(systemName: "speaker.wave.2")
+                            .font(.system(size: 15))
+                            .foregroundStyle(Theme.muted)
                     } else {
                         Text("#")
                             .font(.system(size: 20))
@@ -881,6 +907,12 @@ private struct DesktopConversationHeader: View {
                         Task { await session.startCall(in: channel) }
                     }
                     .disabled(session.voice.connectedChannelId == channel.id)
+                }
+                if let channel, channel.type == .guildVoice,
+                   session.voice.connectedChannelId != channel.id {
+                    headerButton("phone", help: "Join voice", tint: Theme.green) {
+                        Task { await session.joinVoice(channel) }
+                    }
                 }
                 if channel != nil {
                     headerButton("pin", help: "Pinned messages", action: onPins)

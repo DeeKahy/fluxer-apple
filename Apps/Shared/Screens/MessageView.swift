@@ -262,6 +262,14 @@ struct MessageView: View {
                     }
                     .disabled(session.voice.connectedChannelId == channel.id)
                 }
+                if channel.type == .guildVoice {
+                    Button {
+                        Task { await session.joinVoice(channel) }
+                    } label: {
+                        Image(systemName: "phone")
+                    }
+                    .disabled(session.voice.connectedChannelId == channel.id)
+                }
                 Button {
                     showPins = true
                 } label: {
