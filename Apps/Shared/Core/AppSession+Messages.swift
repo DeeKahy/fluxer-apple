@@ -84,6 +84,12 @@ extension AppSession {
         // round trip since the placeholder couldn't show the attachments.
         let nonce = String(UInt64.random(in: 1...UInt64.max))
         if files.isEmpty {
+            // Replies must carry the referenced message from the start or
+            // the placeholder renders as a plain message and the reply
+            // preview pops in only when the server copy lands.
+            let referenced = replyTo.flatMap { id in
+                messages[channel.id]?.first { $0.id == id }
+            }
             let placeholder = Message(
                 id: placeholderMessageId(in: channel.id),
                 channelId: channel.id,
@@ -91,6 +97,7 @@ extension AppSession {
                 author: currentUser,
                 content: trimmed,
                 timestamp: Date(),
+                referencedMessage: referenced.map(IndirectBox.init),
                 nonce: nonce
             )
             pendingSends[nonce] = PendingSend(channelId: channel.id, placeholderId: placeholder.id)
