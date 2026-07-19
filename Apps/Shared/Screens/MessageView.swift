@@ -778,21 +778,24 @@ struct MessageView: View {
         }
     }
 
-    @ViewBuilder
+    /// Always reserves the same height whether or not anyone is typing, so
+    /// the indicator popping in and out never shoves the message list up or
+    /// down. Doubles as breathing room between the messages and the composer.
     private var typingIndicator: some View {
         let names = session.typingNames(in: channel.id)
-        if !names.isEmpty {
-            HStack(spacing: 6) {
+        return HStack(spacing: 6) {
+            if !names.isEmpty {
                 ProgressView()
                     .controlSize(.mini)
                 Text(typingText(names))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 4)
+            Spacer(minLength: 0)
         }
+        .frame(height: 18)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
     }
 
     private func typingText(_ names: [String]) -> String {
@@ -881,6 +884,14 @@ private struct MessageRow: View {
     }
 
     var body: some View {
+        rowContent
+            // Swipe a row from right to left to reply. Gated to the mobile
+            // shell; desktop uses the hover toolbar, and a left-to-right
+            // swipe is left alone so it stays the navigation back gesture.
+            .modifier(SwipeReplyModifier(enabled: !desktopChrome, onReply: onReply))
+    }
+
+    private var rowContent: some View {
         HStack(alignment: .top, spacing: 10) {
             if showsHeader {
                 Button {
@@ -1167,6 +1178,55 @@ private struct MessageRow: View {
         #else
         UIPasteboard.general.string = content
         #endif
+    }
+}
+
+/// Right-to-left swipe on a message row reveals a reply arrow and fires the
+/// reply action once the drag passes the threshold. Only horizontal-dominant
+/// left drags move the row, so vertical scrolling is untouched and the
+/// system's left-edge back swipe keeps working.
+private struct SwipeReplyModifier: ViewModifier {
+    let enabled: Bool
+    let onReply: () -> Void
+
+    @State private var offset: CGFloat = 0
+    @State private var armed = false
+
+    private let threshold: CGFloat = -60
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .offset(x: offset)
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "arrowshape.turn.up.left.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(armed ? Theme.accent : Theme.muted)
+                        .opacity(Double(min(1, abs(offset) / abs(threshold))))
+                        .padding(.trailing, 14)
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 12)
+                        .onChanged { value in
+                            let dx = value.translation.width
+                            guard dx < 0, abs(dx) > abs(value.translation.height) else { return }
+                            offset = max(dx, -90)
+                            armed = offset <= threshold
+                        }
+                        .onEnded { _ in
+                            if offset <= threshold { onReply() }
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                offset = 0
+                            }
+                            armed = false
+                        }
+                )
+                .sensoryFeedback(trigger: armed) { wasArmed, isArmed in
+                    wasArmed || !isArmed ? nil : .impact(weight: .medium)
+                }
+        } else {
+            content
+        }
     }
 }
 
