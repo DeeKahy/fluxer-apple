@@ -23,6 +23,10 @@ struct MessageView: View {
     @State private var showMembers = false
     @State private var showPins = false
     @State private var showEmojiPicker = false
+    /// The message aligned with the bottom of the viewport, kept by the
+    /// scroll position binding and mirrored into session.scrollAnchors.
+    @State private var scrolledId: Snowflake?
+    @State private var unreadJumpDismissed = false
     @FocusState private var composerFocused: Bool
     #if os(iOS)
     @State private var photoItems: [PhotosPickerItem] = []
@@ -102,6 +106,9 @@ struct MessageView: View {
         return result
     }
 
+    /// Scroll target for the new messages divider, distinct from message ids.
+    private static let unreadDividerId = "new-messages-divider"
+
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -171,6 +178,10 @@ struct MessageView: View {
                             }
                             if entry.isFirstUnread {
                                 NewMessagesDivider()
+                                    .id(Self.unreadDividerId)
+                                    // Once the divider has been on screen the
+                                    // jump pill has nothing left to offer.
+                                    .onAppear { unreadJumpDismissed = true }
                             }
                             MessageRow(
                                 message: entry.message,
@@ -186,17 +197,38 @@ struct MessageView: View {
                             .id(entry.message.id)
                         }
                     }
+                    .scrollTargetLayout()
                     .padding(.horizontal)
                     .padding(.vertical, 8)
                 }
                 // Content starts pinned to the newest message, which also
                 // survives lazy row sizing, unlike a manual scrollTo.
                 .defaultScrollAnchor(.bottom)
+                // Tracks which message sits at the bottom edge, both to
+                // remember the reading position and to know whether the view
+                // is parked at the newest message.
+                .scrollPosition(id: $scrolledId, anchor: .bottom)
+                .overlay(alignment: .top) {
+                    unreadJumpPill(proxy)
+                }
+                .onChange(of: scrolledId) { _, newValue in
+                    guard let newValue else { return }
+                    if newValue == session.messages(in: channel.id).last?.id {
+                        session.scrollAnchors[channel.id] = nil
+                    } else {
+                        session.scrollAnchors[channel.id] = newValue
+                    }
+                }
                 // Keyed on the newest id, not the count, so prepending
                 // older history doesn't yank the view to the bottom. The
                 // scroll is deferred a beat so it never runs inside the
-                // same layout pass that inserted the row.
-                .onChange(of: session.messages(in: channel.id).last?.id) {
+                // same layout pass that inserted the row. Skipped while
+                // reading older history, unless the new message is our own.
+                .onChange(of: session.messages(in: channel.id).last?.id) { oldLast, _ in
+                    let last = session.messages(in: channel.id).last
+                    let wasAtBottom = scrolledId == nil || scrolledId == oldLast
+                    let ownMessage = last?.author?.id == session.currentUser?.id
+                    guard wasAtBottom || ownMessage else { return }
                     Task { @MainActor in
                         try? await Task.sleep(for: .milliseconds(60))
                         if let last = session.messages(in: channel.id).last {
@@ -205,11 +237,20 @@ struct MessageView: View {
                     }
                 }
                 .task(id: channel.id) {
+                    scrolledId = nil
+                    unreadJumpDismissed = false
                     session.activeChannelId = channel.id
                     session.recordVisit(channel)
                     session.captureUnreadMarker(channel)
                     await session.loadMessages(for: channel)
                     session.markChannelRead(channel)
+                    // Put the view back where it was last time, once the
+                    // deferred scroll-to-bottom above has had its beat.
+                    if let saved = session.scrollAnchors[channel.id],
+                       session.messages(in: channel.id).contains(where: { $0.id == saved }) {
+                        try? await Task.sleep(for: .milliseconds(150))
+                        scrolledId = saved
+                    }
                 }
                 .onDisappear {
                     if session.activeChannelId == channel.id {
@@ -688,6 +729,47 @@ struct MessageView: View {
                 await session.sendMessage(content, in: channel, replyTo: reply, files: files)
             }
             isSending = false
+        }
+    }
+
+    /// Floating pill offering a jump to the new messages divider. Only shows
+    /// while the divider itself has stayed off screen, so a channel with a
+    /// handful of unread never sees it.
+    @ViewBuilder
+    private func unreadJumpPill(_ proxy: ScrollViewProxy) -> some View {
+        let unreadCount = entries.drop { !$0.isFirstUnread }.count
+        if unreadCount > 0, !unreadJumpDismissed {
+            HStack(spacing: 10) {
+                Button {
+                    unreadJumpDismissed = true
+                    withAnimation {
+                        proxy.scrollTo(Self.unreadDividerId, anchor: .top)
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 11, weight: .bold))
+                        Text(unreadCount == 1 ? "1 new message" : "\(unreadCount) new messages")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                Button {
+                    unreadJumpDismissed = true
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 7)
+            .background(Theme.accent, in: Capsule())
+            .shadow(color: .black.opacity(0.3), radius: 8, y: 3)
+            .padding(.top, 8)
         }
     }
 
