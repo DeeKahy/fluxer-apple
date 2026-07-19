@@ -119,6 +119,13 @@ struct DesktopShell: View {
             callMinimized = false
             callConnectedAt = active ? Date() : nil
         }
+        .onChange(of: selectedChannel?.id) { _, newId in
+            // Opening another channel or DM mid-call shrinks the call to
+            // the pill so the conversation is readable; the call keeps going.
+            if callActive, newId != session.voice.connectedChannelId {
+                callMinimized = true
+            }
+        }
         .task(id: session.guilds.count) {
             // Open straight into the guild's default channel like the comp,
             // instead of an empty pick-a-conversation state.
@@ -547,6 +554,7 @@ private struct DesktopSidebar: View {
         // its chat, the phone button (or the header's) joins the call.
         Button {
             if joined {
+                selectedChannel = channel
                 onRestoreCall()
             } else {
                 selectedChannel = channel
