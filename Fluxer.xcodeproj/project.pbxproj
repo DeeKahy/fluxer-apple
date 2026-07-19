@@ -13,6 +13,7 @@
 		115141C84A36144129BF6931 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45F92AFFB690D90BA001D1C3 /* MainView.swift */; };
 		120F5D4A8EEA21A2F9905E37 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086581378BB70D816FB3E614 /* AvatarView.swift */; };
 		15ECF4F3FFC1CFC52BAF14B1 /* AppSession+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A40A2B18BDA8AD57D0BCACA /* AppSession+Features.swift */; };
+		1A9996CAEDF3C9C4EEF72F53 /* MessageTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31D0B7F8F7B0D45FD4EDA68F /* MessageTranscriptView.swift */; };
 		1AB4E9C3B15A8B03AFE9FF87 /* DesktopShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E15614D2336D491775754197 /* DesktopShell.swift */; };
 		1E2695117AAF0D1F479DA28A /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEACEAA9AFA28CCB8B597D9 /* MessageMarkdown.swift */; };
 		218AFECD428DC97DFD8971B7 /* DesktopCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF51E7329A15AFA7849205D /* DesktopCallView.swift */; };
@@ -53,6 +54,7 @@
 		A3EEB705834CEA2B54C25A17 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = DB6DCDC8927CFA483E3B300B /* LiveKit */; };
 		A6E4053C15486ED08484F41F /* DiskCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9462E4B192B836A61C04BD91 /* DiskCache.swift */; };
 		A9A36F200BA49A4624C3CAC2 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7CB7EC2355215CD97F0EEA /* FriendsView.swift */; };
+		AA7582C22146F46CD1B16FED /* MessageTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31D0B7F8F7B0D45FD4EDA68F /* MessageTranscriptView.swift */; };
 		AB95E5005F74514A80303739 /* Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13846D495C322AEDC513C555 /* Glass.swift */; };
 		B0349DE6D3A7767CE8774BC7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1569297C4C0181A49661B6D /* FluxerApp.swift */; };
 		B12DD59165BA99D5F90B2DBC /* AppSession+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70203A20387F5C2A79638EB1 /* AppSession+Social.swift */; };
@@ -83,6 +85,7 @@
 		0B8E5A1AAC07EC10FE5EC037 /* UIStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIStyles.swift; sourceTree = "<group>"; };
 		13846D495C322AEDC513C555 /* Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass.swift; sourceTree = "<group>"; };
 		157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Fluxer-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		31D0B7F8F7B0D45FD4EDA68F /* MessageTranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageTranscriptView.swift; sourceTree = "<group>"; };
 		35760DB8E41F00840B94EB6E /* TabShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabShell.swift; sourceTree = "<group>"; };
 		3FEAB51248F8DB3408850581 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		45F92AFFB690D90BA001D1C3 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
@@ -168,6 +171,7 @@
 				3FEAB51248F8DB3408850581 /* LoginView.swift */,
 				45F92AFFB690D90BA001D1C3 /* MainView.swift */,
 				AA587D8BBBED81EE30AE6AF7 /* MemberListView.swift */,
+				31D0B7F8F7B0D45FD4EDA68F /* MessageTranscriptView.swift */,
 				4AC0563281F663523448325E /* MessageView.swift */,
 				B7564963A1AD0848B4BB13E7 /* RootView.swift */,
 				F8B213DD2CD1F1C0B06F0DF5 /* SweepViews.swift */,
@@ -347,6 +351,7 @@
 				70AF5514160687B9399D6032 /* MainView.swift in Sources */,
 				877590EC6966F2F9BE20E11F /* MemberListView.swift in Sources */,
 				84F0EE08A327263A0813F1AA /* MessageMarkdown.swift in Sources */,
+				1A9996CAEDF3C9C4EEF72F53 /* MessageTranscriptView.swift in Sources */,
 				30BB9131D7A136458979CCAF /* MessageView.swift in Sources */,
 				3F4E5AE9FA26B444C59C093F /* NotificationManager.swift in Sources */,
 				343872D7FFD536954B5C8AD5 /* RemoteImage.swift in Sources */,
@@ -386,6 +391,7 @@
 				115141C84A36144129BF6931 /* MainView.swift in Sources */,
 				5AFBC142EFD15564291C0E80 /* MemberListView.swift in Sources */,
 				1E2695117AAF0D1F479DA28A /* MessageMarkdown.swift in Sources */,
+				AA7582C22146F46CD1B16FED /* MessageTranscriptView.swift in Sources */,
 				C51C5F2455A7607ECA2F7A94 /* MessageView.swift in Sources */,
 				E19F56C5EB4945CA9525EF93 /* NotificationManager.swift in Sources */,
 				DC25FCFF939DEE9C20CCBB0B /* RemoteImage.swift in Sources */,
@@ -497,8 +503,8 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -577,8 +583,8 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
