@@ -214,6 +214,10 @@ extension AppSession {
     // MARK: Read state
 
     func isUnread(_ channel: Channel) -> Bool {
+        // Until READY brings real read states, a missing entry means
+        // "unknown", not "unread". Claiming unread here made every cached
+        // DM light up with a badge during connect.
+        guard readStatesSynced else { return false }
         guard channel.type != .guildVoice, channel.type != .guildCategory else { return false }
         guard let last = channel.lastMessageId else { return false }
         guard let read = readStates[channel.id] else { return true }
@@ -286,6 +290,7 @@ extension AppSession {
                 }
             }
         }
+        readStatesSynced = true
         for entry in data["users"]?.arrayValue ?? [] {
             if let user = try? entry.decoded(as: User.self) {
                 knownUsers[user.id] = user

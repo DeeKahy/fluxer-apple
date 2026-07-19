@@ -348,6 +348,12 @@ struct DMsTab: View {
                 Text("Direct Messages")
                     .font(.system(size: 26, weight: .heavy))
                     .foregroundStyle(Theme.text)
+                if !session.readStatesSynced {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(Theme.muted)
+                        .padding(.leading, 4)
+                }
                 Spacer()
                 CircleIconButton(systemImage: "square.and.pencil") {
                     showFriends = true

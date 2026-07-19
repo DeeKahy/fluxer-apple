@@ -27,6 +27,9 @@ final class AppSession {
     var gatewayConnected = false
     /// Last read message per channel.
     var readStates: [Snowflake: Snowflake] = [:]
+    /// False until READY delivers read states. Before that the cached
+    /// channel list would otherwise render every conversation as unread.
+    var readStatesSynced = false
     /// Unread mention counts per channel, from read states and live mentions.
     var mentionCounts: [Snowflake: Int] = [:]
     /// Users currently typing per channel, with when their indicator expires.
@@ -372,6 +375,7 @@ final class AppSession {
         channelsLoadingOlder = []
         staleChannels = []
         readStates = [:]
+        readStatesSynced = false
         typingUsers = [:]
         knownUsers = [:]
         presences = [:]
