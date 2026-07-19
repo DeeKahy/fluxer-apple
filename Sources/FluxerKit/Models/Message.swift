@@ -62,6 +62,40 @@ public struct Message: Codable, Hashable, Identifiable, Sendable {
     public var type: Int?
     public var referencedMessage: IndirectBox<Message>?
     public var nonce: String?
+
+    /// Public memberwise init so clients can build local placeholder
+    /// messages (optimistic sends) without a decoding round trip.
+    public init(
+        id: Snowflake,
+        channelId: Snowflake,
+        guildId: Snowflake? = nil,
+        author: User? = nil,
+        content: String? = nil,
+        timestamp: Date? = nil,
+        editedTimestamp: Date? = nil,
+        attachments: [Attachment]? = nil,
+        embeds: [Embed]? = nil,
+        reactions: [Reaction]? = nil,
+        pinned: Bool? = nil,
+        type: Int? = nil,
+        referencedMessage: IndirectBox<Message>? = nil,
+        nonce: String? = nil
+    ) {
+        self.id = id
+        self.channelId = channelId
+        self.guildId = guildId
+        self.author = author
+        self.content = content
+        self.timestamp = timestamp
+        self.editedTimestamp = editedTimestamp
+        self.attachments = attachments
+        self.embeds = embeds
+        self.reactions = reactions
+        self.pinned = pinned
+        self.type = type
+        self.referencedMessage = referencedMessage
+        self.nonce = nonce
+    }
 }
 
 /// Boxes a value so a struct can hold a field of its own type.

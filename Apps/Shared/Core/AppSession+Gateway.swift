@@ -27,7 +27,13 @@ extension AppSession {
             gatewayConnected = true
         case "MESSAGE_CREATE":
             guard let message = try? event.data?.decoded(as: Message.self) else { return }
-            insert(message)
+            // Our own optimistic sends echo back with their nonce; swap the
+            // placeholder instead of inserting a duplicate.
+            if let nonce = message.nonce, pendingSends[nonce] != nil {
+                reconcileSend(nonce: nonce, with: message)
+            } else {
+                insert(message)
+            }
             bumpLastMessageId(message)
             typingUsers[message.channelId]?[message.author?.id ?? Snowflake(0)] = nil
             if message.channelId == activeChannelId || message.author?.id == currentUser?.id {
@@ -36,16 +42,16 @@ extension AppSession {
             notifyIfNeeded(message, raw: event.data)
             updateBadge()
         case "MESSAGE_ACK":
-            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
-                  let messageId = event.data?["message_id"]?.stringValue.flatMap(Snowflake.init(string:))
+            guard let channelId = event.data?.snowflake("channel_id"),
+                  let messageId = event.data?.snowflake("message_id")
             else { return }
             readStates[channelId] = messageId
             mentionCounts[channelId] = nil
             updateBadge()
         case "MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE":
-            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
-                  let messageId = event.data?["message_id"]?.stringValue.flatMap(Snowflake.init(string:)),
-                  let userId = event.data?["user_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+            guard let channelId = event.data?.snowflake("channel_id"),
+                  let messageId = event.data?.snowflake("message_id"),
+                  let userId = event.data?.snowflake("user_id"),
                   let emoji = try? event.data?["emoji"]?.decoded(as: ReactionEmoji.self)
             else { return }
             applyReactionChange(
@@ -56,7 +62,7 @@ extension AppSession {
                 byMe: userId == currentUser?.id
             )
         case "CALL_CREATE", "CALL_UPDATE":
-            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+            guard let channelId = event.data?.snowflake("channel_id"),
                   let myId = currentUser?.id
             else { return }
             let ringing = (event.data?["ringing"]?.arrayValue ?? [])
@@ -79,7 +85,7 @@ extension AppSession {
                 NotificationManager.shared.clearCallNotification(channelId: channelId)
             }
         case "CALL_DELETE":
-            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)) else { return }
+            guard let channelId = event.data?.snowflake("channel_id") else { return }
             if incomingCall?.id == channelId {
                 incomingCall = nil
             }
@@ -106,11 +112,11 @@ extension AppSession {
                 knownUsers[user.id] = user
             }
         case "RELATIONSHIP_REMOVE":
-            guard let id = event.data?["id"]?.stringValue.flatMap(Snowflake.init(string:)) else { return }
+            guard let id = event.data?.snowflake("id") else { return }
             relationships[id] = nil
         case "TYPING_START":
-            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
-                  let userId = event.data?["user_id"]?.stringValue.flatMap(Snowflake.init(string:)),
+            guard let channelId = event.data?.snowflake("channel_id"),
+                  let userId = event.data?.snowflake("user_id"),
                   userId != currentUser?.id
             else { return }
             typingUsers[channelId, default: [:]][userId] = Date().addingTimeInterval(10)
@@ -122,8 +128,8 @@ extension AppSession {
             guard let message = try? event.data?.decoded(as: Message.self) else { return }
             update(message)
         case "MESSAGE_DELETE":
-            guard let channelId = event.data?["channel_id"]?.stringValue.flatMap(Snowflake.init(string:)),
-                  let messageId = event.data?["id"]?.stringValue.flatMap(Snowflake.init(string:))
+            guard let channelId = event.data?.snowflake("channel_id"),
+                  let messageId = event.data?.snowflake("id")
             else { return }
             messages[channelId]?.removeAll { $0.id == messageId }
         case "GUILD_CREATE":
@@ -136,7 +142,7 @@ extension AppSession {
                 guilds.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             }
         case "GUILD_DELETE":
-            guard let guildId = event.data?["id"]?.stringValue.flatMap(Snowflake.init(string:)) else { return }
+            guard let guildId = event.data?.snowflake("id") else { return }
             guilds.removeAll { $0.id == guildId }
         case "CHANNEL_CREATE", "CHANNEL_UPDATE":
             guard let channel = try? event.data?.decoded(as: Channel.self) else { return }

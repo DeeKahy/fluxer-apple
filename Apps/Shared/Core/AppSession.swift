@@ -59,6 +59,14 @@ final class AppSession {
     var myStatus = "online"
     var lastError: String?
 
+    /// Optimistic sends awaiting their server echo, keyed by nonce.
+    /// The value is the placeholder message swapped out on reconcile.
+    struct PendingSend {
+        let channelId: Snowflake
+        let placeholderId: Snowflake
+    }
+    var pendingSends: [String: PendingSend] = [:]
+
     /// The channel currently on screen; new messages there are acked as read.
     var activeChannelId: Snowflake?
 

@@ -19,8 +19,7 @@ extension AppSession {
 
     func applyPresence(_ entry: JSONValue?) {
         guard let entry else { return }
-        let userId = entry["user"]?["id"]?.stringValue.flatMap(Snowflake.init(string:))
-            ?? entry["user_id"]?.stringValue.flatMap(Snowflake.init(string:))
+        let userId = entry["user"]?.snowflake("id") ?? entry.snowflake("user_id")
         guard let userId else { return }
         let status = entry["status"]?.stringValue ?? "offline"
         if status == "offline" {
