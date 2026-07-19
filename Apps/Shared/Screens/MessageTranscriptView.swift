@@ -6,10 +6,17 @@ import FluxerKit
 /// the chrome (composer, banners, toolbars) lives apart from the scroll
 /// machinery.
 ///
-/// Scroll behavior is built on the iOS 18 APIs instead of the old
-/// sentinel-and-sleep workarounds: ScrollPosition for programmatic moves,
-/// onScrollGeometryChange for a real distance-from-bottom signal, and
-/// defaultScrollAnchor(.bottom) so size changes keep the transcript pinned.
+/// Scroll design notes, learned the hard way:
+/// - "Am I at the bottom" comes from scroll geometry, never from comparing
+///   position ids; the position binding often reports a row near the
+///   bottom rather than the exact last one.
+/// - The id binding is used instead of the ScrollPosition type because the
+///   system writes ScrollPosition continuously while scrolling, which
+///   re-rendered this whole view per frame and froze input during the
+///   keyboard animation. The id only changes when a different row crosses
+///   the bottom edge.
+/// - The geometry callback fires per scrolled pixel; nothing in it may
+///   touch observable state unconditionally.
 struct MessageTranscriptView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.desktopChrome) private var desktopChrome
@@ -20,14 +27,16 @@ struct MessageTranscriptView: View {
     let onEdit: (Message) -> Void
     let onDelete: (Message) -> Void
 
-    @State private var position = ScrollPosition(idType: Snowflake.self)
+    /// The message at the bottom edge. Writing it scrolls there. Never use
+    /// it to decide "at the bottom", that is what the metrics are for.
+    @State private var scrolledId: Snowflake?
     @State private var unreadJumpDismissed = false
 
     /// Live scroll metrics, deliberately kept in a plain reference box
     /// instead of @State: they change on every scrolled pixel, nothing in
     /// the rendered body reads them, and routing them through SwiftUI
-    /// state re-rendered the transcript per frame (the reply-gesture
-    /// freezes). Only event closures read these.
+    /// state re-rendered the transcript per frame. Only event closures
+    /// read these.
     private final class MetricsBox {
         var distanceFromBottom: CGFloat = 0
         var viewportHeight: CGFloat = 0
@@ -46,118 +55,109 @@ struct MessageTranscriptView: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                if !session.canLoadOlderMessages(in: channel.id) {
-                    welcomeHero
-                }
-                if session.canLoadOlderMessages(in: channel.id),
-                   !session.messages(in: channel.id).isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .onAppear {
-                            // The tracked scroll position keeps the current
-                            // bottom-edge row anchored through the prepend,
-                            // so no manual restore is needed.
-                            Task { _ = await session.loadOlderMessages(for: channel) }
-                        }
-                }
-                ForEach(entries) { entry in
-                    if let dayLabel = entry.dayLabel {
-                        DayDivider(label: dayLabel)
+        // Computed once per body evaluation; the pill overlay reads it too
+        // and computing it twice doubled the per-render cost.
+        let entryList = entries
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    if !session.canLoadOlderMessages(in: channel.id) {
+                        welcomeHero
                     }
-                    if entry.isFirstUnread {
-                        NewMessagesDivider()
-                            .id(Self.unreadDividerId)
-                            // Once the divider has been on screen the
-                            // jump pill has nothing left to offer.
+                    if session.canLoadOlderMessages(in: channel.id),
+                       !session.messages(in: channel.id).isEmpty {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
                             .onAppear {
-                                withAnimation { unreadJumpDismissed = true }
+                                // The tracked scroll id keeps the current
+                                // bottom-edge row anchored through the
+                                // prepend, so no manual restore is needed.
+                                Task { _ = await session.loadOlderMessages(for: channel) }
                             }
                     }
-                    MessageRow(
-                        message: entry.message,
-                        showsHeader: entry.showsHeader,
-                        isOwn: entry.message.author?.id == session.currentUser?.id,
-                        onReact: { emoji in
-                            Task { await session.toggleReaction(emoji, on: entry.message) }
-                        },
-                        onReply: { onReply(entry.message) },
-                        onEdit: { onEdit(entry.message) },
-                        onDelete: { onDelete(entry.message) }
-                    )
-                    .id(entry.message.id)
+                    ForEach(entryList) { entry in
+                        if let dayLabel = entry.dayLabel {
+                            DayDivider(label: dayLabel)
+                        }
+                        if entry.isFirstUnread {
+                            NewMessagesDivider()
+                                .id(Self.unreadDividerId)
+                                // Once the divider has been on screen the
+                                // jump pill has nothing left to offer.
+                                .onAppear {
+                                    withAnimation { unreadJumpDismissed = true }
+                                }
+                        }
+                        MessageRow(
+                            message: entry.message,
+                            showsHeader: entry.showsHeader,
+                            isOwn: entry.message.author?.id == session.currentUser?.id,
+                            onReact: { emoji in
+                                Task { await session.toggleReaction(emoji, on: entry.message) }
+                            },
+                            onReply: { onReply(entry.message) },
+                            onEdit: { onEdit(entry.message) },
+                            onDelete: { onDelete(entry.message) }
+                        )
+                        .id(entry.message.id)
+                    }
+                }
+                .scrollTargetLayout()
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+            }
+            .defaultScrollAnchor(.bottom, for: .initialOffset)
+            .defaultScrollAnchor(.bottom, for: .sizeChanges)
+            .scrollPosition(id: $scrolledId, anchor: .bottom)
+            .onScrollGeometryChange(for: ScrollMetrics.self) { geometry in
+                ScrollMetrics(
+                    distanceFromBottom: max(
+                        0,
+                        geometry.contentSize.height + geometry.contentInsets.bottom
+                            - geometry.containerSize.height - geometry.contentOffset.y
+                    ),
+                    viewportHeight: geometry.containerSize.height
+                )
+            } action: { _, new in
+                metrics.distanceFromBottom = new.distanceFromBottom
+                metrics.viewportHeight = new.viewportHeight
+                updateResumeAnchor()
+            }
+            .overlay(alignment: .top) {
+                unreadJumpPill(entryList, proxy: proxy)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                jumpToBottomButton
+                    .animation(.easeOut(duration: 0.2), value: session.scrollAnchors[channel.id] != nil)
+            }
+            // Follow new messages while reading live, and always follow our own.
+            .onChange(of: session.messages(in: channel.id).last?.id) { _, newLast in
+                let ownMessage = session.messages(in: channel.id).last?.author?.id == session.currentUser?.id
+                if isAtBottom || ownMessage {
+                    scrolledId = newLast
                 }
             }
-            .scrollTargetLayout()
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-        }
-        .defaultScrollAnchor(.bottom, for: .initialOffset)
-        .defaultScrollAnchor(.bottom, for: .sizeChanges)
-        .scrollPosition($position, anchor: .bottom)
-        .onScrollGeometryChange(for: ScrollMetrics.self) { geometry in
-            ScrollMetrics(
-                distanceFromBottom: max(
-                    0,
-                    geometry.contentSize.height + geometry.contentInsets.bottom
-                        - geometry.containerSize.height - geometry.contentOffset.y
-                ),
-                viewportHeight: geometry.containerSize.height
-            )
-        } action: { old, new in
-            // This fires for every scrolled pixel and every frame of a
-            // keyboard or composer animation. Anything here that touches
-            // observable state unconditionally re-renders the whole
-            // transcript per frame and freezes the UI, so the metrics go
-            // into the plain box and the remaining writes are guarded.
-            metrics.distanceFromBottom = new.distanceFromBottom
-            metrics.viewportHeight = new.viewportHeight
-            // Belt and braces for viewport shrinks (composer growing a
-            // line, banners appearing): if we were at the bottom and the
-            // size-change anchor did NOT keep us pinned, re-pin. When the
-            // anchor does its job the distance stays at zero and this
-            // never runs.
-            if new.viewportHeight < old.viewportHeight,
-               old.distanceFromBottom < 40,
-               new.distanceFromBottom > 1 {
-                position.scrollTo(edge: .bottom)
+            .task(id: channel.id) {
+                scrolledId = nil
+                unreadJumpDismissed = false
+                session.activeChannelId = channel.id
+                session.recordVisit(channel)
+                session.captureUnreadMarker(channel)
+                await session.loadMessages(for: channel)
+                session.markChannelRead(channel)
+                // Resume where the reader left off, if they left meaningfully
+                // scrolled up. One beat so the rows exist before the jump.
+                if let saved = session.scrollAnchors[channel.id],
+                   session.messages(in: channel.id).contains(where: { $0.id == saved }) {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    scrolledId = saved
+                }
             }
-            updateResumeAnchor()
-        }
-        .overlay(alignment: .top) {
-            unreadJumpPill
-        }
-        .overlay(alignment: .bottomTrailing) {
-            jumpToBottomButton
-                .animation(.easeOut(duration: 0.2), value: session.scrollAnchors[channel.id] != nil)
-        }
-        // Follow new messages while reading live, and always follow our own.
-        .onChange(of: session.messages(in: channel.id).last?.id) { _, _ in
-            let ownMessage = session.messages(in: channel.id).last?.author?.id == session.currentUser?.id
-            if isAtBottom || ownMessage {
-                position.scrollTo(edge: .bottom)
-            }
-        }
-        .task(id: channel.id) {
-            unreadJumpDismissed = false
-            session.activeChannelId = channel.id
-            session.recordVisit(channel)
-            session.captureUnreadMarker(channel)
-            await session.loadMessages(for: channel)
-            session.markChannelRead(channel)
-            // Resume where the reader left off, if they left meaningfully
-            // scrolled up. One beat so the rows exist before the jump.
-            if let saved = session.scrollAnchors[channel.id],
-               session.messages(in: channel.id).contains(where: { $0.id == saved }) {
-                try? await Task.sleep(for: .milliseconds(100))
-                position.scrollTo(id: saved, anchor: .bottom)
-            }
-        }
-        .onDisappear {
-            if session.activeChannelId == channel.id {
-                session.activeChannelId = nil
+            .onDisappear {
+                if session.activeChannelId == channel.id {
+                    session.activeChannelId = nil
+                }
             }
         }
     }
@@ -171,8 +171,7 @@ struct MessageTranscriptView: View {
         // only touch it when the anchor genuinely changes; this runs on
         // every scroll tick.
         if metrics.distanceFromBottom > max(metrics.viewportHeight * 1.5, 400) {
-            if let id = position.viewID(type: Snowflake.self),
-               session.scrollAnchors[channel.id] != id {
+            if let id = scrolledId, session.scrollAnchors[channel.id] != id {
                 session.scrollAnchors[channel.id] = id
             }
         } else if session.scrollAnchors[channel.id] != nil {
@@ -190,7 +189,7 @@ struct MessageTranscriptView: View {
             Button {
                 session.scrollAnchors[channel.id] = nil
                 withAnimation(.easeOut(duration: 0.3)) {
-                    position.scrollTo(edge: .bottom)
+                    scrolledId = session.messages(in: channel.id).last?.id
                 }
                 session.markChannelRead(channel)
             } label: {
@@ -211,14 +210,14 @@ struct MessageTranscriptView: View {
     /// while the divider itself has stayed off screen, so a channel with a
     /// handful of unread never sees it.
     @ViewBuilder
-    private var unreadJumpPill: some View {
-        let unreadCount = entries.drop { !$0.isFirstUnread }.count
+    private func unreadJumpPill(_ entryList: [Entry], proxy: ScrollViewProxy) -> some View {
+        let unreadCount = entryList.drop { !$0.isFirstUnread }.count
         if unreadCount > 0, !unreadJumpDismissed {
             HStack(spacing: 10) {
                 Button {
                     withAnimation {
                         unreadJumpDismissed = true
-                        position.scrollTo(id: Self.unreadDividerId, anchor: .top)
+                        proxy.scrollTo(Self.unreadDividerId, anchor: .top)
                     }
                 } label: {
                     HStack(spacing: 5) {

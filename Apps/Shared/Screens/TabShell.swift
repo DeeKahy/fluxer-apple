@@ -608,6 +608,10 @@ struct YouTab: View {
 
     @State private var showSessions = false
 
+    /// CFBundleVersion, stamped with the build time by the deploy command
+    /// so a glance at this footer answers "which build is this phone on".
+    static let buildStamp = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+
     private let statuses: [(String, String, Color)] = [
         ("online", "Active", Theme.green),
         ("idle", "Away", Color(hex: 0xFAA61A)),
@@ -688,7 +692,7 @@ struct YouTab: View {
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal, 16)
 
-                Text("Fluxer for iOS and macOS")
+                Text("Fluxer for iOS and macOS · build \(Self.buildStamp)")
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.faint)
                     .frame(maxWidth: .infinity)
