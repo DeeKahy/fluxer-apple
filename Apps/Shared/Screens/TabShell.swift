@@ -104,7 +104,12 @@ struct TabShell: View {
 
     private func tabItem(_ target: Tab, icon: String, label: String, badge: Int) -> some View {
         Button {
-            tab = target
+            // Re-tapping the home tab brings up the workspace switcher.
+            if tab == target, target == .home {
+                showWorkspaces = true
+            } else {
+                tab = target
+            }
         } label: {
             VStack(spacing: 3) {
                 Image(systemName: tab == target ? icon + ".fill" : icon)
