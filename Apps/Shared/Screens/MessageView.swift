@@ -421,15 +421,14 @@ struct MessageView: View {
                     .padding(.trailing, 10)
                     .padding(.bottom, 9)
             }
-            .background(Theme.field, in: RoundedRectangle(cornerRadius: 18))
+            .liquidGlass(cornerRadius: 22)
             Button(action: send) {
                 Image(systemName: editing != nil ? "checkmark" : "arrow.up")
                     .font(.system(size: 16, weight: .heavy))
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
-                    .background(
-                        canSend && slowmodeRemaining <= 0 ? Theme.accent : Theme.bubble,
-                        in: Circle()
+                    .liquidGlassCircle(
+                        tint: canSend && slowmodeRemaining <= 0 ? Theme.accent : nil
                     )
             }
             .buttonStyle(SquishButtonStyle())
@@ -497,12 +496,8 @@ struct MessageView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
         }
-        .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
-        }
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .liquidGlass(cornerRadius: 14)
         .padding(.horizontal, 20)
         .padding(.top, 2)
         .padding(.bottom, 20)
@@ -575,7 +570,7 @@ struct MessageView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Theme.icon)
                 .frame(width: 36, height: 36)
-                .background(Theme.bubble, in: Circle())
+                .liquidGlassCircle()
         }
         .buttonStyle(SquishButtonStyle())
         .onChange(of: photoItems) { _, items in
@@ -605,7 +600,7 @@ struct MessageView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Theme.icon)
                 .frame(width: 36, height: 36)
-                .background(Theme.bubble, in: Circle())
+                .liquidGlassCircle()
         }
         .buttonStyle(SquishButtonStyle())
         #endif

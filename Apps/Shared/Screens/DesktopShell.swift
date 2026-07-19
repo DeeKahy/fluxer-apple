@@ -59,7 +59,15 @@ struct DesktopShell: View {
                 onOpenProfile: { profileUser = $0 }
             )
             .frame(width: 256)
-            .background(Theme.sidebarBg)
+            .background {
+                #if os(macOS)
+                BehindWindowBlur(material: .sidebar)
+                    .overlay(Theme.sidebarBg.opacity(0.72))
+                    .ignoresSafeArea()
+                #else
+                Theme.sidebarBg
+                #endif
+            }
             .overlay(alignment: .trailing) { Theme.hairline.frame(width: 1) }
             mainColumn
             if showMembers, let guild = currentGuild {
@@ -252,7 +260,15 @@ private struct DesktopRail: View {
         .padding(.bottom, 16)
         .frame(width: 74)
         .frame(maxHeight: .infinity)
-        .background(Theme.railBg)
+        .background {
+            #if os(macOS)
+            BehindWindowBlur(material: .underWindowBackground)
+                .overlay(Theme.railBg.opacity(0.6))
+                .ignoresSafeArea()
+            #else
+            Theme.railBg
+            #endif
+        }
     }
 
     private func mentionCount(_ guild: Guild) -> Int {
@@ -753,8 +769,9 @@ private struct DesktopSidebar: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
-        .background(Theme.green.opacity(0.09))
-        .overlay(alignment: .top) { Theme.green.opacity(0.22).frame(height: 1) }
+        .liquidGlass(tint: Theme.green.opacity(0.35), cornerRadius: 14)
+        .padding(.horizontal, 8)
+        .padding(.bottom, 2)
     }
 
     private var voiceChannelName: String {
@@ -778,7 +795,7 @@ private struct DesktopSidebar: View {
                         Circle()
                             .fill(Theme.presenceColor(session.myStatus == "invisible" ? nil : session.myStatus))
                             .frame(width: 10, height: 10)
-                            .overlay { Circle().strokeBorder(Theme.selfBarBg, lineWidth: 2) }
+                            .overlay { Circle().strokeBorder(Theme.sidebarBg, lineWidth: 2) }
                             .offset(x: 2, y: 2)
                     }
                     .contentShape(Circle())
@@ -842,8 +859,9 @@ private struct DesktopSidebar: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(Theme.selfBarBg)
-        .overlay(alignment: .top) { Theme.hairline.frame(height: 1) }
+        .liquidGlass(cornerRadius: 16)
+        .padding(.horizontal, 8)
+        .padding(.bottom, 8)
     }
 
     private func statusLabel(_ status: String) -> String {
