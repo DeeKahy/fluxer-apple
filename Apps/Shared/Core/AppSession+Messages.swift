@@ -239,7 +239,15 @@ extension AppSession {
     }
 
     func markChannelRead(_ channel: Channel) {
-        guard let last = messages(in: channel.id).last?.id ?? channel.lastMessageId else { return }
+        // The newest loaded message can sit behind the channel's
+        // lastMessageId, most commonly when the newest message was deleted:
+        // history no longer contains it but lastMessageId still points at
+        // it, so acking only messages().last leaves the channel unread
+        // forever. Ack the furthest position known, from the live channel
+        // object since the one handed in may be a stale copy.
+        let live = findChannel(channel.id) ?? channel
+        let positions = [messages(in: channel.id).last?.id, live.lastMessageId, channel.lastMessageId]
+        guard let last = positions.compactMap({ $0 }).max() else { return }
         markRead(channelId: channel.id, messageId: last)
     }
 
