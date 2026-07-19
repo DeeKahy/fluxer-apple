@@ -237,6 +237,21 @@ struct MessageView: View {
                 // remember the reading position and to know whether the view
                 // is parked at the newest message.
                 .scrollPosition(id: $scrolledId, anchor: .bottom)
+                // The viewport shrinks when the composer grows a line or a
+                // banner appears, and SwiftUI keeps the content offset
+                // rather than the bottom edge, sliding the newest messages
+                // out of view. Re-pin whenever the height changes while
+                // parked at the bottom.
+                .onGeometryChange(for: CGFloat.self) { geometry in
+                    geometry.size.height
+                } action: { _ in
+                    guard bottomVisible else { return }
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(50))
+                        guard bottomVisible, let last = session.messages(in: channel.id).last else { return }
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
+                }
                 .overlay(alignment: .top) {
                     unreadJumpPill(proxy)
                 }
