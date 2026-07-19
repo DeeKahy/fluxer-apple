@@ -74,6 +74,18 @@ final class AppSession {
     var incomingCall: Channel?
     /// Who is in which voice channel, kept from READY and voice updates.
     var voiceChannelUsers: [Snowflake: Set<Snowflake>] = [:]
+    /// Users currently muted in voice, self or server muted, from the same
+    /// sources. Rendered as mic-off badges on tiles and occupant rows.
+    var voiceMutedUsers: Set<Snowflake> = []
+
+    /// Whether a voice participant should show a mute badge. The local
+    /// toggle wins for ourselves so the badge flips instantly.
+    func isVoiceMuted(_ userId: Snowflake) -> Bool {
+        if userId == currentUser?.id, voice.isActive {
+            return voice.muted
+        }
+        return voiceMutedUsers.contains(userId)
+    }
 
     var channelsWithFullHistory: Set<Snowflake> = []
     var channelsLoadingOlder: Set<Snowflake> = []
@@ -123,16 +135,21 @@ final class AppSession {
         self.instanceConfig = config
         self.client = APIClient(baseURL: config.apiBase)
         MediaURLs.configure(with: config)
-        voice.sendVoiceState = { [weak self] guildId, channelId, mute in
+        voice.sendVoiceState = { [weak self] guildId, channelId, mute, connectionId in
             await self?.gateway?.updateVoiceState(
                 guildId: guildId,
                 channelId: channelId,
-                selfMute: mute
+                selfMute: mute,
+                connectionId: connectionId
             )
         }
-        voice.heartbeat = { [weak self] channelId in
+        voice.heartbeat = { [weak self] channelId, connectionId in
             guard let self else { return }
-            try? await self.client.voiceHeartbeat(in: channelId)
+            try? await self.client.voiceHeartbeat(in: channelId, connectionId: connectionId)
+        }
+        voice.endHeartbeat = { [weak self] channelId, connectionId in
+            guard let self else { return }
+            try? await self.client.endVoiceHeartbeat(in: channelId, connectionId: connectionId)
         }
         if let token = KeychainStore.loadToken() {
             loadCachedState()

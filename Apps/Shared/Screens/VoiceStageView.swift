@@ -147,6 +147,11 @@ struct VoiceStageView: View {
         .overlay(alignment: .bottomLeading) {
             nameBadge(tile.userId, suffix: tile.isScreenShare ? "screen" : nil)
         }
+        .overlay(alignment: .bottomTrailing) {
+            if let userId = tile.userId, !tile.isScreenShare, session.isVoiceMuted(userId) {
+                muteBadge.padding(6)
+            }
+        }
         .overlay {
             if let userId = tile.userId, session.voice.speakingUserIds.contains(userId), !tile.isScreenShare {
                 RoundedRectangle(cornerRadius: 10).strokeBorder(.green, lineWidth: 2.5)
@@ -171,6 +176,19 @@ struct VoiceStageView: View {
             .overlay(alignment: .bottomLeading) {
                 nameBadge(userId, suffix: nil)
             }
+            .overlay(alignment: .bottomTrailing) {
+                if session.isVoiceMuted(userId) {
+                    muteBadge.padding(6)
+                }
+            }
+    }
+
+    private var muteBadge: some View {
+        Image(systemName: "mic.slash.fill")
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(.red)
+            .padding(5)
+            .background(.black.opacity(0.55), in: Circle())
     }
 
     private func nameBadge(_ userId: Snowflake?, suffix: String?) -> some View {

@@ -625,6 +625,11 @@ private struct DesktopSidebar: View {
                         .foregroundStyle(Theme.icon)
                         .lineLimit(1)
                     Spacer()
+                    if session.isVoiceMuted(userId) {
+                        Image(systemName: "mic.slash.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Theme.red)
+                    }
                 }
                 .padding(.vertical, 3)
                 .padding(.leading, 30)

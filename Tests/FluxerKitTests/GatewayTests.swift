@@ -224,4 +224,64 @@ struct GatewayClientTests {
         let heartbeat = try #require(payloads.last(where: { $0.op == .heartbeat }))
         #expect(heartbeat.d?.numberValue == 5)
     }
+
+    @Test func voiceStateUpdateCarriesMuteAndConnectionId() async throws {
+        let (client, transport) = makeClient()
+        try await client.connect(token: "tok")
+        await client.updateVoiceState(
+            guildId: Snowflake(10),
+            channelId: Snowflake(11),
+            selfMute: true,
+            connectionId: "conn-1"
+        )
+
+        let payloads = try await waitForFrames(transport, count: 1)
+        let update = try #require(payloads.first(where: { $0.op == .voiceStateUpdate }))
+        #expect(update.d?["guild_id"]?.stringValue == "10")
+        #expect(update.d?["channel_id"]?.stringValue == "11")
+        #expect(update.d?["self_mute"]?.boolValue == true)
+        #expect(update.d?["connection_id"]?.stringValue == "conn-1")
+    }
+
+    @Test func voiceStateUpdateWithoutConnectionSendsNull() async throws {
+        let (client, transport) = makeClient()
+        try await client.connect(token: "tok")
+        await client.updateVoiceState(guildId: nil, channelId: Snowflake(11))
+
+        let payloads = try await waitForFrames(transport, count: 1)
+        let update = try #require(payloads.first(where: { $0.op == .voiceStateUpdate }))
+        #expect(update.d?["guild_id"] == JSONValue.null)
+        #expect(update.d?["connection_id"] == JSONValue.null)
+        #expect(update.d?["self_mute"]?.boolValue == false)
+    }
+}
+
+@Suite("VoiceState")
+struct VoiceStateTests {
+    @Test func decodesMuteFlags() throws {
+        let json = """
+        {"user_id": "7", "channel_id": "11", "guild_id": "10", "self_mute": true, "self_deaf": false, "mute": false, "deaf": false}
+        """
+        let state = try JSONDecoder.fluxer.decode(VoiceState.self, from: Data(json.utf8))
+        #expect(state.userId == Snowflake(7))
+        #expect(state.selfMute == true)
+        #expect(state.isMuted)
+    }
+
+    @Test func serverMuteCountsAsMuted() throws {
+        let json = """
+        {"user_id": "7", "channel_id": "11", "self_mute": false, "mute": true}
+        """
+        let state = try JSONDecoder.fluxer.decode(VoiceState.self, from: Data(json.utf8))
+        #expect(state.selfMute == false)
+        #expect(state.isMuted)
+    }
+
+    @Test func unmutedWhenNoFlagsSet() throws {
+        let json = """
+        {"user_id": "7", "channel_id": "11"}
+        """
+        let state = try JSONDecoder.fluxer.decode(VoiceState.self, from: Data(json.utf8))
+        #expect(!state.isMuted)
+    }
 }

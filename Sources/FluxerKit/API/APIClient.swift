@@ -584,10 +584,25 @@ public actor APIClient {
     // MARK: Voice
 
     /// Keeps the server's voice presence alive; the official client pings
-    /// every fifteen seconds while connected.
-    public func voiceHeartbeat(in channelId: Snowflake) async throws {
-        let data = Data("{}".utf8)
+    /// every fifteen seconds while connected. The server rejects the call
+    /// without the connection id from VOICE_SERVER_UPDATE.
+    public func voiceHeartbeat(in channelId: Snowflake, connectionId: String) async throws {
+        struct Body: Encodable {
+            let connectionId: String
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(connectionId: connectionId))
         let request = try makeRequest("POST", Endpoint.voiceHeartbeat(channelId), bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
+    /// Tells the server this voice connection's presence ended, called on
+    /// a clean leave so others see the departure right away.
+    public func endVoiceHeartbeat(in channelId: Snowflake, connectionId: String) async throws {
+        struct Body: Encodable {
+            let connectionId: String
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(connectionId: connectionId))
+        let request = try makeRequest("DELETE", Endpoint.voiceHeartbeat(channelId), bodyData: data)
         _ = try await executeRaw(request)
     }
 

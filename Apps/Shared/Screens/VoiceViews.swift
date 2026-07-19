@@ -235,6 +235,16 @@ struct VoiceChannelRow: View {
                                         Circle().strokeBorder(.green, lineWidth: 2)
                                     }
                                 }
+                                .overlay(alignment: .bottomTrailing) {
+                                    if session.isVoiceMuted(userId) {
+                                        Image(systemName: "mic.slash.fill")
+                                            .font(.system(size: 7, weight: .bold))
+                                            .foregroundStyle(.red)
+                                            .padding(1.5)
+                                            .background(Theme.sheet, in: Circle())
+                                            .offset(x: 3, y: 3)
+                                    }
+                                }
                         }
                         if occupants.count > 6 {
                             Text("+\(occupants.count - 6)")

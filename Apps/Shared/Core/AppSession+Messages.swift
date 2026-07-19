@@ -320,6 +320,7 @@ extension AppSession {
             }
         }
         voiceChannelUsers = [:]
+        voiceMutedUsers = []
         for guildEntry in data["guilds"]?.arrayValue ?? [] {
             for entry in guildEntry["voice_states"]?.arrayValue ?? [] {
                 if let state = try? entry.decoded(as: VoiceState.self) {
@@ -372,7 +373,8 @@ extension AppSession {
         NotificationManager.shared.updateBadge(unreadCount: unreadDMs)
     }
 
-    /// Moves a user between voice channel occupancy sets.
+    /// Moves a user between voice channel occupancy sets and keeps their
+    /// mute badge current.
     func applyVoiceState(_ state: VoiceState) {
         for (channelId, users) in voiceChannelUsers where users.contains(state.userId) {
             voiceChannelUsers[channelId]?.remove(state.userId)
@@ -382,6 +384,13 @@ extension AppSession {
         }
         if let channelId = state.channelId {
             voiceChannelUsers[channelId, default: []].insert(state.userId)
+            if state.isMuted {
+                voiceMutedUsers.insert(state.userId)
+            } else {
+                voiceMutedUsers.remove(state.userId)
+            }
+        } else {
+            voiceMutedUsers.remove(state.userId)
         }
     }
 

@@ -8,6 +8,14 @@ public struct VoiceState: Codable, Sendable {
     public var guildId: Snowflake?
     public var selfMute: Bool?
     public var selfDeaf: Bool?
+    /// Server-side mute and deafen, set by moderators.
+    public var mute: Bool?
+    public var deaf: Bool?
+
+    /// Muted from everyone else's point of view, self or server imposed.
+    public var isMuted: Bool {
+        selfMute == true || mute == true
+    }
 }
 
 /// Where to connect for media after asking to join voice: a LiveKit

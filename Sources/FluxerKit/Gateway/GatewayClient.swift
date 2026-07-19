@@ -58,12 +58,16 @@ public actor GatewayClient {
         startReceiveLoop()
     }
 
-    /// Asks to join, move, or leave voice. A nil channel leaves.
+    /// Asks to join, move, or leave voice. A nil channel leaves. Pass the
+    /// connection id from VOICE_SERVER_UPDATE when updating an existing
+    /// connection (mute changes); without it the server treats the payload
+    /// as a brand new join.
     public func updateVoiceState(
         guildId: Snowflake?,
         channelId: Snowflake?,
         selfMute: Bool = false,
-        selfDeaf: Bool = false
+        selfDeaf: Bool = false,
+        connectionId: String? = nil
     ) async {
         let payload = GatewayPayload(
             op: .voiceStateUpdate,
@@ -72,6 +76,7 @@ public actor GatewayClient {
                 "channel_id": channelId.map { JSONValue.string($0.stringValue) } ?? .null,
                 "self_mute": .bool(selfMute),
                 "self_deaf": .bool(selfDeaf),
+                "connection_id": connectionId.map(JSONValue.string) ?? .null,
             ])
         )
         await send(payload)

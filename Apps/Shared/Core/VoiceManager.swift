@@ -48,10 +48,16 @@ final class VoiceManager {
     private var heartbeatTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var pendingGuildId: Snowflake?
+    /// The server's id for this voice connection, from VOICE_SERVER_UPDATE.
+    /// Mute updates and presence heartbeats must carry it or the server
+    /// ignores them (heartbeats 400, mute updates open a second join).
+    private var connectionId: String?
 
     /// Wired by AppSession so the manager can drive gateway and REST.
-    var sendVoiceState: ((Snowflake?, Snowflake?, Bool) async -> Void)?
-    var heartbeat: ((Snowflake) async -> Void)?
+    /// Parameters: guild, channel, self mute, connection id.
+    var sendVoiceState: ((Snowflake?, Snowflake?, Bool, String?) async -> Void)?
+    var heartbeat: ((Snowflake, String) async -> Void)?
+    var endHeartbeat: ((Snowflake, String) async -> Void)?
 
     var connectedChannelId: Snowflake? {
         if case .connected(let channelId) = phase { return channelId }
@@ -90,7 +96,7 @@ final class VoiceManager {
         isRinging = ringing
         phase = .requesting(channelId: channelId)
         pendingGuildId = guildId
-        await sendVoiceState?(guildId, channelId, muted)
+        await sendVoiceState?(guildId, channelId, muted, nil)
         // VOICE_SERVER_UPDATE continues the flow; give up if it never comes.
         Task {
             try? await Task.sleep(for: .seconds(8))
@@ -109,6 +115,7 @@ final class VoiceManager {
             return
         }
         phase = .connecting(channelId: channelId)
+        connectionId = update.connectionId
         do {
             try await room.connect(url: url.absoluteString, token: update.token)
             do {
@@ -120,6 +127,12 @@ final class VoiceManager {
                 lastError = "Microphone unavailable, connected listen only."
             }
             phase = .connected(channelId: channelId)
+            // Resend the voice state with the connection id, the way the
+            // official client does after connecting. This promotes the
+            // server's pending join to a visible one even when the media
+            // server's own confirmation is missed, and settles the mute
+            // flag in case the mic publish failed.
+            await sendVoiceState?(pendingGuildId, channelId, muted, connectionId)
             refreshParticipants()
             startHeartbeat(channelId: channelId)
             startRefreshLoop()
@@ -130,7 +143,8 @@ final class VoiceManager {
             voiceLog.error("Voice connect failed: \(String(describing: error))")
             lastError = "Voice connection failed."
             phase = .idle
-            await sendVoiceState?(pendingGuildId, nil, muted)
+            connectionId = nil
+            await sendVoiceState?(pendingGuildId, nil, muted, nil)
         }
     }
 
@@ -144,17 +158,27 @@ final class VoiceManager {
         cameraEnabled = false
         videoTiles = []
         let guildId = pendingGuildId
+        let channelId = connectedChannelId
+        let leavingConnectionId = connectionId
         pendingGuildId = nil
+        connectionId = nil
         phase = .idle
         speakingUserIds = []
         roomParticipantIds = []
         await room.disconnect()
-        await sendVoiceState?(guildId, nil, muted)
+        await sendVoiceState?(guildId, nil, muted, nil)
+        if let channelId, let leavingConnectionId {
+            await endHeartbeat?(channelId, leavingConnectionId)
+        }
     }
 
     func toggleMute() async {
         muted.toggle()
         try? await room.localParticipant.setMicrophone(enabled: !muted)
+        // Tell the gateway so everyone else's mute indicator updates.
+        if case .connected(let channelId) = phase, connectionId != nil {
+            await sendVoiceState?(pendingGuildId, channelId, muted, connectionId)
+        }
     }
 
     func toggleCamera() async {
@@ -294,9 +318,10 @@ final class VoiceManager {
 
     private func startHeartbeat(channelId: Snowflake) {
         heartbeatTask?.cancel()
+        guard let connectionId else { return }
         heartbeatTask = Task {
             while !Task.isCancelled {
-                await heartbeat?(channelId)
+                await heartbeat?(channelId, connectionId)
                 try? await Task.sleep(for: .seconds(15))
             }
         }

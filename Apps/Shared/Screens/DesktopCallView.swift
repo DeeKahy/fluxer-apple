@@ -261,6 +261,11 @@ struct DesktopCallView: View {
         .overlay(alignment: .bottomLeading) {
             tileName(userName(tile.userId), size: nameSize)
         }
+        .overlay(alignment: .bottomTrailing) {
+            if let userId = tile.userId, !tile.isScreenShare, session.isVoiceMuted(userId) {
+                muteBadge.padding(10)
+            }
+        }
         .overlay {
             if let userId = tile.userId,
                session.voice.speakingUserIds.contains(userId),
@@ -279,6 +284,7 @@ struct DesktopCallView: View {
         speakingRing: Bool = false
     ) -> some View {
         let speaking = userId.map { session.voice.speakingUserIds.contains($0) } ?? false
+        let muted = userId.map { session.isVoiceMuted($0) } ?? false
         return RoundedRectangle(cornerRadius: radius)
             .fill(userId.map { Theme.tileColor(for: $0) } ?? Theme.deskTile)
             .overlay {
@@ -293,7 +299,9 @@ struct DesktopCallView: View {
                 tileName(userName(userId), size: nameSize)
             }
             .overlay(alignment: .bottomTrailing) {
-                if speaking {
+                if muted {
+                    muteBadge.padding(10)
+                } else if speaking {
                     SpeakingWave()
                         .padding(10)
                 }
@@ -304,6 +312,14 @@ struct DesktopCallView: View {
                         .strokeBorder(Theme.green.opacity(0.7), lineWidth: 3)
                 }
             }
+    }
+
+    private var muteBadge: some View {
+        Image(systemName: "mic.slash.fill")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(Theme.red)
+            .padding(6)
+            .background(.black.opacity(0.55), in: Circle())
     }
 
     private func tileName(_ name: String, size: CGFloat) -> some View {
