@@ -26,13 +26,21 @@ struct MessageTranscriptView: View {
     /// scrolls there.
     @State private var scrolledId: Snowflake?
 
+    /// Pagination stays disarmed until the initial load has settled. The
+    /// lazy stack touches the top of the content during the first layout
+    /// passes, which fired the history loader's onAppear on open and
+    /// chain-loaded page after page in long channels, locking scrolling
+    /// for seconds.
+    @State private var paginationArmed = false
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 if !session.canLoadOlderMessages(in: channel.id) {
                     welcomeHero
                 }
-                if session.canLoadOlderMessages(in: channel.id),
+                if paginationArmed,
+                   session.canLoadOlderMessages(in: channel.id),
                    !session.messages(in: channel.id).isEmpty {
                     ProgressView()
                         .frame(maxWidth: .infinity)
@@ -79,11 +87,19 @@ struct MessageTranscriptView: View {
         }
         .task(id: channel.id) {
             scrolledId = nil
+            paginationArmed = false
             session.activeChannelId = channel.id
             session.recordVisit(channel)
             session.captureUnreadMarker(channel)
             await session.loadMessages(for: channel)
             session.markChannelRead(channel)
+            // Park on the newest message explicitly: until the user has
+            // scrolled, the position binding is nil and a history prepend
+            // has no row to hold onto, which let the view drift up into
+            // the loader. Then arm pagination once layout has settled.
+            scrolledId = session.messages(in: channel.id).last?.id
+            try? await Task.sleep(for: .milliseconds(300))
+            paginationArmed = true
         }
         .onDisappear {
             if session.activeChannelId == channel.id {
