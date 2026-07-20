@@ -1,22 +1,17 @@
 import SwiftUI
 import FluxerKit
 
-/// The scrolling message list for a channel: history, day dividers, the
-/// unread marker, and all scroll behavior. Extracted from MessageView so
-/// the chrome (composer, banners, toolbars) lives apart from the scroll
-/// machinery.
-///
-/// Scroll design notes, learned the hard way:
-/// - "Am I at the bottom" comes from scroll geometry, never from comparing
-///   position ids; the position binding often reports a row near the
-///   bottom rather than the exact last one.
-/// - The id binding is used instead of the ScrollPosition type because the
-///   system writes ScrollPosition continuously while scrolling, which
-///   re-rendered this whole view per frame and froze input during the
-///   keyboard animation. The id only changes when a different row crosses
-///   the bottom edge.
-/// - The geometry callback fires per scrolled pixel; nothing in it may
-///   touch observable state unconditionally.
+/// The scrolling message list for a channel. Deliberately minimal after
+/// several rounds of clever scroll features made the experience worse:
+/// no position saving, no geometry tracking, no jump buttons. Two native
+/// mechanisms do all the work:
+/// - defaultScrollAnchor(.bottom): open at the newest message and stay
+///   pinned through keyboard, composer and banner resizes.
+/// - scrollPosition(id:): the system keeps the current row in place when
+///   content changes (history prepends, messages arriving while reading
+///   older history).
+/// The only hand-rolled rule left is "follow the conversation": jump to a
+/// new message when parked at the newest one or when it is our own.
 struct MessageTranscriptView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.desktopChrome) private var desktopChrome
@@ -27,230 +22,72 @@ struct MessageTranscriptView: View {
     let onEdit: (Message) -> Void
     let onDelete: (Message) -> Void
 
-    /// The message at the bottom edge. Writing it scrolls there. Never use
-    /// it to decide "at the bottom", that is what the metrics are for.
+    /// The row at the bottom edge, maintained by the system. Writing it
+    /// scrolls there.
     @State private var scrolledId: Snowflake?
-    @State private var unreadJumpDismissed = false
-
-    /// Live scroll metrics, deliberately kept in a plain reference box
-    /// instead of @State: they change on every scrolled pixel, nothing in
-    /// the rendered body reads them, and routing them through SwiftUI
-    /// state re-rendered the transcript per frame. Only event closures
-    /// read these.
-    private final class MetricsBox {
-        var distanceFromBottom: CGFloat = 0
-        var viewportHeight: CGFloat = 0
-    }
-    @State private var metrics = MetricsBox()
-
-    /// Close enough to the newest message to count as reading live.
-    private var isAtBottom: Bool { metrics.distanceFromBottom < 40 }
-
-    /// Scroll target for the new messages divider, distinct from message ids.
-    private static let unreadDividerId = "new-messages-divider"
-
-    private struct ScrollMetrics: Equatable {
-        var distanceFromBottom: CGFloat
-        var viewportHeight: CGFloat
-    }
 
     var body: some View {
-        // Computed once per body evaluation; the pill overlay reads it too
-        // and computing it twice doubled the per-render cost.
-        let entryList = entries
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    if !session.canLoadOlderMessages(in: channel.id) {
-                        welcomeHero
-                    }
-                    if session.canLoadOlderMessages(in: channel.id),
-                       !session.messages(in: channel.id).isEmpty {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .onAppear {
-                                // The tracked scroll id keeps the current
-                                // bottom-edge row anchored through the
-                                // prepend, so no manual restore is needed.
-                                Task { _ = await session.loadOlderMessages(for: channel) }
-                            }
-                    }
-                    ForEach(entryList) { entry in
-                        if let dayLabel = entry.dayLabel {
-                            DayDivider(label: dayLabel)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                if !session.canLoadOlderMessages(in: channel.id) {
+                    welcomeHero
+                }
+                if session.canLoadOlderMessages(in: channel.id),
+                   !session.messages(in: channel.id).isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .onAppear {
+                            Task { _ = await session.loadOlderMessages(for: channel) }
                         }
-                        if entry.isFirstUnread {
-                            NewMessagesDivider()
-                                .id(Self.unreadDividerId)
-                                // Once the divider has been on screen the
-                                // jump pill has nothing left to offer.
-                                .onAppear {
-                                    withAnimation { unreadJumpDismissed = true }
-                                }
-                        }
-                        MessageRow(
-                            message: entry.message,
-                            showsHeader: entry.showsHeader,
-                            isOwn: entry.message.author?.id == session.currentUser?.id,
-                            onReact: { emoji in
-                                Task { await session.toggleReaction(emoji, on: entry.message) }
-                            },
-                            onReply: { onReply(entry.message) },
-                            onEdit: { onEdit(entry.message) },
-                            onDelete: { onDelete(entry.message) }
-                        )
-                        .id(entry.message.id)
+                }
+                ForEach(entries) { entry in
+                    if let dayLabel = entry.dayLabel {
+                        DayDivider(label: dayLabel)
                     }
-                }
-                .scrollTargetLayout()
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-            }
-            .defaultScrollAnchor(.bottom, for: .initialOffset)
-            .defaultScrollAnchor(.bottom, for: .sizeChanges)
-            .scrollPosition(id: $scrolledId, anchor: .bottom)
-            .onScrollGeometryChange(for: ScrollMetrics.self) { geometry in
-                ScrollMetrics(
-                    distanceFromBottom: max(
-                        0,
-                        geometry.contentSize.height + geometry.contentInsets.bottom
-                            - geometry.containerSize.height - geometry.contentOffset.y
-                    ),
-                    viewportHeight: geometry.containerSize.height
-                )
-            } action: { _, new in
-                metrics.distanceFromBottom = new.distanceFromBottom
-                metrics.viewportHeight = new.viewportHeight
-                updateResumeAnchor()
-            }
-            .overlay(alignment: .top) {
-                unreadJumpPill(entryList, proxy: proxy)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                jumpToBottomButton
-                    .animation(.easeOut(duration: 0.2), value: session.scrollAnchors[channel.id] != nil)
-            }
-            // Follow new messages while reading live, and always follow our own.
-            .onChange(of: session.messages(in: channel.id).last?.id) { _, newLast in
-                let ownMessage = session.messages(in: channel.id).last?.author?.id == session.currentUser?.id
-                if isAtBottom || ownMessage {
-                    scrolledId = newLast
+                    if entry.isFirstUnread {
+                        NewMessagesDivider()
+                    }
+                    MessageRow(
+                        message: entry.message,
+                        showsHeader: entry.showsHeader,
+                        isOwn: entry.message.author?.id == session.currentUser?.id,
+                        onReact: { emoji in
+                            Task { await session.toggleReaction(emoji, on: entry.message) }
+                        },
+                        onReply: { onReply(entry.message) },
+                        onEdit: { onEdit(entry.message) },
+                        onDelete: { onDelete(entry.message) }
+                    )
+                    .id(entry.message.id)
                 }
             }
-            .task(id: channel.id) {
-                scrolledId = nil
-                unreadJumpDismissed = false
-                session.activeChannelId = channel.id
-                session.recordVisit(channel)
-                session.captureUnreadMarker(channel)
-                await session.loadMessages(for: channel)
-                session.markChannelRead(channel)
-                // Resume where the reader left off, if they left meaningfully
-                // scrolled up. One beat so the rows exist before the jump.
-                if let saved = session.scrollAnchors[channel.id],
-                   session.messages(in: channel.id).contains(where: { $0.id == saved }) {
-                    try? await Task.sleep(for: .milliseconds(100))
-                    scrolledId = saved
-                }
-            }
-            .onDisappear {
-                if session.activeChannelId == channel.id {
-                    session.activeChannelId = nil
-                }
+            .scrollTargetLayout()
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+        .defaultScrollAnchor(.bottom)
+        .scrollPosition(id: $scrolledId, anchor: .bottom)
+        #if os(iOS)
+        .scrollDismissesKeyboard(.interactively)
+        #endif
+        .onChange(of: session.messages(in: channel.id).last?.id) { oldLast, newLast in
+            let ownMessage = session.messages(in: channel.id).last?.author?.id == session.currentUser?.id
+            if scrolledId == nil || scrolledId == oldLast || ownMessage {
+                scrolledId = newLast
             }
         }
-    }
-
-    /// A resume spot is worth keeping once the reading position is more
-    /// than about a screen and a half above the newest message. Anything
-    /// closer reopens pinned to the bottom, and the saved anchor doubles
-    /// as the jump-to-bottom button's visibility.
-    private func updateResumeAnchor() {
-        // Writing to the session invalidates every view observing it, so
-        // only touch it when the anchor genuinely changes; this runs on
-        // every scroll tick.
-        if metrics.distanceFromBottom > max(metrics.viewportHeight * 1.5, 400) {
-            if let id = scrolledId, session.scrollAnchors[channel.id] != id {
-                session.scrollAnchors[channel.id] = id
-            }
-        } else if session.scrollAnchors[channel.id] != nil {
-            session.scrollAnchors[channel.id] = nil
+        .task(id: channel.id) {
+            scrolledId = nil
+            session.activeChannelId = channel.id
+            session.recordVisit(channel)
+            session.captureUnreadMarker(channel)
+            await session.loadMessages(for: channel)
+            session.markChannelRead(channel)
         }
-    }
-
-    // MARK: Overlays
-
-    /// Floating jump back to the newest message, shown while a resume spot
-    /// is armed, so its presence signals "you are not reading the latest".
-    @ViewBuilder
-    private var jumpToBottomButton: some View {
-        if session.scrollAnchors[channel.id] != nil {
-            Button {
-                session.scrollAnchors[channel.id] = nil
-                withAnimation(.easeOut(duration: 0.3)) {
-                    scrolledId = session.messages(in: channel.id).last?.id
-                }
-                session.markChannelRead(channel)
-            } label: {
-                Image(systemName: "arrow.down")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Theme.text)
-                    .frame(width: 40, height: 40)
-                    .liquidGlassCircle()
-            }
-            .buttonStyle(SquishButtonStyle())
-            .padding(.trailing, 14)
-            .padding(.bottom, 10)
-            .transition(.opacity.combined(with: .scale(scale: 0.8)))
-        }
-    }
-
-    /// Floating pill offering a jump to the new messages divider. Only shows
-    /// while the divider itself has stayed off screen, so a channel with a
-    /// handful of unread never sees it.
-    @ViewBuilder
-    private func unreadJumpPill(_ entryList: [Entry], proxy: ScrollViewProxy) -> some View {
-        let unreadCount = entryList.drop { !$0.isFirstUnread }.count
-        if unreadCount > 0, !unreadJumpDismissed {
-            HStack(spacing: 10) {
-                Button {
-                    withAnimation {
-                        unreadJumpDismissed = true
-                        proxy.scrollTo(Self.unreadDividerId, anchor: .top)
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 11, weight: .bold))
-                        Text(unreadCount == 1 ? "1 new message" : "\(unreadCount) new messages")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                Button {
-                    withAnimation { unreadJumpDismissed = true }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 13)
-            .padding(.vertical, 7)
-            .background(Theme.accent, in: Capsule())
-            .shadow(color: .black.opacity(0.3), radius: 8, y: 3)
-            .padding(.top, 8)
-            .transition(.opacity.combined(with: .move(edge: .top)))
-            // The pill is an offer at the moment of opening, not a badge;
-            // if it goes untouched it clears itself.
-            .task {
-                try? await Task.sleep(for: .seconds(8))
-                guard !Task.isCancelled else { return }
-                withAnimation { unreadJumpDismissed = true }
+        .onDisappear {
+            if session.activeChannelId == channel.id {
+                session.activeChannelId = nil
             }
         }
     }

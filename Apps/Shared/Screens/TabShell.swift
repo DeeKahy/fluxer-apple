@@ -612,6 +612,16 @@ struct YouTab: View {
     /// so a glance at this footer answers "which build is this phone on".
     static let buildStamp = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
 
+    /// When the running binary was compiled, straight from the executable
+    /// file's timestamp, so it works even without the stamped version.
+    static let buildDate: String = {
+        guard let url = Bundle.main.executableURL,
+              let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))
+                .flatMap(\.contentModificationDate)
+        else { return "unknown" }
+        return date.formatted(date: .abbreviated, time: .shortened)
+    }()
+
     private let statuses: [(String, String, Color)] = [
         ("online", "Active", Theme.green),
         ("idle", "Away", Color(hex: 0xFAA61A)),
@@ -692,11 +702,14 @@ struct YouTab: View {
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal, 16)
 
-                Text("Fluxer for iOS and macOS · build \(Self.buildStamp)")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.faint)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 22)
+                VStack(spacing: 3) {
+                    Text("Fluxer for iOS and macOS")
+                    Text("build \(Self.buildStamp) · compiled \(Self.buildDate)")
+                }
+                .font(.system(size: 13))
+                .foregroundStyle(Theme.faint)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 22)
             }
         }
         .background(Theme.bg)
