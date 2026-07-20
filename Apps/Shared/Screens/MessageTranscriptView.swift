@@ -74,10 +74,18 @@ struct MessageTranscriptView: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
-        .defaultScrollAnchor(.bottom)
+        // initialOffset ONLY. The anchor's size-change handling and the id
+        // binding are two authorities both issuing scroll adjustments when
+        // the viewport resizes; opening a reply (banner plus keyboard, two
+        // resizes at once) left the scroll view stuck arbitrating between
+        // them with its pan gesture disabled. The id binding alone keeps
+        // the bottom row pinned through resizes.
+        .defaultScrollAnchor(.bottom, for: .initialOffset)
         .scrollPosition(id: $scrolledId, anchor: .bottom)
         #if os(iOS)
-        .scrollDismissesKeyboard(.interactively)
+        // Not .interactively: linking the pan gesture to the keyboard is
+        // another way scrolling stops responding while the keyboard is up.
+        .scrollDismissesKeyboard(.immediately)
         #endif
         .onChange(of: session.messages(in: channel.id).last?.id) { oldLast, newLast in
             let ownMessage = session.messages(in: channel.id).last?.author?.id == session.currentUser?.id
