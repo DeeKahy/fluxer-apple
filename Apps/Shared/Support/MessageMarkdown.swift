@@ -1,18 +1,47 @@
 import Foundation
+import SwiftUI
 import FluxerKit
 
 /// Turns raw message content into an AttributedString: basic markdown
 /// (bold, italics, strikethrough, inline code, links), clickable channel
-/// mentions, named user mentions, and auto linked bare URLs.
+/// mentions, named user mentions, auto linked bare URLs, and spoilers.
 enum MessageMarkdown {
     static let channelURLScheme = "fluxer"
 
     static func render(
         _ content: String,
+        revealedSpoilers: Set<Int> = [],
         channelName: (Snowflake) -> String?,
         userName: (Snowflake) -> String?
     ) -> AttributedString {
         var text = content
+
+        // ||spoiler|| markers. Revealed ones just lose the bars and render
+        // normally. Hidden ones are replaced whole with a tappable link,
+        // so the content never reaches the later transforms and the block
+        // characters can't collide with markdown syntax.
+        if let regex = try? NSRegularExpression(
+            pattern: #"\|\|(.+?)\|\|"#,
+            options: [.dotMatchesLineSeparators]
+        ) {
+            let range = NSRange(text.startIndex..., in: text)
+            let matches = regex.matches(in: text, range: range)
+            for (index, match) in matches.enumerated().reversed() {
+                guard let fullRange = Range(match.range, in: text),
+                      let innerRange = Range(match.range(at: 1), in: text)
+                else { continue }
+                if revealedSpoilers.contains(index) {
+                    text.replaceSubrange(fullRange, with: String(text[innerRange]))
+                } else {
+                    let width = min(max(text[innerRange].count, 4), 24)
+                    let bar = String(repeating: "\u{2588}", count: width)
+                    text.replaceSubrange(
+                        fullRange,
+                        with: "[\(bar)](\(channelURLScheme)://spoiler/\(index))"
+                    )
+                }
+            }
+        }
 
         // <#123> becomes a tappable link routed back into the app.
         text = replace(in: text, pattern: #"<#(\d+)>"#) { id in
@@ -55,7 +84,20 @@ enum MessageMarkdown {
             interpretedSyntax: .inlineOnlyPreservingWhitespace,
             failurePolicy: .returnPartiallyParsedIfPossible
         )
-        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(content)
+        var attributed = (try? AttributedString(markdown: text, options: options)) ?? AttributedString(content)
+
+        // Hidden spoiler bars should look like redactions, not links.
+        let spoilerRanges = attributed.runs.compactMap { run -> Range<AttributedString.Index>? in
+            guard let link = run.link,
+                  link.scheme == channelURLScheme,
+                  link.host() == "spoiler"
+            else { return nil }
+            return run.range
+        }
+        for range in spoilerRanges {
+            attributed[range].foregroundColor = Theme.faint
+        }
+        return attributed
     }
 
     /// When a message is nothing but 1 to 8 custom emoji, returns their ids
@@ -97,21 +139,24 @@ enum MessageMarkdown {
         return codes
     }
 
-    /// Splits content into plain segments and fenced code blocks.
+    /// Splits content into plain segments, quoted runs, and fenced code
+    /// blocks.
     enum Segment: Equatable {
         case text(String)
+        case quote(String)
         case codeBlock(String)
     }
 
     static func segments(_ content: String) -> [Segment] {
-        guard content.contains("```") else { return [.text(content)] }
+        let hasQuote = content.hasPrefix(">") || content.contains("\n>")
+        guard content.contains("```") || hasQuote else { return [.text(content)] }
         var result: [Segment] = []
         let parts = content.components(separatedBy: "```")
         for (index, part) in parts.enumerated() {
             if index % 2 == 0 {
                 let trimmed = part.trimmingCharacters(in: .newlines)
                 if !trimmed.isEmpty {
-                    result.append(.text(trimmed))
+                    result.append(contentsOf: splitQuotes(trimmed))
                 }
             } else {
                 // Drop a leading language tag line.
@@ -127,6 +172,52 @@ enum MessageMarkdown {
             }
         }
         return result.isEmpty ? [.text(content)] : result
+    }
+
+    /// Pulls "> " quoted lines out of a plain segment. Consecutive quoted
+    /// lines merge into one quote block, and ">>> " quotes everything from
+    /// that line to the end of the segment.
+    private static func splitQuotes(_ text: String) -> [Segment] {
+        guard text.hasPrefix(">") || text.contains("\n>") else { return [.text(text)] }
+        var result: [Segment] = []
+        var plain: [String] = []
+        var quoted: [String] = []
+
+        func flushPlain() {
+            let joined = plain.joined(separator: "\n").trimmingCharacters(in: .newlines)
+            if !joined.isEmpty { result.append(.text(joined)) }
+            plain = []
+        }
+        func flushQuoted() {
+            let joined = quoted.joined(separator: "\n").trimmingCharacters(in: .newlines)
+            if !joined.isEmpty { result.append(.quote(joined)) }
+            quoted = []
+        }
+
+        let lines = text.components(separatedBy: "\n")
+        for (index, line) in lines.enumerated() {
+            if line.hasPrefix(">>> ") {
+                flushPlain()
+                flushQuoted()
+                var rest = [String(line.dropFirst(4))]
+                rest.append(contentsOf: lines[(index + 1)...])
+                let joined = rest.joined(separator: "\n").trimmingCharacters(in: .newlines)
+                if !joined.isEmpty { result.append(.quote(joined)) }
+                return result
+            } else if line.hasPrefix("> ") {
+                flushPlain()
+                quoted.append(String(line.dropFirst(2)))
+            } else if line == ">" {
+                flushPlain()
+                quoted.append("")
+            } else {
+                flushQuoted()
+                plain.append(line)
+            }
+        }
+        flushPlain()
+        flushQuoted()
+        return result.isEmpty ? [.text(text)] : result
     }
 
     private static func replace(

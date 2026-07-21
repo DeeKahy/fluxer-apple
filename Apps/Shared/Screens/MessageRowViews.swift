@@ -37,19 +37,32 @@ struct DayDivider: View {
     }
 }
 
-private struct MessageContentText: View {
+struct MessageContentText: View {
     @Environment(AppSession.self) private var session
 
     let content: String
+    var textColor: Color = Theme.messageText
+
+    /// Spoiler indices tapped open in this segment; once revealed they
+    /// stay revealed until the row is rebuilt, like the web client.
+    @State private var revealedSpoilers: Set<Int> = []
 
     var body: some View {
-        Text(session.renderMessageContent(content))
+        Text(session.renderMessageContent(content, revealedSpoilers: revealedSpoilers))
             .font(.system(size: 15))
-            .foregroundStyle(Theme.messageText)
+            .foregroundStyle(textColor)
             .textSelection(.enabled)
             .environment(\.openURL, OpenURLAction { url in
-                guard url.scheme == MessageMarkdown.channelURLScheme,
-                      url.host() == "channel",
+                guard url.scheme == MessageMarkdown.channelURLScheme else {
+                    return .systemAction
+                }
+                if url.host() == "spoiler",
+                   let indexPart = url.pathComponents.last,
+                   let index = Int(indexPart) {
+                    revealedSpoilers.insert(index)
+                    return .handled
+                }
+                guard url.host() == "channel",
                       let idPart = url.pathComponents.last,
                       let id = Snowflake(string: idPart),
                       let channel = session.findChannel(id)
@@ -172,6 +185,15 @@ struct MessageRow: View {
                             switch segment {
                             case .text(let text):
                                 MessageContentText(content: text)
+                            case .quote(let quoted):
+                                HStack(alignment: .top, spacing: 8) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Theme.faint)
+                                        .frame(width: 3)
+                                    MessageContentText(content: quoted, textColor: Theme.soft)
+                                }
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.vertical, 1)
                             case .codeBlock(let code):
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     Text(code)
@@ -492,48 +514,5 @@ private struct SwipeReplyModifier: ViewModifier {
         } else {
             content
         }
-    }
-}
-
-private struct AttachmentContent: View {
-    let attachment: Attachment
-
-    private var isImage: Bool {
-        attachment.contentType?.hasPrefix("image/") == true
-    }
-
-    private var imageURL: URL? {
-        (attachment.proxyUrl ?? attachment.url).flatMap(URL.init(string:))
-    }
-
-    @State private var showViewer = false
-
-    var body: some View {
-        if isImage, let url = imageURL {
-            RemoteImage(url: url) {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(.quaternary)
-                    .overlay { ProgressView() }
-            }
-            .aspectRatio(aspectRatio, contentMode: .fit)
-            .frame(maxWidth: 320, maxHeight: 320, alignment: .leading)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .padding(.top, 4)
-            .onTapGesture { showViewer = true }
-            .sheet(isPresented: $showViewer) {
-                ImageViewerSheet(url: url, filename: attachment.filename)
-            }
-        } else {
-            Label(attachment.filename, systemImage: "paperclip")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var aspectRatio: CGFloat {
-        guard let width = attachment.width, let height = attachment.height, height > 0 else {
-            return 4 / 3
-        }
-        return CGFloat(width) / CGFloat(height)
     }
 }

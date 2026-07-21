@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		03A21269379DBF71189CC987 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1DDD02FB88D1369EED487936 /* LiveKit */; };
+		066C6515A357596354B1F5FF /* AttachmentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E58EE08D334505FA5ABAD2D /* AttachmentViews.swift */; };
 		09600609281EE5894455717C /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE99545FAB788ECBDF230844 /* AppSession.swift */; };
 		09DE03DCF51903C62E483F98 /* DesktopPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F627A345E412F16D47B6FA20 /* DesktopPanels.swift */; };
 		0D393769D0D7CB4BF9EE4FF8 /* AppSession+Gateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7041167B7D2E7E3E7B7101 /* AppSession+Gateway.swift */; };
@@ -21,6 +22,7 @@
 		1E2695117AAF0D1F479DA28A /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEACEAA9AFA28CCB8B597D9 /* MessageMarkdown.swift */; };
 		201412CCAEA7C0F07F5CC140 /* HomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F60349B51AD7E0FBE583EE /* HomeTab.swift */; };
 		218AFECD428DC97DFD8971B7 /* DesktopCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF51E7329A15AFA7849205D /* DesktopCallView.swift */; };
+		2272C2BB2888BFDA6407FD22 /* AttachmentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E58EE08D334505FA5ABAD2D /* AttachmentViews.swift */; };
 		250C2D2915B224019A286B6D /* MessageRowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2A1966F0661EE5ECB703C2 /* MessageRowViews.swift */; };
 		298DA37D180F9F0AD925F9AF /* CaptchaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12D0494483EF2AF4F9294E6 /* CaptchaView.swift */; };
 		29DD7F1A895C38A12DAF7EF0 /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B213DD2CD1F1C0B06F0DF5 /* SweepViews.swift */; };
@@ -127,6 +129,7 @@
 		70203A20387F5C2A79638EB1 /* AppSession+Social.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Social.swift"; sourceTree = "<group>"; };
 		778B73C8D81C16F6BEB25943 /* AppSession+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Navigation.swift"; sourceTree = "<group>"; };
 		79CB3E03761468F2266A98E5 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		7E58EE08D334505FA5ABAD2D /* AttachmentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentViews.swift; sourceTree = "<group>"; };
 		7E6551A26BAFAC58414724E1 /* SearchTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTab.swift; sourceTree = "<group>"; };
 		87B641A44758FFE21E19771B /* DesktopSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSidebar.swift; sourceTree = "<group>"; };
 		8AF74D397909ABE5E83A36DE /* AppSession+Messages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Messages.swift"; sourceTree = "<group>"; };
@@ -202,6 +205,7 @@
 		3C52E0272CD73C1D63AFC12A /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				7E58EE08D334505FA5ABAD2D /* AttachmentViews.swift */,
 				BEF51E7329A15AFA7849205D /* DesktopCallView.swift */,
 				C052515233DC0801C8B60042 /* DesktopConversationHeader.swift */,
 				F627A345E412F16D47B6FA20 /* DesktopPanels.swift */,
@@ -388,6 +392,7 @@
 				7E12E71B5D90E6B6E65109FE /* AppSession+Navigation.swift in Sources */,
 				B12DD59165BA99D5F90B2DBC /* AppSession+Social.swift in Sources */,
 				BDE5E435C429452EC58E9FF0 /* AppSession.swift in Sources */,
+				066C6515A357596354B1F5FF /* AttachmentViews.swift in Sources */,
 				62A493586E908D38A9677660 /* AvatarView.swift in Sources */,
 				298DA37D180F9F0AD925F9AF /* CaptchaView.swift in Sources */,
 				102105CB1C658050B5CA0E0C /* DMsTab.swift in Sources */,
@@ -441,6 +446,7 @@
 				3DE7291133AA51A711F8325A /* AppSession+Navigation.swift in Sources */,
 				8BC2A59585E3A5CFABCB48DC /* AppSession+Social.swift in Sources */,
 				09600609281EE5894455717C /* AppSession.swift in Sources */,
+				2272C2BB2888BFDA6407FD22 /* AttachmentViews.swift in Sources */,
 				120F5D4A8EEA21A2F9905E37 /* AvatarView.swift in Sources */,
 				973519C12F765204B7D5C9EE /* CaptchaView.swift in Sources */,
 				7C006DD5F78D059D37B5092F /* DMsTab.swift in Sources */,

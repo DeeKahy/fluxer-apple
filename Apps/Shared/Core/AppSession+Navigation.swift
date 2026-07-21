@@ -44,9 +44,10 @@ extension AppSession {
         return nil
     }
 
-    func renderMessageContent(_ content: String) -> AttributedString {
+    func renderMessageContent(_ content: String, revealedSpoilers: Set<Int> = []) -> AttributedString {
         MessageMarkdown.render(
             content,
+            revealedSpoilers: revealedSpoilers,
             channelName: { self.findChannel($0)?.name },
             userName: { self.knownUsers[$0]?.displayName }
         )
