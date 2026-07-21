@@ -52,7 +52,7 @@ extension AppSession {
     func setSaved(_ message: Message, saved: Bool) async {
         do {
             if saved {
-                try await client.saveMessage(message.id)
+                try await client.saveMessage(message.id, in: message.channelId)
             } else {
                 try await client.unsaveMessage(message.id)
             }
@@ -67,6 +67,40 @@ extension AppSession {
         } catch {
             reportTransient(error)
             return []
+        }
+    }
+
+    /// Drops one mention from the server-side recent mentions list.
+    func dismissMention(_ message: Message) async {
+        do {
+            try await client.deleteMention(message.id)
+        } catch {
+            reportTransient(error)
+        }
+    }
+
+    /// Marks the loaded mentions read server side and clears the local
+    /// mention badges so the bell and the list agree.
+    func markMentionsRead(_ messages: [Message]) async {
+        guard !messages.isEmpty else { return }
+        do {
+            try await client.markMentionsRead(messages.map(\.id))
+            for channelId in Set(messages.map(\.channelId)) {
+                mentionCounts[channelId] = nil
+            }
+        } catch {
+            reportTransient(error)
+        }
+    }
+
+    // MARK: Search
+
+    func searchMessages(_ query: String) async -> APIClient.MessageSearchResults? {
+        do {
+            return try await client.searchMessages(content: query)
+        } catch {
+            reportTransient(error)
+            return nil
         }
     }
 

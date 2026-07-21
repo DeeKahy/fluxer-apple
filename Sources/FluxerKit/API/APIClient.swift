@@ -458,8 +458,15 @@ public actor APIClient {
         return Self.extractMessages(from: data)
     }
 
-    public func saveMessage(_ messageId: Snowflake) async throws {
-        let request = try makeRequest("PUT", Endpoint.savedMessage(messageId))
+    /// Saving is a POST with the channel and message ids in the body;
+    /// the per-message path only exists for DELETE.
+    public func saveMessage(_ messageId: Snowflake, in channelId: Snowflake) async throws {
+        struct Body: Encodable {
+            let channelId: Snowflake
+            let messageId: Snowflake
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(channelId: channelId, messageId: messageId))
+        let request = try makeRequest("POST", Endpoint.savedMessages, bodyData: data)
         _ = try await executeRaw(request)
     }
 
@@ -486,14 +493,71 @@ public actor APIClient {
             ?? value["mentions"]?.arrayValue
             ?? []
         return array.compactMap { entry in
-            if let message = try? entry.decoded(as: Message.self) {
-                return message
+            // Wrapper entries (saved messages, pins) carry the real message
+            // under a "message" key and would otherwise half-decode as a
+            // Message themselves, so check the key first.
+            if let inner = entry["message"] {
+                return try? inner.decoded(as: Message.self)
             }
-            if let inner = entry["message"], let message = try? inner.decoded(as: Message.self) {
-                return message
-            }
-            return nil
+            return try? entry.decoded(as: Message.self)
         }
+    }
+
+    public func deleteMention(_ messageId: Snowflake) async throws {
+        try await sendExpectingNoContent("DELETE", Endpoint.mention(messageId))
+    }
+
+    public func markMentionsRead(_ messageIds: [Snowflake]) async throws {
+        struct Body: Encodable {
+            let messageIds: [Snowflake]
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(messageIds: messageIds))
+        let request = try makeRequest("POST", Endpoint.mentionsRead, bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
+    // MARK: Search
+
+    public struct MessageSearchResults: Sendable {
+        public var messages: [Message]
+        public var channels: [Channel]
+        public var total: Int
+        /// True while the server is still building its search index; results
+        /// are empty and the client should say so instead of "no matches".
+        public var indexing: Bool
+
+        public init(messages: [Message] = [], channels: [Channel] = [], total: Int = 0, indexing: Bool = false) {
+            self.messages = messages
+            self.channels = channels
+            self.total = total
+            self.indexing = indexing
+        }
+    }
+
+    /// Global message search. The response is either a results object or
+    /// {indexing: true} while the server builds its index.
+    public func searchMessages(content: String, limit: Int = 25) async throws -> MessageSearchResults {
+        struct Body: Encodable {
+            let content: String
+            let hitsPerPage: Int
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(content: content, hitsPerPage: limit))
+        let request = try makeRequest("POST", Endpoint.searchMessages, bodyData: data)
+        let responseData = try await executeRaw(request)
+        return Self.extractSearchResults(from: responseData)
+    }
+
+    static func extractSearchResults(from data: Data) -> MessageSearchResults {
+        guard let value = try? JSONDecoder().decode(JSONValue.self, from: data) else {
+            return MessageSearchResults()
+        }
+        if value["indexing"]?.boolValue == true {
+            return MessageSearchResults(indexing: true)
+        }
+        let messages = (value["messages"]?.arrayValue ?? []).compactMap { try? $0.decoded(as: Message.self) }
+        let channels = (value["channels"]?.arrayValue ?? []).compactMap { try? $0.decoded(as: Channel.self) }
+        let total = value["total"]?.intValue ?? messages.count
+        return MessageSearchResults(messages: messages, channels: channels, total: total)
     }
 
     // MARK: Profiles, sessions

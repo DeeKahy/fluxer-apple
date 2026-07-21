@@ -133,6 +133,16 @@ struct MessageFeedView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .toolbar {
+            if feed == .mentions, let loaded = messages, !loaded.isEmpty {
+                Button("Mark all read") {
+                    Task {
+                        await session.markMentionsRead(loaded)
+                        messages = []
+                    }
+                }
+            }
+        }
         .task {
             messages = feed == .saved ? await session.savedMessages() : await session.recentMentions()
         }
@@ -148,6 +158,24 @@ struct MessageFeedView: View {
                             self.messages?.removeAll { $0.id == message.id }
                         }
                     }
+                } else {
+                    Button("Dismiss", systemImage: "bell.slash") {
+                        Task {
+                            await session.dismissMention(message)
+                            self.messages?.removeAll { $0.id == message.id }
+                        }
+                    }
+                }
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                if feed == .mentions {
+                    Button("Dismiss", systemImage: "bell.slash") {
+                        Task {
+                            await session.dismissMention(message)
+                            self.messages?.removeAll { $0.id == message.id }
+                        }
+                    }
+                    .tint(.red)
                 }
             }
     }
