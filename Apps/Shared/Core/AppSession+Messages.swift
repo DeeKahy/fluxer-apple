@@ -328,6 +328,21 @@ extension AppSession {
         ReadStateOps.isUnread(channel: channel, readStates: readStates, synced: readStatesSynced)
     }
 
+    /// Total for badges tied to the recent-mentions feed. The server bumps
+    /// read-state mention counts for every DM message but only records guild
+    /// mentions in the recent-mentions history, so a badge summing all
+    /// channels shows counts the feed can never display. DMs have their own
+    /// badge; the bell only counts guild channels.
+    var guildMentionTotal: Int {
+        mentionCounts.reduce(0) { total, entry in
+            if let channel = findChannel(entry.key),
+               channel.type == .dm || channel.type == .groupDM {
+                return total
+            }
+            return total + entry.value
+        }
+    }
+
     func hasUnread(_ guild: Guild) -> Bool {
         (guild.channels ?? []).contains { isUnread($0) }
     }

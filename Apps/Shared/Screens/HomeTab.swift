@@ -65,7 +65,7 @@ struct HomeTab: View {
 
     private var quickRows: some View {
         VStack(spacing: 0) {
-            quickRow(icon: "at", label: "Mentions & reactions", badge: session.mentionCounts.values.reduce(0, +)) {
+            quickRow(icon: "at", label: "Mentions & reactions", badge: session.guildMentionTotal) {
                 showMentions = true
             }
             quickRow(icon: "bookmark", label: "Saved messages", badge: 0) {

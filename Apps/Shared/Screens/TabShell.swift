@@ -27,7 +27,7 @@ struct TabShell: View {
     }
 
     private var mentionTotal: Int {
-        session.mentionCounts.values.reduce(0, +)
+        session.guildMentionTotal
     }
 
     /// Re-tapping the home tab brings up the workspace switcher.

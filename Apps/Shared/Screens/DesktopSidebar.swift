@@ -21,7 +21,7 @@ struct DesktopSidebar: View {
             searchField
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    quickRow(icon: "at", label: "Mentions", badge: session.mentionCounts.values.reduce(0, +)) {
+                    quickRow(icon: "at", label: "Mentions", badge: session.guildMentionTotal) {
                         showMentions = true
                     }
                     quickRow(icon: "bookmark", label: "Saved messages") { showSaved = true }
