@@ -9,29 +9,37 @@
 /* Begin PBXBuildFile section */
 		03A21269379DBF71189CC987 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1DDD02FB88D1369EED487936 /* LiveKit */; };
 		09600609281EE5894455717C /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE99545FAB788ECBDF230844 /* AppSession.swift */; };
+		09DE03DCF51903C62E483F98 /* DesktopPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F627A345E412F16D47B6FA20 /* DesktopPanels.swift */; };
 		0D393769D0D7CB4BF9EE4FF8 /* AppSession+Gateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7041167B7D2E7E3E7B7101 /* AppSession+Gateway.swift */; };
+		102105CB1C658050B5CA0E0C /* DMsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFE8C7B7E1CA34FAA9C14F0 /* DMsTab.swift */; };
 		115141C84A36144129BF6931 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45F92AFFB690D90BA001D1C3 /* MainView.swift */; };
 		120F5D4A8EEA21A2F9905E37 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086581378BB70D816FB3E614 /* AvatarView.swift */; };
 		15ECF4F3FFC1CFC52BAF14B1 /* AppSession+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A40A2B18BDA8AD57D0BCACA /* AppSession+Features.swift */; };
+		15F84E5B3B99D8188EACCE1C /* SearchTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6551A26BAFAC58414724E1 /* SearchTab.swift */; };
 		1A9996CAEDF3C9C4EEF72F53 /* MessageTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31D0B7F8F7B0D45FD4EDA68F /* MessageTranscriptView.swift */; };
 		1AB4E9C3B15A8B03AFE9FF87 /* DesktopShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E15614D2336D491775754197 /* DesktopShell.swift */; };
 		1E2695117AAF0D1F479DA28A /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEACEAA9AFA28CCB8B597D9 /* MessageMarkdown.swift */; };
+		201412CCAEA7C0F07F5CC140 /* HomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F60349B51AD7E0FBE583EE /* HomeTab.swift */; };
 		218AFECD428DC97DFD8971B7 /* DesktopCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF51E7329A15AFA7849205D /* DesktopCallView.swift */; };
+		250C2D2915B224019A286B6D /* MessageRowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2A1966F0661EE5ECB703C2 /* MessageRowViews.swift */; };
 		298DA37D180F9F0AD925F9AF /* CaptchaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12D0494483EF2AF4F9294E6 /* CaptchaView.swift */; };
 		29DD7F1A895C38A12DAF7EF0 /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B213DD2CD1F1C0B06F0DF5 /* SweepViews.swift */; };
 		2BEC2D0C6BD1C10DA4D32F1B /* Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13846D495C322AEDC513C555 /* Glass.swift */; };
 		30BB9131D7A136458979CCAF /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC0563281F663523448325E /* MessageView.swift */; };
 		31CD8F0FD3617195B2E1843E /* VoiceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F56A696266AD6F6FD209FA0 /* VoiceViews.swift */; };
+		3324ED0571A929CDFA028B4F /* WorkspaceSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5F17A11B997B7F43ABF41B /* WorkspaceSwitcherView.swift */; };
 		3344D3A814232F3BF867D6DD /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7CB7EC2355215CD97F0EEA /* FriendsView.swift */; };
 		343872D7FFD536954B5C8AD5 /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CEBC3F1D1661ADFD6703D70 /* RemoteImage.swift */; };
 		361736C45140CF925D695E86 /* AppSession+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AF74D397909ABE5E83A36DE /* AppSession+Messages.swift */; };
 		36753134535E92C938A55434 /* HandoffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036C7BBE2C54143101965729 /* HandoffView.swift */; };
 		37F20B8DE4673FFB696B3E7F /* AppSession+Gateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7041167B7D2E7E3E7B7101 /* AppSession+Gateway.swift */; };
+		3827D0A2584D160FDCF16CC8 /* DesktopSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B641A44758FFE21E19771B /* DesktopSidebar.swift */; };
 		3DE7291133AA51A711F8325A /* AppSession+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778B73C8D81C16F6BEB25943 /* AppSession+Navigation.swift */; };
 		3F4E5AE9FA26B444C59C093F /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79CB3E03761468F2266A98E5 /* NotificationManager.swift */; };
 		49DD7DC67E6F27EFCD5DF3EA /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE136C76A83BC536C207F06 /* KeychainStore.swift */; };
 		4BE856A21BD6F4631FED6E20 /* EmailConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73D5EA6236F490A5E74EEA4 /* EmailConfirmationView.swift */; };
 		4F7798ACE8B73E73E7D646D5 /* AppSession+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A40A2B18BDA8AD57D0BCACA /* AppSession+Features.swift */; };
+		585EA28F0516AA6857599BD6 /* DesktopSearchResults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AAA7FB27B2984EF4FBAC46 /* DesktopSearchResults.swift */; };
 		5A6E114E18A8D6B8583FDF79 /* DesktopShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E15614D2336D491775754197 /* DesktopShell.swift */; };
 		5AFBC142EFD15564291C0E80 /* MemberListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA587D8BBBED81EE30AE6AF7 /* MemberListView.swift */; };
 		5CF2EBD66D2E4F3B475E1214 /* HangMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEED7D4C9A347933662ADBF3 /* HangMonitor.swift */; };
@@ -40,14 +48,23 @@
 		63A69801C14B9F149710B8C7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1569297C4C0181A49661B6D /* FluxerApp.swift */; };
 		647DFC8212C830FB693D8C30 /* DesktopCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF51E7329A15AFA7849205D /* DesktopCallView.swift */; };
 		66B669B833DAC9A284550E15 /* TabShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35760DB8E41F00840B94EB6E /* TabShell.swift */; };
+		6A9BB0CE51B9B5B30F644A51 /* DesktopConversationHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C052515233DC0801C8B60042 /* DesktopConversationHeader.swift */; };
 		6DE8274C763F7D26902AC857 /* UIStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B8E5A1AAC07EC10FE5EC037 /* UIStyles.swift */; };
+		6E66936C4F2D9CA3156991E1 /* DesktopSearchResults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AAA7FB27B2984EF4FBAC46 /* DesktopSearchResults.swift */; };
 		6E93A864F966E06F84AB19A9 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = B0DD205E3FEE92631EC5C284 /* FluxerKit */; };
 		70AF5514160687B9399D6032 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45F92AFFB690D90BA001D1C3 /* MainView.swift */; };
+		73196AA513037ACC34BFDD1A /* DesktopSelfBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650628AE520E1EEAB6E5B66E /* DesktopSelfBar.swift */; };
+		77EA7D776D016F9F16302BB8 /* YouTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5831741BEAACEDE378A6E52 /* YouTab.swift */; };
+		7ACD98F62DB93D6F21CDFB6D /* DesktopRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB351BFFFF181DBC69634E16 /* DesktopRail.swift */; };
+		7C006DD5F78D059D37B5092F /* DMsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFE8C7B7E1CA34FAA9C14F0 /* DMsTab.swift */; };
 		7E12E71B5D90E6B6E65109FE /* AppSession+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778B73C8D81C16F6BEB25943 /* AppSession+Navigation.swift */; };
 		7FFF9C97A6A54DA580CB3551 /* VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D966850F387D2CAB8CE0AF /* VoiceManager.swift */; };
+		8343134B3A70FB8DAE266F57 /* DesktopSelfBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650628AE520E1EEAB6E5B66E /* DesktopSelfBar.swift */; };
 		84F0EE08A327263A0813F1AA /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEACEAA9AFA28CCB8B597D9 /* MessageMarkdown.swift */; };
 		872A205761817CD80B2306A6 /* HangMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEED7D4C9A347933662ADBF3 /* HangMonitor.swift */; };
 		877590EC6966F2F9BE20E11F /* MemberListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA587D8BBBED81EE30AE6AF7 /* MemberListView.swift */; };
+		878C75BB806FBF5F78A365DC /* MessageRowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2A1966F0661EE5ECB703C2 /* MessageRowViews.swift */; };
+		8A25F73C285BF914FAC1EC97 /* SearchTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6551A26BAFAC58414724E1 /* SearchTab.swift */; };
 		8BC2A59585E3A5CFABCB48DC /* AppSession+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70203A20387F5C2A79638EB1 /* AppSession+Social.swift */; };
 		8DE0D45FD488DE5EAC291C31 /* EmailConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73D5EA6236F490A5E74EEA4 /* EmailConfirmationView.swift */; };
 		947DE00BC7F493B2320033E5 /* UIStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B8E5A1AAC07EC10FE5EC037 /* UIStyles.swift */; };
@@ -60,13 +77,18 @@
 		AB95E5005F74514A80303739 /* Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13846D495C322AEDC513C555 /* Glass.swift */; };
 		B0349DE6D3A7767CE8774BC7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1569297C4C0181A49661B6D /* FluxerApp.swift */; };
 		B12DD59165BA99D5F90B2DBC /* AppSession+Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70203A20387F5C2A79638EB1 /* AppSession+Social.swift */; };
+		B5FE642D8F4EA7C024E39B8E /* DesktopSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B641A44758FFE21E19771B /* DesktopSidebar.swift */; };
 		B8622AA8B2D7775855DC99C5 /* AppSession+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AF74D397909ABE5E83A36DE /* AppSession+Messages.swift */; };
 		BBF2244B1086D95E3947EA39 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEAB51248F8DB3408850581 /* LoginView.swift */; };
 		BDE5E435C429452EC58E9FF0 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE99545FAB788ECBDF230844 /* AppSession.swift */; };
 		BF1C17C6928443D1D63B8D28 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B800819ED6C65A12153EF532 /* Theme.swift */; };
+		C035EBEC9DC1D6DC1F02FB64 /* DesktopConversationHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C052515233DC0801C8B60042 /* DesktopConversationHeader.swift */; };
 		C11F2C9B5255CE7352691FC7 /* VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D966850F387D2CAB8CE0AF /* VoiceManager.swift */; };
 		C51C5F2455A7607ECA2F7A94 /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC0563281F663523448325E /* MessageView.swift */; };
 		CCA64B66444D9A51D41372A8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B800819ED6C65A12153EF532 /* Theme.swift */; };
+		CE33E79BE499BED3DAD6379A /* DesktopRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB351BFFFF181DBC69634E16 /* DesktopRail.swift */; };
+		CF2F2F0FA782BA8185512926 /* HomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F60349B51AD7E0FBE583EE /* HomeTab.swift */; };
+		D246B62C9560A065F94AC454 /* DesktopPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F627A345E412F16D47B6FA20 /* DesktopPanels.swift */; };
 		D2B82C4B211C9F789528EFEB /* TabShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35760DB8E41F00840B94EB6E /* TabShell.swift */; };
 		D9DC1F96557CF02D9BA1DA85 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE136C76A83BC536C207F06 /* KeychainStore.swift */; };
 		DC25FCFF939DEE9C20CCBB0B /* RemoteImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CEBC3F1D1661ADFD6703D70 /* RemoteImage.swift */; };
@@ -76,14 +98,18 @@
 		E462692FE94FD2FCB840142B /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7564963A1AD0848B4BB13E7 /* RootView.swift */; };
 		E9D5EDD5A861F48EB6B7A7FE /* SweepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B213DD2CD1F1C0B06F0DF5 /* SweepViews.swift */; };
 		EF5F867149FCEEEE4712AB81 /* VoiceStageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C83B9D05FD1AC94A4BE2718 /* VoiceStageView.swift */; };
+		F10AF9C9B7CF71F2D2F9B8AF /* WorkspaceSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5F17A11B997B7F43ABF41B /* WorkspaceSwitcherView.swift */; };
 		F2A4ED5F30165916BC449861 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEAB51248F8DB3408850581 /* LoginView.swift */; };
+		F87663B3F8E623C419245014 /* YouTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5831741BEAACEDE378A6E52 /* YouTab.swift */; };
 		FD64F07718204A0FE4FC1450 /* FluxerKit in Frameworks */ = {isa = PBXBuildFile; productRef = C033D75BAE3A91A96A9A7A53 /* FluxerKit */; };
 		FE4EBC39CAFE8A8410BB7371 /* VoiceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F56A696266AD6F6FD209FA0 /* VoiceViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		036C7BBE2C54143101965729 /* HandoffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffView.swift; sourceTree = "<group>"; };
+		05AAA7FB27B2984EF4FBAC46 /* DesktopSearchResults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSearchResults.swift; sourceTree = "<group>"; };
 		086581378BB70D816FB3E614 /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
+		0B2A1966F0661EE5ECB703C2 /* MessageRowViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageRowViews.swift; sourceTree = "<group>"; };
 		0B8E5A1AAC07EC10FE5EC037 /* UIStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIStyles.swift; sourceTree = "<group>"; };
 		13846D495C322AEDC513C555 /* Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass.swift; sourceTree = "<group>"; };
 		157EA25EAF0D04FB032BA387 /* Fluxer-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Fluxer-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,20 +119,27 @@
 		45F92AFFB690D90BA001D1C3 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		4AC0563281F663523448325E /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
 		4F56A696266AD6F6FD209FA0 /* VoiceViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceViews.swift; sourceTree = "<group>"; };
+		53F60349B51AD7E0FBE583EE /* HomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTab.swift; sourceTree = "<group>"; };
+		650628AE520E1EEAB6E5B66E /* DesktopSelfBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSelfBar.swift; sourceTree = "<group>"; };
 		6A40A2B18BDA8AD57D0BCACA /* AppSession+Features.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Features.swift"; sourceTree = "<group>"; };
 		6C83B9D05FD1AC94A4BE2718 /* VoiceStageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceStageView.swift; sourceTree = "<group>"; };
 		6CEBC3F1D1661ADFD6703D70 /* RemoteImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImage.swift; sourceTree = "<group>"; };
 		70203A20387F5C2A79638EB1 /* AppSession+Social.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Social.swift"; sourceTree = "<group>"; };
 		778B73C8D81C16F6BEB25943 /* AppSession+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Navigation.swift"; sourceTree = "<group>"; };
 		79CB3E03761468F2266A98E5 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		7E6551A26BAFAC58414724E1 /* SearchTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTab.swift; sourceTree = "<group>"; };
+		87B641A44758FFE21E19771B /* DesktopSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSidebar.swift; sourceTree = "<group>"; };
 		8AF74D397909ABE5E83A36DE /* AppSession+Messages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Messages.swift"; sourceTree = "<group>"; };
 		9462E4B192B836A61C04BD91 /* DiskCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskCache.swift; sourceTree = "<group>"; };
+		9FFE8C7B7E1CA34FAA9C14F0 /* DMsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DMsTab.swift; sourceTree = "<group>"; };
 		A73D5EA6236F490A5E74EEA4 /* EmailConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailConfirmationView.swift; sourceTree = "<group>"; };
 		AA587D8BBBED81EE30AE6AF7 /* MemberListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberListView.swift; sourceTree = "<group>"; };
+		AC5F17A11B997B7F43ABF41B /* WorkspaceSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSwitcherView.swift; sourceTree = "<group>"; };
 		B3D966850F387D2CAB8CE0AF /* VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceManager.swift; sourceTree = "<group>"; };
 		B7564963A1AD0848B4BB13E7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		B800819ED6C65A12153EF532 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		BEF51E7329A15AFA7849205D /* DesktopCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopCallView.swift; sourceTree = "<group>"; };
+		C052515233DC0801C8B60042 /* DesktopConversationHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopConversationHeader.swift; sourceTree = "<group>"; };
 		C87E031529CF3FEDD4EB6D22 /* Fluxer-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Fluxer-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBE136C76A83BC536C207F06 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		CE99545FAB788ECBDF230844 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
@@ -116,7 +149,10 @@
 		DEED7D4C9A347933662ADBF3 /* HangMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HangMonitor.swift; sourceTree = "<group>"; };
 		E15614D2336D491775754197 /* DesktopShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopShell.swift; sourceTree = "<group>"; };
 		F1569297C4C0181A49661B6D /* FluxerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxerApp.swift; sourceTree = "<group>"; };
+		F5831741BEAACEDE378A6E52 /* YouTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTab.swift; sourceTree = "<group>"; };
+		F627A345E412F16D47B6FA20 /* DesktopPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPanels.swift; sourceTree = "<group>"; };
 		F8B213DD2CD1F1C0B06F0DF5 /* SweepViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SweepViews.swift; sourceTree = "<group>"; };
+		FB351BFFFF181DBC69634E16 /* DesktopRail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRail.swift; sourceTree = "<group>"; };
 		FE7CB7EC2355215CD97F0EEA /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		FEEACEAA9AFA28CCB8B597D9 /* MessageMarkdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageMarkdown.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -167,21 +203,33 @@
 			isa = PBXGroup;
 			children = (
 				BEF51E7329A15AFA7849205D /* DesktopCallView.swift */,
+				C052515233DC0801C8B60042 /* DesktopConversationHeader.swift */,
+				F627A345E412F16D47B6FA20 /* DesktopPanels.swift */,
+				FB351BFFFF181DBC69634E16 /* DesktopRail.swift */,
+				05AAA7FB27B2984EF4FBAC46 /* DesktopSearchResults.swift */,
+				650628AE520E1EEAB6E5B66E /* DesktopSelfBar.swift */,
 				E15614D2336D491775754197 /* DesktopShell.swift */,
+				87B641A44758FFE21E19771B /* DesktopSidebar.swift */,
+				9FFE8C7B7E1CA34FAA9C14F0 /* DMsTab.swift */,
 				A73D5EA6236F490A5E74EEA4 /* EmailConfirmationView.swift */,
 				F1569297C4C0181A49661B6D /* FluxerApp.swift */,
 				FE7CB7EC2355215CD97F0EEA /* FriendsView.swift */,
 				036C7BBE2C54143101965729 /* HandoffView.swift */,
+				53F60349B51AD7E0FBE583EE /* HomeTab.swift */,
 				3FEAB51248F8DB3408850581 /* LoginView.swift */,
 				45F92AFFB690D90BA001D1C3 /* MainView.swift */,
 				AA587D8BBBED81EE30AE6AF7 /* MemberListView.swift */,
+				0B2A1966F0661EE5ECB703C2 /* MessageRowViews.swift */,
 				31D0B7F8F7B0D45FD4EDA68F /* MessageTranscriptView.swift */,
 				4AC0563281F663523448325E /* MessageView.swift */,
 				B7564963A1AD0848B4BB13E7 /* RootView.swift */,
+				7E6551A26BAFAC58414724E1 /* SearchTab.swift */,
 				F8B213DD2CD1F1C0B06F0DF5 /* SweepViews.swift */,
 				35760DB8E41F00840B94EB6E /* TabShell.swift */,
 				6C83B9D05FD1AC94A4BE2718 /* VoiceStageView.swift */,
 				4F56A696266AD6F6FD209FA0 /* VoiceViews.swift */,
+				AC5F17A11B997B7F43ABF41B /* WorkspaceSwitcherView.swift */,
+				F5831741BEAACEDE378A6E52 /* YouTab.swift */,
 			);
 			path = Screens;
 			sourceTree = "<group>";
@@ -342,8 +390,15 @@
 				BDE5E435C429452EC58E9FF0 /* AppSession.swift in Sources */,
 				62A493586E908D38A9677660 /* AvatarView.swift in Sources */,
 				298DA37D180F9F0AD925F9AF /* CaptchaView.swift in Sources */,
+				102105CB1C658050B5CA0E0C /* DMsTab.swift in Sources */,
 				647DFC8212C830FB693D8C30 /* DesktopCallView.swift in Sources */,
+				6A9BB0CE51B9B5B30F644A51 /* DesktopConversationHeader.swift in Sources */,
+				09DE03DCF51903C62E483F98 /* DesktopPanels.swift in Sources */,
+				7ACD98F62DB93D6F21CDFB6D /* DesktopRail.swift in Sources */,
+				585EA28F0516AA6857599BD6 /* DesktopSearchResults.swift in Sources */,
+				73196AA513037ACC34BFDD1A /* DesktopSelfBar.swift in Sources */,
 				1AB4E9C3B15A8B03AFE9FF87 /* DesktopShell.swift in Sources */,
+				3827D0A2584D160FDCF16CC8 /* DesktopSidebar.swift in Sources */,
 				A6E4053C15486ED08484F41F /* DiskCache.swift in Sources */,
 				8DE0D45FD488DE5EAC291C31 /* EmailConfirmationView.swift in Sources */,
 				B0349DE6D3A7767CE8774BC7 /* FluxerApp.swift in Sources */,
@@ -351,16 +406,19 @@
 				AB95E5005F74514A80303739 /* Glass.swift in Sources */,
 				36753134535E92C938A55434 /* HandoffView.swift in Sources */,
 				872A205761817CD80B2306A6 /* HangMonitor.swift in Sources */,
+				CF2F2F0FA782BA8185512926 /* HomeTab.swift in Sources */,
 				49DD7DC67E6F27EFCD5DF3EA /* KeychainStore.swift in Sources */,
 				F2A4ED5F30165916BC449861 /* LoginView.swift in Sources */,
 				70AF5514160687B9399D6032 /* MainView.swift in Sources */,
 				877590EC6966F2F9BE20E11F /* MemberListView.swift in Sources */,
 				84F0EE08A327263A0813F1AA /* MessageMarkdown.swift in Sources */,
+				878C75BB806FBF5F78A365DC /* MessageRowViews.swift in Sources */,
 				1A9996CAEDF3C9C4EEF72F53 /* MessageTranscriptView.swift in Sources */,
 				30BB9131D7A136458979CCAF /* MessageView.swift in Sources */,
 				3F4E5AE9FA26B444C59C093F /* NotificationManager.swift in Sources */,
 				343872D7FFD536954B5C8AD5 /* RemoteImage.swift in Sources */,
 				E462692FE94FD2FCB840142B /* RootView.swift in Sources */,
+				15F84E5B3B99D8188EACCE1C /* SearchTab.swift in Sources */,
 				29DD7F1A895C38A12DAF7EF0 /* SweepViews.swift in Sources */,
 				66B669B833DAC9A284550E15 /* TabShell.swift in Sources */,
 				CCA64B66444D9A51D41372A8 /* Theme.swift in Sources */,
@@ -368,6 +426,8 @@
 				C11F2C9B5255CE7352691FC7 /* VoiceManager.swift in Sources */,
 				5DFF2694A1E76C9020D5EDF9 /* VoiceStageView.swift in Sources */,
 				FE4EBC39CAFE8A8410BB7371 /* VoiceViews.swift in Sources */,
+				3324ED0571A929CDFA028B4F /* WorkspaceSwitcherView.swift in Sources */,
+				77EA7D776D016F9F16302BB8 /* YouTab.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -383,8 +443,15 @@
 				09600609281EE5894455717C /* AppSession.swift in Sources */,
 				120F5D4A8EEA21A2F9905E37 /* AvatarView.swift in Sources */,
 				973519C12F765204B7D5C9EE /* CaptchaView.swift in Sources */,
+				7C006DD5F78D059D37B5092F /* DMsTab.swift in Sources */,
 				218AFECD428DC97DFD8971B7 /* DesktopCallView.swift in Sources */,
+				C035EBEC9DC1D6DC1F02FB64 /* DesktopConversationHeader.swift in Sources */,
+				D246B62C9560A065F94AC454 /* DesktopPanels.swift in Sources */,
+				CE33E79BE499BED3DAD6379A /* DesktopRail.swift in Sources */,
+				6E66936C4F2D9CA3156991E1 /* DesktopSearchResults.swift in Sources */,
+				8343134B3A70FB8DAE266F57 /* DesktopSelfBar.swift in Sources */,
 				5A6E114E18A8D6B8583FDF79 /* DesktopShell.swift in Sources */,
+				B5FE642D8F4EA7C024E39B8E /* DesktopSidebar.swift in Sources */,
 				DDE0E2C1BB00E8743226ABEB /* DiskCache.swift in Sources */,
 				4BE856A21BD6F4631FED6E20 /* EmailConfirmationView.swift in Sources */,
 				63A69801C14B9F149710B8C7 /* FluxerApp.swift in Sources */,
@@ -392,16 +459,19 @@
 				2BEC2D0C6BD1C10DA4D32F1B /* Glass.swift in Sources */,
 				9764510235091F922B55F159 /* HandoffView.swift in Sources */,
 				5CF2EBD66D2E4F3B475E1214 /* HangMonitor.swift in Sources */,
+				201412CCAEA7C0F07F5CC140 /* HomeTab.swift in Sources */,
 				D9DC1F96557CF02D9BA1DA85 /* KeychainStore.swift in Sources */,
 				BBF2244B1086D95E3947EA39 /* LoginView.swift in Sources */,
 				115141C84A36144129BF6931 /* MainView.swift in Sources */,
 				5AFBC142EFD15564291C0E80 /* MemberListView.swift in Sources */,
 				1E2695117AAF0D1F479DA28A /* MessageMarkdown.swift in Sources */,
+				250C2D2915B224019A286B6D /* MessageRowViews.swift in Sources */,
 				AA7582C22146F46CD1B16FED /* MessageTranscriptView.swift in Sources */,
 				C51C5F2455A7607ECA2F7A94 /* MessageView.swift in Sources */,
 				E19F56C5EB4945CA9525EF93 /* NotificationManager.swift in Sources */,
 				DC25FCFF939DEE9C20CCBB0B /* RemoteImage.swift in Sources */,
 				E049878570E86EEC72DC5DE1 /* RootView.swift in Sources */,
+				8A25F73C285BF914FAC1EC97 /* SearchTab.swift in Sources */,
 				E9D5EDD5A861F48EB6B7A7FE /* SweepViews.swift in Sources */,
 				D2B82C4B211C9F789528EFEB /* TabShell.swift in Sources */,
 				BF1C17C6928443D1D63B8D28 /* Theme.swift in Sources */,
@@ -409,6 +479,8 @@
 				7FFF9C97A6A54DA580CB3551 /* VoiceManager.swift in Sources */,
 				EF5F867149FCEEEE4712AB81 /* VoiceStageView.swift in Sources */,
 				31CD8F0FD3617195B2E1843E /* VoiceViews.swift in Sources */,
+				F10AF9C9B7CF71F2D2F9B8AF /* WorkspaceSwitcherView.swift in Sources */,
+				F87663B3F8E623C419245014 /* YouTab.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
