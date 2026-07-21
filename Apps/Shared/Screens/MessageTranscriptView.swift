@@ -3,15 +3,18 @@ import FluxerKit
 
 /// The scrolling message list for a channel. Deliberately minimal after
 /// several rounds of clever scroll features made the experience worse:
-/// no position saving, no geometry tracking, no jump buttons. Two native
-/// mechanisms do all the work:
-/// - defaultScrollAnchor(.bottom): open at the newest message and stay
-///   pinned through keyboard, composer and banner resizes.
-/// - scrollPosition(id:): the system keeps the current row in place when
-///   content changes (history prepends, messages arriving while reading
-///   older history).
-/// The only hand-rolled rule left is "follow the conversation": jump to a
-/// new message when parked at the newest one or when it is our own.
+/// no position saving, no geometry tracking, no jump buttons, and crucially
+/// no programmatic scrolling. A single native mechanism does all the work:
+/// defaultScrollAnchor(.bottom) aligns the bottom edge of the content on
+/// first layout and on every size change, which opens at the newest message,
+/// follows new messages, and holds position when older history is prepended,
+/// all without ever issuing a scroll command from our code. An earlier
+/// scrollPosition(id:) binding added a second, programmatic authority that
+/// wedged the scroll view's pan gesture; see the anchor comment below.
+/// Trade-off: when scrolled up reading history, a new message at the bottom
+/// re-pins to the bottom. That is the price of having no jump button; revisit
+/// only if it actually bothers the user, and never by reintroducing a
+/// programmatic scroll authority without a fresh look at the freeze.
 struct MessageTranscriptView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.desktopChrome) private var desktopChrome
@@ -22,10 +25,6 @@ struct MessageTranscriptView: View {
     let onEdit: (Message) -> Void
     let onDelete: (Message) -> Void
 
-    /// The row at the bottom edge, maintained by the system. Writing it
-    /// scrolls there.
-    @State private var scrolledId: Snowflake?
-
     /// Pagination stays disarmed until the initial load has settled. The
     /// lazy stack touches the top of the content during the first layout
     /// passes, which fired the history loader's onAppear on open and
@@ -34,6 +33,7 @@ struct MessageTranscriptView: View {
     @State private var paginationArmed = false
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 if !session.canLoadOlderMessages(in: channel.id) {
@@ -70,42 +70,52 @@ struct MessageTranscriptView: View {
                     .id(entry.message.id)
                 }
             }
-            .scrollTargetLayout()
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
-        // initialOffset ONLY. The anchor's size-change handling and the id
-        // binding are two authorities both issuing scroll adjustments when
-        // the viewport resizes; opening a reply (banner plus keyboard, two
-        // resizes at once) left the scroll view stuck arbitrating between
-        // them with its pan gesture disabled. The id binding alone keeps
-        // the bottom row pinned through resizes.
-        .defaultScrollAnchor(.bottom, for: .initialOffset)
-        .scrollPosition(id: $scrolledId, anchor: .bottom)
+        // ONE scroll authority: the bottom anchor, applied on first layout
+        // AND on every size change. Because it aligns the bottom EDGE of the
+        // content it covers all three cases we need without a single
+        // programmatic scroll: open at the newest message, follow new
+        // messages arriving at the bottom, and hold position when older
+        // history is prepended at the top (the bottom edge does not move, so
+        // the viewport stays put). The previous scrollPosition(id:) binding
+        // was a second, programmatic authority; writing it while the list
+        // was still measuring rows (channel open) or while the viewport was
+        // resizing (reply raises the banner and keyboard at once) left
+        // UIScrollView's pan recognizer wedged until the channel was left
+        // and reopened. Removing it is what unfreezes scrolling.
+        .defaultScrollAnchor(.bottom)
         #if os(iOS)
         // Not .interactively: linking the pan gesture to the keyboard is
         // another way scrolling stops responding while the keyboard is up.
         .scrollDismissesKeyboard(.immediately)
         #endif
-        .onChange(of: session.messages(in: channel.id).last?.id) { oldLast, newLast in
-            let ownMessage = session.messages(in: channel.id).last?.author?.id == session.currentUser?.id
-            if scrolledId == nil || scrolledId == oldLast || ownMessage {
-                scrolledId = newLast
+        // Follow the conversation to the bottom when the newest message is
+        // our own send. This is the one deliberate scroll we keep, and it is
+        // a ONE-SHOT imperative scrollTo, not a persistent binding: it fires
+        // once per new own-message and never re-applies itself during a
+        // resize, so it cannot wedge the pan gesture the way scrollPosition
+        // did. Others' messages are left to the bottom anchor so reading
+        // history is not yanked around.
+        .onChange(of: session.messages(in: channel.id).last?.id) { _, newLast in
+            guard let newLast,
+                  session.messages(in: channel.id).last?.author?.id == session.currentUser?.id
+            else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo(newLast, anchor: .bottom)
             }
         }
         .task(id: channel.id) {
-            scrolledId = nil
             paginationArmed = false
             session.activeChannelId = channel.id
             session.recordVisit(channel)
             session.captureUnreadMarker(channel)
             await session.loadMessages(for: channel)
             session.markChannelRead(channel)
-            // Park on the newest message explicitly: until the user has
-            // scrolled, the position binding is nil and a history prepend
-            // has no row to hold onto, which let the view drift up into
-            // the loader. Then arm pagination once layout has settled.
-            scrolledId = session.messages(in: channel.id).last?.id
+            // Arm pagination only once layout has settled. The lazy stack
+            // touches the top of the content during the first passes, so an
+            // unguarded loader onAppear would chain-fire page loads on open.
             try? await Task.sleep(for: .milliseconds(300))
             paginationArmed = true
         }
@@ -113,6 +123,7 @@ struct MessageTranscriptView: View {
             if session.activeChannelId == channel.id {
                 session.activeChannelId = nil
             }
+        }
         }
     }
 

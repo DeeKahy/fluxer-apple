@@ -950,11 +950,27 @@ private struct SwipeReplyModifier: ViewModifier {
                         .opacity(Double(min(1, abs(offset) / abs(threshold))))
                         .padding(.trailing, 14)
                 }
-                .gesture(
-                    DragGesture(minimumDistance: 12)
+                // simultaneousGesture, NOT .gesture: a plain .gesture on
+                // every row enters exclusive arbitration with the scroll
+                // view's pan recognizer. On a mostly-vertical drag this
+                // recognizer still claims the touch, and if the scroll view
+                // cancels it mid-drag the onEnded never fires and the pan
+                // gesture stays wedged until the channel is left and
+                // reopened (the "can tap but can't scroll" freeze). Running
+                // simultaneously takes it out of that arbitration entirely:
+                // the pan can never be starved, and the row only translates
+                // on horizontal-dominant drags.
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 18)
                         .onChanged { value in
                             let dx = value.translation.width
-                            guard dx < 0, abs(dx) > abs(value.translation.height) else { return }
+                            // Vertical-dominant drag: this is a scroll, keep
+                            // the row still and drop any partial offset.
+                            guard dx < 0, abs(dx) > abs(value.translation.height) * 1.5 else {
+                                if offset != 0 { offset = 0 }
+                                armed = false
+                                return
+                            }
                             offset = max(dx, -90)
                             armed = offset <= threshold
                         }
