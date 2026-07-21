@@ -252,7 +252,7 @@ struct ProfileSheet: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                if friendRequestFailed, let error = session.lastError {
+                if friendRequestFailed, let error = session.friendRequestError {
                     Text(error)
                         .font(.caption)
                         .foregroundStyle(.red)

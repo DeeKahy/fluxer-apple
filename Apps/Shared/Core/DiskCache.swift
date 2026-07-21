@@ -62,7 +62,14 @@ extension AppSession {
         cacheSaveTask = Task {
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
-            let trimmedMessages = messages.mapValues { Array($0.suffix(50)) }
+            // Local placeholders (pending or failed sends) must not be
+            // persisted: after a restart they would render as ordinary
+            // messages with no retry state behind them.
+            let localIds = Set(pendingSends.values.map(\.placeholderId))
+                .union(failedSends.values.map(\.placeholderId))
+            let trimmedMessages = messages.mapValues { list in
+                Array(list.filter { !localIds.contains($0.id) }.suffix(50))
+            }
             let snapshot = CacheSnapshot(
                 guilds: guilds,
                 privateChannels: privateChannels,

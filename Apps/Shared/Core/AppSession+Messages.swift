@@ -34,7 +34,7 @@ extension AppSession {
             staleChannels.remove(channel.id)
             scheduleCacheSave()
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -58,14 +58,10 @@ extension AppSession {
                 channelsWithFullHistory.insert(channel.id)
             }
             guard !older.isEmpty else { return nil }
-            let existingIds = Set(existing.map(\.id))
-            var merged = existing
-            merged.append(contentsOf: older.filter { !existingIds.contains($0.id) })
-            merged.sort { $0.id < $1.id }
-            messages[channel.id] = merged
+            messages[channel.id] = MessageListOps.mergingOlderPage(older, into: existing)
             return oldest.id
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return nil
         }
     }
@@ -120,43 +116,111 @@ extension AppSession {
             if let retryAfter {
                 slowmodeUntil[channel.id] = Date().addingTimeInterval(retryAfter)
             }
-            dropPendingSend(nonce: nonce)
-            lastError = "Slow down, try again in a moment."
+            if files.isEmpty {
+                failSend(nonce: nonce, content: trimmed, replyTo: replyTo,
+                         reason: "Rate limited, try again in a moment.")
+            } else {
+                reportTransient(message: "Rate limited, try again in a moment.")
+            }
         } catch {
-            dropPendingSend(nonce: nonce)
-            lastError = Self.describe(error)
+            if files.isEmpty {
+                failSend(nonce: nonce, content: trimmed, replyTo: replyTo,
+                         reason: Self.describe(error))
+            } else {
+                reportTransient(error)
+            }
+        }
+    }
+
+    /// Moves a pending text send into the failed bucket. Its placeholder
+    /// stays in the transcript, greyed out with retry and discard controls,
+    /// instead of silently vanishing. If the pending entry is already gone
+    /// the gateway echo confirmed the send despite the failed response, so
+    /// there is nothing to report.
+    private func failSend(nonce: String, content: String, replyTo: Snowflake?, reason: String) {
+        guard let pending = pendingSends.removeValue(forKey: nonce) else { return }
+        failedSends[nonce] = FailedSend(
+            nonce: nonce,
+            channelId: pending.channelId,
+            placeholderId: pending.placeholderId,
+            content: content,
+            replyTo: replyTo,
+            reason: reason
+        )
+    }
+
+    /// Resends a failed message, reusing its nonce and placeholder so the
+    /// message keeps its spot in the transcript.
+    func retrySend(_ failed: FailedSend) async {
+        guard failedSends.removeValue(forKey: failed.nonce) != nil else { return }
+        pendingSends[failed.nonce] = PendingSend(
+            channelId: failed.channelId,
+            placeholderId: failed.placeholderId
+        )
+        do {
+            let sent = try await client.sendMessage(
+                failed.content,
+                to: failed.channelId,
+                replyTo: failed.replyTo,
+                nonce: failed.nonce
+            )
+            reconcileSend(nonce: failed.nonce, with: sent)
+        } catch APIError.rateLimited(let retryAfter) {
+            if let retryAfter {
+                slowmodeUntil[failed.channelId] = Date().addingTimeInterval(retryAfter)
+            }
+            failSend(nonce: failed.nonce, content: failed.content, replyTo: failed.replyTo,
+                     reason: "Rate limited, try again in a moment.")
+        } catch {
+            failSend(nonce: failed.nonce, content: failed.content, replyTo: failed.replyTo,
+                     reason: Self.describe(error))
+        }
+    }
+
+    /// Drops a failed send and its placeholder from the transcript.
+    func discardFailedSend(nonce: String) {
+        guard let failed = failedSends.removeValue(forKey: nonce) else { return }
+        messages[failed.channelId]?.removeAll { $0.id == failed.placeholderId }
+    }
+
+    /// The failure record behind a placeholder message, if its send failed.
+    func failedSend(for message: Message) -> FailedSend? {
+        failedSends.values.first {
+            $0.placeholderId == message.id && $0.channelId == message.channelId
         }
     }
 
     /// A local-only id that sorts right after the newest loaded message, so
     /// the placeholder lands at the bottom regardless of snowflake epochs.
     private func placeholderMessageId(in channelId: Snowflake) -> Snowflake {
-        let newest = messages[channelId]?.last?.id.rawValue ?? 0
-        return Snowflake(max(newest, 1) &+ 1)
+        MessageListOps.placeholderId(after: messages[channelId] ?? [])
     }
 
     /// Swaps a pending placeholder for the server's copy of the message.
     /// Called from both the REST response and the gateway echo; whichever
-    /// arrives first wins and the other deduplicates by id.
+    /// arrives first wins and the other deduplicates by id. A send marked
+    /// failed can still land here when the request went through but its
+    /// response never made it back; the echo clears the failed state.
     func reconcileSend(nonce: String, with real: Message) {
-        guard let pending = pendingSends.removeValue(forKey: nonce) else {
+        let pending = pendingSends.removeValue(forKey: nonce)
+            ?? failedSends.removeValue(forKey: nonce).map {
+                PendingSend(channelId: $0.channelId, placeholderId: $0.placeholderId)
+            }
+        guard let pending else {
             insert(real)
             return
         }
         bumpLastMessageId(real)
-        guard var channelMessages = messages[pending.channelId] else { return }
-        if let index = channelMessages.firstIndex(where: { $0.id == pending.placeholderId }) {
-            if channelMessages.contains(where: { $0.id == real.id }) {
-                channelMessages.remove(at: index)
-            } else {
-                channelMessages[index] = real
-                channelMessages.sort { $0.id < $1.id }
-            }
-            messages[pending.channelId] = channelMessages
-            scheduleCacheSave()
-        } else {
-            insert(real)
+        guard let channelMessages = messages[pending.channelId] else { return }
+        messages[pending.channelId] = MessageListOps.reconcilingPlaceholder(
+            id: pending.placeholderId,
+            with: real,
+            in: channelMessages
+        )
+        if let author = real.author {
+            knownUsers[author.id] = author
         }
+        scheduleCacheSave()
     }
 
     /// True while a message is a local placeholder still waiting on its
@@ -167,13 +231,6 @@ extension AppSession {
         }
     }
 
-    /// Removes a failed send's placeholder so a phantom message doesn't
-    /// linger in the transcript.
-    private func dropPendingSend(nonce: String) {
-        guard let pending = pendingSends.removeValue(forKey: nonce) else { return }
-        messages[pending.channelId]?.removeAll { $0.id == pending.placeholderId }
-    }
-
     func editMessage(_ message: Message, content: String) async {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -181,7 +238,7 @@ extension AppSession {
             let edited = try await client.editMessage(message.id, in: message.channelId, content: trimmed)
             update(edited)
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -190,7 +247,7 @@ extension AppSession {
             try await client.deleteMessage(message.id, in: message.channelId)
             messages[message.channelId]?.removeAll { $0.id == message.id }
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -220,7 +277,7 @@ extension AppSession {
                 delta: mine ? 1 : -1,
                 byMe: true
             )
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -231,42 +288,22 @@ extension AppSession {
         delta: Int,
         byMe: Bool
     ) {
-        guard var channelMessages = messages[channelId],
-              let index = channelMessages.firstIndex(where: { $0.id == messageId })
-        else { return }
-        var message = channelMessages[index]
-        var reactions = message.reactions ?? []
-        if let reactionIndex = reactions.firstIndex(where: { $0.emoji.key == emoji.key }) {
-            var reaction = reactions[reactionIndex]
-            let alreadyMine = reaction.me == true
-            // Skip echoes of changes already applied optimistically.
-            if byMe && ((delta > 0 && alreadyMine) || (delta < 0 && !alreadyMine)) { return }
-            reaction.count += delta
-            if byMe {
-                reaction.me = delta > 0
-            }
-            if reaction.count <= 0 {
-                reactions.remove(at: reactionIndex)
-            } else {
-                reactions[reactionIndex] = reaction
-            }
-        } else if delta > 0 {
-            reactions.append(Reaction(emoji: emoji, count: 1, me: byMe))
-        }
-        message.reactions = reactions.isEmpty ? nil : reactions
-        channelMessages[index] = message
-        messages[channelId] = channelMessages
+        guard let channelMessages = messages[channelId] else { return }
+        messages[channelId] = MessageListOps.applyingReaction(
+            to: channelMessages,
+            messageId: messageId,
+            emoji: emoji,
+            delta: delta,
+            byMe: byMe
+        )
     }
 
     func insert(_ message: Message) {
         if let author = message.author {
             knownUsers[author.id] = author
         }
-        guard var channelMessages = messages[message.channelId] else { return }
-        guard !channelMessages.contains(where: { $0.id == message.id }) else { return }
-        channelMessages.append(message)
-        channelMessages.sort { $0.id < $1.id }
-        messages[message.channelId] = channelMessages
+        guard let channelMessages = messages[message.channelId] else { return }
+        messages[message.channelId] = MessageListOps.inserting(message, into: channelMessages)
         scheduleCacheSave()
     }
 
@@ -288,14 +325,7 @@ extension AppSession {
     // MARK: Read state
 
     func isUnread(_ channel: Channel) -> Bool {
-        // Until READY brings real read states, a missing entry means
-        // "unknown", not "unread". Claiming unread here made every cached
-        // DM light up with a badge during connect.
-        guard readStatesSynced else { return false }
-        guard channel.type != .guildVoice, channel.type != .guildCategory else { return false }
-        guard let last = channel.lastMessageId else { return false }
-        guard let read = readStates[channel.id] else { return true }
-        return last > read
+        ReadStateOps.isUnread(channel: channel, readStates: readStates, synced: readStatesSynced)
     }
 
     func hasUnread(_ guild: Guild) -> Bool {
@@ -305,7 +335,7 @@ extension AppSession {
     /// Optimistically records the read position and tells the server.
     func markRead(channelId: Snowflake, messageId: Snowflake) {
         mentionCounts[channelId] = nil
-        if let current = readStates[channelId], current >= messageId { return }
+        guard ReadStateOps.shouldAdvance(current: readStates[channelId], to: messageId) else { return }
         readStates[channelId] = messageId
         Task {
             try? await client.ackMessage(messageId, in: channelId)
@@ -320,8 +350,11 @@ extension AppSession {
         // forever. Ack the furthest position known, from the live channel
         // object since the one handed in may be a stale copy.
         let live = findChannel(channel.id) ?? channel
-        let positions = [messages(in: channel.id).last?.id, live.lastMessageId, channel.lastMessageId]
-        guard let last = positions.compactMap({ $0 }).max() else { return }
+        guard let last = ReadStateOps.ackTarget(
+            messages(in: channel.id).last?.id,
+            live.lastMessageId,
+            channel.lastMessageId
+        ) else { return }
         markRead(channelId: channel.id, messageId: last)
     }
 
@@ -458,22 +491,7 @@ extension AppSession {
     /// Moves a user between voice channel occupancy sets and keeps their
     /// mute badge current.
     func applyVoiceState(_ state: VoiceState) {
-        for (channelId, users) in voiceChannelUsers where users.contains(state.userId) {
-            voiceChannelUsers[channelId]?.remove(state.userId)
-            if voiceChannelUsers[channelId]?.isEmpty == true {
-                voiceChannelUsers[channelId] = nil
-            }
-        }
-        if let channelId = state.channelId {
-            voiceChannelUsers[channelId, default: []].insert(state.userId)
-            if state.isMuted {
-                voiceMutedUsers.insert(state.userId)
-            } else {
-                voiceMutedUsers.remove(state.userId)
-            }
-        } else {
-            voiceMutedUsers.remove(state.userId)
-        }
+        VoiceStateOps.apply(state, users: &voiceChannelUsers, muted: &voiceMutedUsers)
     }
 
     func sortPrivateChannels() {

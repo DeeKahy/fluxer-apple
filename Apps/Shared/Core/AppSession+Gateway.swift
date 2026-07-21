@@ -29,7 +29,7 @@ extension AppSession {
             guard let message = try? event.data?.decoded(as: Message.self) else { return }
             // Our own optimistic sends echo back with their nonce; swap the
             // placeholder instead of inserting a duplicate.
-            if let nonce = message.nonce, pendingSends[nonce] != nil {
+            if let nonce = message.nonce, pendingSends[nonce] != nil || failedSends[nonce] != nil {
                 reconcileSend(nonce: nonce, with: message)
             } else {
                 insert(message)

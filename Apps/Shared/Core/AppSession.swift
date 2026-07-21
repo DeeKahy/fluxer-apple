@@ -54,7 +54,40 @@ final class AppSession {
     var unreadMarkers: [Snowflake: Snowflake] = [:]
     /// The user's own chosen status.
     var myStatus = "online"
-    var lastError: String?
+
+    // MARK: Error state
+    // One shared string for every failure meant whichever operation
+    // finished last silently stomped the others. Each surface now has its
+    // own slot, and failed sends keep their placeholder (issue #34).
+
+    /// Login flow errors, rendered by the login screens.
+    var authError: String?
+    /// Friend request failures, rendered next to the add friend buttons.
+    var friendRequestError: String?
+
+    /// A short lived banner for operations with no dedicated error surface.
+    struct TransientError: Equatable, Identifiable {
+        let id: UUID
+        let message: String
+    }
+    var transientError: TransientError?
+    var transientErrorTask: Task<Void, Never>?
+
+    /// Shows a failure briefly where no dedicated error slot exists.
+    func reportTransient(_ error: any Error) {
+        reportTransient(message: Self.describe(error))
+    }
+
+    func reportTransient(message: String) {
+        let entry = TransientError(id: UUID(), message: message)
+        transientError = entry
+        transientErrorTask?.cancel()
+        transientErrorTask = Task {
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled, self.transientError?.id == entry.id else { return }
+            self.transientError = nil
+        }
+    }
 
     /// Optimistic sends awaiting their server echo, keyed by nonce.
     /// The value is the placeholder message swapped out on reconcile.
@@ -63,6 +96,19 @@ final class AppSession {
         let placeholderId: Snowflake
     }
     var pendingSends: [String: PendingSend] = [:]
+
+    /// Text sends that failed. The placeholder stays in the transcript,
+    /// greyed out with a retry affordance, until retried or discarded.
+    struct FailedSend: Identifiable {
+        let nonce: String
+        let channelId: Snowflake
+        let placeholderId: Snowflake
+        let content: String
+        let replyTo: Snowflake?
+        var reason: String
+        var id: String { nonce }
+    }
+    var failedSends: [String: FailedSend] = [:]
 
     /// The channel currently on screen; new messages there are acked as read.
     var activeChannelId: Snowflake?
@@ -177,10 +223,10 @@ final class AppSession {
             }
             client = APIClient(baseURL: config.apiBase)
             MediaURLs.configure(with: config)
-            lastError = nil
+            authError = nil
             return true
         } catch {
-            lastError = "Couldn't read that instance: \(Self.describe(error))"
+            authError = "Couldn't read that instance: \(Self.describe(error))"
             return false
         }
     }
@@ -219,14 +265,14 @@ final class AppSession {
             phase = .loggedIn
             connectGateway(token: token)
         } catch {
-            lastError = Self.describe(error)
+            authError = Self.describe(error)
             phase = .loggedOut
         }
     }
 
     func login(email: String, password: String, captcha: CaptchaSolution? = nil) async {
         phase = .loggingIn
-        lastError = nil
+        authError = nil
         do {
             switch try await client.login(email: email, password: password, captcha: captcha) {
             case .success(let token):
@@ -238,7 +284,7 @@ final class AppSession {
                     mfaTicket = ticket
                     phase = .mfaPending
                 } else {
-                    lastError = "This account uses a passkey. Use \"Sign in with browser\" below."
+                    authError = "This account uses a passkey. Use \"Sign in with browser\" below."
                     phase = .loggedOut
                 }
             case .ipAuthorizationRequired(let ticket, let email):
@@ -252,10 +298,10 @@ final class AppSession {
             phase = .captchaPending
         } catch APIError.invalidCaptcha {
             pendingLogin = (email, password)
-            lastError = "Captcha check failed, try again."
+            authError = "Captcha check failed, try again."
             phase = .captchaPending
         } catch {
-            lastError = Self.describe(error)
+            authError = Self.describe(error)
             phase = .loggedOut
         }
     }
@@ -291,7 +337,7 @@ final class AppSession {
                     if let token = status.token {
                         await finishLogin(token: token)
                     } else {
-                        lastError = "Device confirmed, sign in again."
+                        authError = "Device confirmed, sign in again."
                         phase = .loggedOut
                     }
                     return
@@ -303,14 +349,14 @@ final class AppSession {
     /// Starts a browser login: get a pairing code, show it, and poll for
     /// approval while the person signs in on the web and enters the code.
     func startBrowserLogin() async {
-        lastError = nil
+        authError = nil
         do {
             let initiation = try await client.initiateHandoff()
             handoffCode = initiation.code
             phase = .handoffPending(code: initiation.code)
             startHandoffPolling()
         } catch {
-            lastError = Self.describe(error)
+            authError = Self.describe(error)
             phase = .loggedOut
         }
     }
@@ -329,7 +375,7 @@ final class AppSession {
                 }
                 if status.isExpired {
                     handoffCode = nil
-                    lastError = "The code expired, try again."
+                    authError = "The code expired, try again."
                     phase = .loggedOut
                     return
                 }
@@ -362,13 +408,13 @@ final class AppSession {
     func submitMfaCode(_ code: String) async {
         guard let ticket = mfaTicket else { return }
         phase = .loggingIn
-        lastError = nil
+        authError = nil
         do {
             let token = try await client.loginMfaTotp(code: code, ticket: ticket)
             mfaTicket = nil
             await finishLogin(token: token)
         } catch {
-            lastError = Self.describe(error)
+            authError = Self.describe(error)
             phase = .mfaPending
         }
     }
@@ -411,6 +457,12 @@ final class AppSession {
         pinnedDMIds = []
         unreadMarkers = [:]
         myStatus = "online"
+        pendingSends = [:]
+        failedSends = [:]
+        authError = nil
+        friendRequestError = nil
+        transientErrorTask?.cancel()
+        transientError = nil
         lastTypingSent = [:]
         activeChannelId = nil
         mfaTicket = nil
@@ -422,7 +474,7 @@ final class AppSession {
         do {
             guilds = try await client.myGuilds()
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 }

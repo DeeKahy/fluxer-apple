@@ -20,7 +20,7 @@ extension AppSession {
         do {
             return try await client.pinnedMessages(in: channel.id)
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return []
         }
     }
@@ -36,7 +36,7 @@ extension AppSession {
             updated.pinned = pinned
             update(updated)
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -44,7 +44,7 @@ extension AppSession {
         do {
             return try await client.savedMessages()
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return []
         }
     }
@@ -57,7 +57,7 @@ extension AppSession {
                 try await client.unsaveMessage(message.id)
             }
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -65,7 +65,7 @@ extension AppSession {
         do {
             return try await client.mentions()
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return []
         }
     }
@@ -82,7 +82,7 @@ extension AppSession {
         do {
             return try await client.createInvite(in: channel.id).code
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return nil
         }
     }
@@ -98,7 +98,7 @@ extension AppSession {
             _ = try await client.acceptInvite(code)
             return true
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return false
         }
     }
@@ -146,7 +146,7 @@ extension AppSession {
             }
             return true
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return false
         }
     }
@@ -156,7 +156,7 @@ extension AppSession {
             try await client.leaveGuild(guild.id)
             guilds.removeAll { $0.id == guild.id }
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -166,7 +166,7 @@ extension AppSession {
             try await client.kickMember(userId, from: guildId)
             guildMembers[guildId]?.removeAll { $0.user?.id == userId }
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -176,7 +176,7 @@ extension AppSession {
             try await client.banMember(userId, from: guildId)
             guildMembers[guildId]?.removeAll { $0.user?.id == userId }
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -266,7 +266,7 @@ extension AppSession {
         do {
             return try await client.sessions()
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return []
         }
     }
@@ -276,7 +276,7 @@ extension AppSession {
             try await client.logoutSessions(idHashes: [session.idHash])
             return true
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return false
         }
     }

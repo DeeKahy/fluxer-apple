@@ -54,7 +54,7 @@ struct LoginView: View {
             }
             .frame(maxWidth: 320)
 
-            if let error = session.lastError {
+            if let error = session.authError {
                 Text(error)
                     .font(.callout)
                     .foregroundStyle(.red)

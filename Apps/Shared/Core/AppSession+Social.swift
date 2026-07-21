@@ -101,7 +101,7 @@ extension AppSession {
                 $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
             }
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -136,22 +136,24 @@ extension AppSession {
         let name = String(parts[0]).trimmingCharacters(in: .whitespaces)
         let discriminator = parts.count > 1 ? String(parts[1]) : nil
         guard !name.isEmpty else { return false }
+        friendRequestError = nil
         do {
             try await client.sendFriendRequest(username: name, discriminator: discriminator)
             return true
         } catch {
-            lastError = Self.describe(error)
+            friendRequestError = Self.describe(error)
             return false
         }
     }
 
     /// Friend request to a user we already know the id of, from profiles.
     func sendFriendRequest(to userId: Snowflake) async -> Bool {
+        friendRequestError = nil
         do {
             try await client.sendFriendRequest(to: userId)
             return true
         } catch {
-            lastError = Self.describe(error)
+            friendRequestError = Self.describe(error)
             return false
         }
     }
@@ -160,7 +162,7 @@ extension AppSession {
         do {
             try await client.acceptFriendRequest(from: relationship.id)
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -169,7 +171,7 @@ extension AppSession {
             try await client.removeRelationship(with: relationship.id)
             relationships[relationship.id] = nil
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
         }
     }
 
@@ -187,7 +189,7 @@ extension AppSession {
             }
             return channel
         } catch {
-            lastError = Self.describe(error)
+            reportTransient(error)
             return nil
         }
     }
