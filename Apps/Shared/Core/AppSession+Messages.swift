@@ -78,14 +78,40 @@ extension AppSession {
     ) async {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || !files.isEmpty else { return }
+
+        // Optimistic echo for plain text: show the message right away and
+        // reconcile with the server copy by nonce. File sends keep the
+        // round trip since the placeholder couldn't show the attachments.
+        let nonce = String(UInt64.random(in: 1...UInt64.max))
+        if files.isEmpty {
+            // Replies must carry the referenced message from the start or
+            // the placeholder renders as a plain message and the reply
+            // preview pops in only when the server copy lands.
+            let referenced = replyTo.flatMap { id in
+                messages[channel.id]?.first { $0.id == id }
+            }
+            let placeholder = Message(
+                id: placeholderMessageId(in: channel.id),
+                channelId: channel.id,
+                guildId: channel.guildId,
+                author: currentUser,
+                content: trimmed,
+                timestamp: Date(),
+                referencedMessage: referenced.map(IndirectBox.init),
+                nonce: nonce
+            )
+            pendingSends[nonce] = PendingSend(channelId: channel.id, placeholderId: placeholder.id)
+            insert(placeholder)
+        }
+
         do {
             let sent: Message
             if files.isEmpty {
-                sent = try await client.sendMessage(trimmed, to: channel.id, replyTo: replyTo)
+                sent = try await client.sendMessage(trimmed, to: channel.id, replyTo: replyTo, nonce: nonce)
             } else {
-                sent = try await client.sendMessage(trimmed, to: channel.id, files: files, replyTo: replyTo)
+                sent = try await client.sendMessage(trimmed, to: channel.id, files: files, replyTo: replyTo, nonce: nonce)
             }
-            insert(sent)
+            reconcileSend(nonce: nonce, with: sent)
             let interval = slowmodeInterval(in: channel)
             if interval > 0 {
                 slowmodeUntil[channel.id] = Date().addingTimeInterval(TimeInterval(interval))
@@ -94,10 +120,58 @@ extension AppSession {
             if let retryAfter {
                 slowmodeUntil[channel.id] = Date().addingTimeInterval(retryAfter)
             }
+            dropPendingSend(nonce: nonce)
             lastError = "Slow down, try again in a moment."
         } catch {
+            dropPendingSend(nonce: nonce)
             lastError = Self.describe(error)
         }
+    }
+
+    /// A local-only id that sorts right after the newest loaded message, so
+    /// the placeholder lands at the bottom regardless of snowflake epochs.
+    private func placeholderMessageId(in channelId: Snowflake) -> Snowflake {
+        let newest = messages[channelId]?.last?.id.rawValue ?? 0
+        return Snowflake(max(newest, 1) &+ 1)
+    }
+
+    /// Swaps a pending placeholder for the server's copy of the message.
+    /// Called from both the REST response and the gateway echo; whichever
+    /// arrives first wins and the other deduplicates by id.
+    func reconcileSend(nonce: String, with real: Message) {
+        guard let pending = pendingSends.removeValue(forKey: nonce) else {
+            insert(real)
+            return
+        }
+        bumpLastMessageId(real)
+        guard var channelMessages = messages[pending.channelId] else { return }
+        if let index = channelMessages.firstIndex(where: { $0.id == pending.placeholderId }) {
+            if channelMessages.contains(where: { $0.id == real.id }) {
+                channelMessages.remove(at: index)
+            } else {
+                channelMessages[index] = real
+                channelMessages.sort { $0.id < $1.id }
+            }
+            messages[pending.channelId] = channelMessages
+            scheduleCacheSave()
+        } else {
+            insert(real)
+        }
+    }
+
+    /// True while a message is a local placeholder still waiting on its
+    /// server confirmation, so the view can render it dimmed.
+    func isPendingSend(_ message: Message) -> Bool {
+        pendingSends.values.contains {
+            $0.placeholderId == message.id && $0.channelId == message.channelId
+        }
+    }
+
+    /// Removes a failed send's placeholder so a phantom message doesn't
+    /// linger in the transcript.
+    private func dropPendingSend(nonce: String) {
+        guard let pending = pendingSends.removeValue(forKey: nonce) else { return }
+        messages[pending.channelId]?.removeAll { $0.id == pending.placeholderId }
     }
 
     func editMessage(_ message: Message, content: String) async {

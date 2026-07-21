@@ -23,10 +23,6 @@ struct MessageView: View {
     @State private var showMembers = false
     @State private var showPins = false
     @State private var showEmojiPicker = false
-    /// The message aligned with the bottom of the viewport, kept by the
-    /// scroll position binding and mirrored into session.scrollAnchors.
-    @State private var scrolledId: Snowflake?
-    @State private var unreadJumpDismissed = false
     @FocusState private var composerFocused: Bool
     #if os(iOS)
     @State private var photoItems: [PhotosPickerItem] = []
@@ -49,217 +45,15 @@ struct MessageView: View {
         return others.map(\.displayName).joined(separator: ", ")
     }
 
-    /// One rendered list entry: a message plus how it should appear.
-    private struct Entry: Identifiable {
-        let message: Message
-        let showsHeader: Bool
-        let dayLabel: String?
-        var isFirstUnread = false
-        var id: Snowflake { message.id }
-    }
-
-    /// Messages from the same author within a short window collapse under
-    /// one header, and day changes get a labelled divider.
-    private var entries: [Entry] {
-        let messages = session.messages(in: channel.id)
-        let calendar = Calendar.current
-        let formatter = Self.dayFormatter
-        var result: [Entry] = []
-        result.reserveCapacity(messages.count)
-        let unreadAfter = session.unreadMarkers[channel.id]
-        var markedUnread = false
-        var previous: Message?
-        for message in messages {
-            var dayLabel: String?
-            let isNewDay: Bool
-            if let timestamp = message.timestamp {
-                if let previousTimestamp = previous?.timestamp {
-                    isNewDay = !calendar.isDate(timestamp, inSameDayAs: previousTimestamp)
-                } else {
-                    isNewDay = previous == nil
-                }
-                if isNewDay {
-                    dayLabel = formatter.string(from: timestamp)
-                }
-            } else {
-                isNewDay = false
-            }
-            let groupsWithPrevious: Bool = {
-                guard !isNewDay,
-                      let previous,
-                      previous.author?.id == message.author?.id,
-                      message.referencedMessage == nil,
-                      let previousTimestamp = previous.timestamp,
-                      let timestamp = message.timestamp
-                else { return false }
-                return timestamp.timeIntervalSince(previousTimestamp) < 420
-            }()
-            var entry = Entry(message: message, showsHeader: !groupsWithPrevious, dayLabel: dayLabel)
-            if !markedUnread, let unreadAfter, message.id > unreadAfter,
-               message.author?.id != session.currentUser?.id {
-                entry.isFirstUnread = true
-                markedUnread = true
-            }
-            result.append(entry)
-            previous = message
-        }
-        return result
-    }
-
-    /// Scroll target for the new messages divider, distinct from message ids.
-    private static let unreadDividerId = "new-messages-divider"
-
-    private static let dayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        formatter.doesRelativeDateFormatting = true
-        return formatter
-    }()
-
     var body: some View {
         VStack(spacing: 0) {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        if !session.canLoadOlderMessages(in: channel.id) {
-                            // Mobile comp centers the hero; the desktop comp
-                            // left-aligns it with a bigger title.
-                            VStack(alignment: desktopChrome ? .leading : .center, spacing: 12) {
-                                RoundedRectangle(cornerRadius: desktopChrome ? 16 : 18)
-                                    .fill(Theme.heroTile)
-                                    .frame(width: 60, height: 60)
-                                    .overlay {
-                                        if channel.guildId != nil {
-                                            Text("#")
-                                                .font(.system(size: desktopChrome ? 26 : 30, weight: desktopChrome ? .heavy : .regular))
-                                                .foregroundStyle(Theme.accentSoft)
-                                        } else {
-                                            Image(systemName: "bubble.left.and.bubble.right.fill")
-                                                .font(.system(size: 24))
-                                                .foregroundStyle(Theme.accentSoft)
-                                        }
-                                    }
-                                Text("Welcome to \(channelTitle)")
-                                    .font(.system(size: desktopChrome ? 26 : 22, weight: .heavy))
-                                    .foregroundStyle(Theme.text)
-                                    .multilineTextAlignment(desktopChrome ? .leading : .center)
-                                if let topic = channel.topic, !topic.isEmpty {
-                                    Text(topic)
-                                        .font(.system(size: desktopChrome ? 15 : 14))
-                                        .foregroundStyle(Theme.secondary)
-                                        .multilineTextAlignment(desktopChrome ? .leading : .center)
-                                } else {
-                                    Text("This is the very beginning of the conversation.")
-                                        .font(.system(size: desktopChrome ? 15 : 14))
-                                        .foregroundStyle(Theme.secondary)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: desktopChrome ? .leading : .center)
-                            .padding(.vertical, 22)
-                            .padding(.horizontal, desktopChrome ? 10 : 0)
-                        }
-                        if session.canLoadOlderMessages(in: channel.id),
-                           !session.messages(in: channel.id).isEmpty {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .onAppear {
-                                    Task {
-                                        if let anchor = await session.loadOlderMessages(for: channel) {
-                                            proxy.scrollTo(anchor, anchor: .top)
-                                        }
-                                    }
-                                }
-                        }
-                        ForEach(entries) { entry in
-                            if let dayLabel = entry.dayLabel {
-                                DayDivider(label: dayLabel)
-                            }
-                            if entry.isFirstUnread {
-                                NewMessagesDivider()
-                                    .id(Self.unreadDividerId)
-                                    // Once the divider has been on screen the
-                                    // jump pill has nothing left to offer.
-                                    .onAppear {
-                                        withAnimation { unreadJumpDismissed = true }
-                                    }
-                            }
-                            MessageRow(
-                                message: entry.message,
-                                showsHeader: entry.showsHeader,
-                                isOwn: entry.message.author?.id == session.currentUser?.id,
-                                onReact: { emoji in
-                                    Task { await session.toggleReaction(emoji, on: entry.message) }
-                                },
-                                onReply: { startReply(entry.message) },
-                                onEdit: { startEdit(entry.message) },
-                                onDelete: { messageToDelete = entry.message }
-                            )
-                            .id(entry.message.id)
-                        }
-                    }
-                    .scrollTargetLayout()
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                }
-                // Content starts pinned to the newest message, which also
-                // survives lazy row sizing, unlike a manual scrollTo.
-                .defaultScrollAnchor(.bottom)
-                // Tracks which message sits at the bottom edge, both to
-                // remember the reading position and to know whether the view
-                // is parked at the newest message.
-                .scrollPosition(id: $scrolledId, anchor: .bottom)
-                .overlay(alignment: .top) {
-                    unreadJumpPill(proxy)
-                }
-                .onChange(of: scrolledId) { _, newValue in
-                    guard let newValue else { return }
-                    if newValue == session.messages(in: channel.id).last?.id {
-                        session.scrollAnchors[channel.id] = nil
-                    } else {
-                        session.scrollAnchors[channel.id] = newValue
-                    }
-                }
-                // Keyed on the newest id, not the count, so prepending
-                // older history doesn't yank the view to the bottom. The
-                // scroll is deferred a beat so it never runs inside the
-                // same layout pass that inserted the row. Skipped while
-                // reading older history, unless the new message is our own.
-                .onChange(of: session.messages(in: channel.id).last?.id) { oldLast, _ in
-                    let last = session.messages(in: channel.id).last
-                    let wasAtBottom = scrolledId == nil || scrolledId == oldLast
-                    let ownMessage = last?.author?.id == session.currentUser?.id
-                    guard wasAtBottom || ownMessage else { return }
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(60))
-                        if let last = session.messages(in: channel.id).last {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
-                }
-                .task(id: channel.id) {
-                    scrolledId = nil
-                    unreadJumpDismissed = false
-                    session.activeChannelId = channel.id
-                    session.recordVisit(channel)
-                    session.captureUnreadMarker(channel)
-                    await session.loadMessages(for: channel)
-                    session.markChannelRead(channel)
-                    // Put the view back where it was last time, once the
-                    // deferred scroll-to-bottom above has had its beat.
-                    if let saved = session.scrollAnchors[channel.id],
-                       session.messages(in: channel.id).contains(where: { $0.id == saved }) {
-                        try? await Task.sleep(for: .milliseconds(150))
-                        scrolledId = saved
-                    }
-                }
-                .onDisappear {
-                    if session.activeChannelId == channel.id {
-                        session.activeChannelId = nil
-                    }
-                }
-            }
+            MessageTranscriptView(
+                channel: channel,
+                title: channelTitle,
+                onReply: startReply,
+                onEdit: startEdit,
+                onDelete: { messageToDelete = $0 }
+            )
 
             typingIndicator
 
@@ -729,70 +523,24 @@ struct MessageView: View {
         }
     }
 
-    /// Floating pill offering a jump to the new messages divider. Only shows
-    /// while the divider itself has stayed off screen, so a channel with a
-    /// handful of unread never sees it.
-    @ViewBuilder
-    private func unreadJumpPill(_ proxy: ScrollViewProxy) -> some View {
-        let unreadCount = entries.drop { !$0.isFirstUnread }.count
-        if unreadCount > 0, !unreadJumpDismissed {
-            HStack(spacing: 10) {
-                Button {
-                    withAnimation {
-                        unreadJumpDismissed = true
-                        proxy.scrollTo(Self.unreadDividerId, anchor: .top)
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 11, weight: .bold))
-                        Text(unreadCount == 1 ? "1 new message" : "\(unreadCount) new messages")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                Button {
-                    withAnimation { unreadJumpDismissed = true }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 13)
-            .padding(.vertical, 7)
-            .background(Theme.accent, in: Capsule())
-            .shadow(color: .black.opacity(0.3), radius: 8, y: 3)
-            .padding(.top, 8)
-            .transition(.opacity.combined(with: .move(edge: .top)))
-            // The pill is an offer at the moment of opening, not a badge;
-            // if it goes untouched it clears itself.
-            .task {
-                try? await Task.sleep(for: .seconds(8))
-                guard !Task.isCancelled else { return }
-                withAnimation { unreadJumpDismissed = true }
-            }
-        }
-    }
-
-    @ViewBuilder
+    /// Always reserves the same height whether or not anyone is typing, so
+    /// the indicator popping in and out never shoves the message list up or
+    /// down. Doubles as breathing room between the messages and the composer.
     private var typingIndicator: some View {
         let names = session.typingNames(in: channel.id)
-        if !names.isEmpty {
-            HStack(spacing: 6) {
+        return HStack(spacing: 6) {
+            if !names.isEmpty {
                 ProgressView()
                     .controlSize(.mini)
                 Text(typingText(names))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 4)
+            Spacer(minLength: 0)
         }
+        .frame(height: 18)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
     }
 
     private func typingText(_ names: [String]) -> String {
@@ -804,7 +552,7 @@ struct MessageView: View {
     }
 }
 
-private struct NewMessagesDivider: View {
+struct NewMessagesDivider: View {
     var body: some View {
         HStack {
             Rectangle().fill(Color.red.opacity(0.6)).frame(height: 1)
@@ -818,7 +566,7 @@ private struct NewMessagesDivider: View {
     }
 }
 
-private struct DayDivider: View {
+struct DayDivider: View {
     let label: String
 
     var body: some View {
@@ -859,7 +607,7 @@ private struct MessageContentText: View {
     }
 }
 
-private struct MessageRow: View {
+struct MessageRow: View {
     @Environment(AppSession.self) private var session
     @Environment(\.desktopChrome) private var desktopChrome
 
@@ -874,7 +622,21 @@ private struct MessageRow: View {
     @State private var profileUser: User?
     @State private var hovering = false
 
+    /// Local placeholder that hasn't been confirmed by the server yet;
+    /// rendered dimmed with a clock until the echo swaps it out.
+    private var isPending: Bool {
+        session.isPendingSend(message)
+    }
+
     var body: some View {
+        rowContent
+            // Swipe a row from right to left to reply. Gated to the mobile
+            // shell; desktop uses the hover toolbar, and a left-to-right
+            // swipe is left alone so it stays the navigation back gesture.
+            .modifier(SwipeReplyModifier(enabled: !desktopChrome, onReply: onReply))
+    }
+
+    private var rowContent: some View {
         HStack(alignment: .top, spacing: 10) {
             if showsHeader {
                 Button {
@@ -917,6 +679,11 @@ private struct MessageRow: View {
                         }
                         if message.editedTimestamp != nil {
                             Text("edited")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        if isPending {
+                            Image(systemName: "clock")
                                 .font(.system(size: 10))
                                 .foregroundStyle(Theme.muted)
                         }
@@ -963,6 +730,8 @@ private struct MessageRow: View {
             }
             Spacer(minLength: 0)
         }
+        .opacity(isPending ? 0.45 : 1)
+        .animation(.easeOut(duration: 0.25), value: isPending)
         .padding(.top, desktopChrome ? (showsHeader ? 8 : 1) : (showsHeader ? 10 : 2))
         .padding(.horizontal, desktopChrome ? 6 : 0)
         .padding(.bottom, desktopChrome ? 1 : 0)
@@ -1154,6 +923,55 @@ private struct MessageRow: View {
         #else
         UIPasteboard.general.string = content
         #endif
+    }
+}
+
+/// Right-to-left swipe on a message row reveals a reply arrow and fires the
+/// reply action once the drag passes the threshold. Only horizontal-dominant
+/// left drags move the row, so vertical scrolling is untouched and the
+/// system's left-edge back swipe keeps working.
+private struct SwipeReplyModifier: ViewModifier {
+    let enabled: Bool
+    let onReply: () -> Void
+
+    @State private var offset: CGFloat = 0
+    @State private var armed = false
+
+    private let threshold: CGFloat = -60
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .offset(x: offset)
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "arrowshape.turn.up.left.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(armed ? Theme.accent : Theme.muted)
+                        .opacity(Double(min(1, abs(offset) / abs(threshold))))
+                        .padding(.trailing, 14)
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 12)
+                        .onChanged { value in
+                            let dx = value.translation.width
+                            guard dx < 0, abs(dx) > abs(value.translation.height) else { return }
+                            offset = max(dx, -90)
+                            armed = offset <= threshold
+                        }
+                        .onEnded { _ in
+                            if offset <= threshold { onReply() }
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                offset = 0
+                            }
+                            armed = false
+                        }
+                )
+                .sensoryFeedback(trigger: armed) { wasArmed, isArmed in
+                    wasArmed || !isArmed ? nil : .impact(weight: .medium)
+                }
+        } else {
+            content
+        }
     }
 }
 

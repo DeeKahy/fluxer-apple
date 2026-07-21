@@ -89,4 +89,32 @@ struct MessageDecodingTests {
         #expect(channel.type == .unknown)
         #expect(channel.name == "mystery")
     }
+
+    @Test func snowflakeHelperReadsStringAndNumberIds() throws {
+        let json = """
+        {"channel_id": "123456", "user_id": 789, "flag": true, "bad": "abc", "frac": 1.5}
+        """
+        let value = try JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))
+        #expect(value.snowflake("channel_id") == Snowflake(123456))
+        #expect(value.snowflake("user_id") == Snowflake(789))
+        #expect(value.snowflake("flag") == nil)
+        #expect(value.snowflake("bad") == nil)
+        #expect(value.snowflake("frac") == nil)
+        #expect(value.snowflake("missing") == nil)
+    }
+
+    @Test func messagePublicInitBuildsPlaceholders() {
+        let message = Message(
+            id: Snowflake(42),
+            channelId: Snowflake(7),
+            content: "on its way",
+            timestamp: Date(),
+            nonce: "abc123"
+        )
+        #expect(message.id == Snowflake(42))
+        #expect(message.channelId == Snowflake(7))
+        #expect(message.content == "on its way")
+        #expect(message.nonce == "abc123")
+        #expect(message.attachments == nil)
+    }
 }

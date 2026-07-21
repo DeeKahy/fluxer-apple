@@ -52,12 +52,17 @@ final class AppSession {
     /// messages divider. Unlike readStates this doesn't advance while
     /// the channel stays open.
     var unreadMarkers: [Snowflake: Snowflake] = [:]
-    /// Bottom-most message on screen when a channel was last left, so the
-    /// view can reopen at the same spot. Empty means open at the newest.
-    var scrollAnchors: [Snowflake: Snowflake] = [:]
     /// The user's own chosen status.
     var myStatus = "online"
     var lastError: String?
+
+    /// Optimistic sends awaiting their server echo, keyed by nonce.
+    /// The value is the placeholder message swapped out on reconcile.
+    struct PendingSend {
+        let channelId: Snowflake
+        let placeholderId: Snowflake
+    }
+    var pendingSends: [String: PendingSend] = [:]
 
     /// The channel currently on screen; new messages there are acked as read.
     var activeChannelId: Snowflake?
@@ -405,7 +410,6 @@ final class AppSession {
         slowmodeUntil = [:]
         pinnedDMIds = []
         unreadMarkers = [:]
-        scrollAnchors = [:]
         myStatus = "online"
         lastTypingSent = [:]
         activeChannelId = nil

@@ -88,6 +88,21 @@ extension JSONValue {
         objectValue?[key]
     }
 
+    /// Reads a snowflake id field out of an object value, accepting both
+    /// the usual string form and a bare number. Collapses the
+    /// `data?["key"]?.stringValue.flatMap(Snowflake.init(string:))` chains
+    /// the gateway handlers were full of.
+    public func snowflake(_ key: String) -> Snowflake? {
+        switch self[key] {
+        case .string(let string):
+            return Snowflake(string: string)
+        case .number(let number) where number >= 0 && number.truncatingRemainder(dividingBy: 1) == 0:
+            return Snowflake(UInt64(number))
+        default:
+            return nil
+        }
+    }
+
     /// Re-encodes this value and decodes it as a concrete model type.
     public func decoded<T: Decodable>(as type: T.Type, decoder: JSONDecoder = .fluxer) throws -> T {
         let data = try JSONEncoder().encode(self)
