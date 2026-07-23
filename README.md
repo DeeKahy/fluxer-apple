@@ -15,49 +15,39 @@ See docs/media/README.md for the suggested shots and filenames.
 
 > **Screenshots coming.** Real captures from the app will live here soon. If you want to see it now, grab a build below.
 
-## Download
+## Get it
 
-Prebuilt binaries are attached to the [latest release](https://github.com/DeeKahy/fluxer-apple/releases/latest).
+### macOS (easy)
 
-| Platform | File | Notes |
-| --- | --- | --- |
-| **macOS** (Intel + Apple Silicon) | `CornFlux-macOS-Universal.dmg` | One universal build for both Mac types |
-| **iPhone / iPad** | `CornFlux.ipa` | Sideload with SideStore or AltStore |
-
-There is no App Store build yet. Getting one needs a paid Apple Developer membership, which the project cannot afford on its own right now (see [Funding the App Store path](#funding-the-app-store-path)).
-
-### Install on macOS
-
-The quickest path is Homebrew:
+Install with Homebrew:
 
 ```
 brew install --cask deekahy/tap/cornflux
 ```
 
-Or install by hand: open `CornFlux-macOS-Universal.dmg` and drag **CornFlux** to Applications.
+Or grab `CornFlux-macOS-Universal.dmg` from the [latest release](https://github.com/DeeKahy/fluxer-apple/releases/latest) and drag **CornFlux** to Applications. It is one universal build that runs on both Intel and Apple Silicon.
 
-Either way, the app is signed ad hoc (no paid Developer certificate), so macOS quarantines it and reports it as "damaged" on first launch. Clear the quarantine flag once:
+The app is signed ad hoc, because I do not have a paid Apple Developer certificate, so macOS quarantines it and calls it "damaged" on first launch. Clear that once:
 
 ```
 xattr -dr com.apple.quarantine /Applications/CornFlux.app
 ```
 
-Or open it once, let macOS block it, then go to **System Settings > Privacy & Security** and click **Open Anyway**. One time per build.
+Or open it once, let macOS block it, then click **Open Anyway** under **System Settings > Privacy & Security**. One time per build.
 
-Nix users: a Darwin package definition for a future nixpkgs submission lives in [packaging/nix/package.nix](packaging/nix/package.nix). Build it now with `nix-build packaging/nix` then `open ./result/Applications/CornFlux.app`.
+Nix users: a Darwin package for a future nixpkgs submission lives in [packaging/nix/package.nix](packaging/nix/package.nix). Build it with `nix-build packaging/nix`.
 
-### Install on iPhone with SideStore
+### iPhone and iPad (build it yourself)
 
-iOS will not run an app from outside the App Store unless it is signed with your own Apple ID. [SideStore](https://sidestore.io) (or [AltStore](https://altstore.io)) does that for you and re-signs the app before it expires, so you do not have to think about the seven day free-account limit.
+I am not going to pretend there is a smooth iPhone install, because there is not. Apple will not run an app on iOS unless it is signed, and signing for real distribution needs a paid Apple Developer membership at 99 dollars a year that I cannot afford right now. Until that changes, the honest path onto a device is to build it yourself:
 
-1. Install SideStore by following its [setup guide](https://docs.sidestore.io). You sign in with **your own** Apple ID; a free one works. SideStore never sees your Fluxer account.
-2. Download `CornFlux.ipa` from the [latest release](https://github.com/DeeKahy/fluxer-apple/releases/latest) onto the device.
-3. In SideStore, tap **+**, pick `CornFlux.ipa`, and let it install.
-4. Keep SideStore's background refresh on so it re-signs the app automatically. A free Apple ID caps you at three sideloaded apps at a time.
+1. Clone this repo and open it in Xcode (see [Building from source](#building-from-source)).
+2. Set `DEVELOPMENT_TEAM` in `project.yml` to your own Apple ID team. A free account works.
+3. Plug in your iPhone, choose it as the run destination, and press run.
 
-The `.ipa` ships unsigned on purpose so SideStore can sign it with your account. Minimum iOS is 18.0.
+Builds from a free account stop working after seven days and need a rebuild. That is Apple's limit, not mine. If you already run SideStore or AltStore, an unsigned `CornFlux.ipa` is attached to every release and you know what to do with it. I am not writing that guide here.
 
-> Sideloading is available worldwide with SideStore or AltStore. The EU DMA "alternative app marketplaces" are a different thing and still require a paid Developer membership, so they are not the path here.
+Everything that would make this painless (a normal install, no seven day expiry, push and calls while the app is closed) unlocks with that paid membership. If you want it to happen, see [Funding](#funding) below.
 
 ## What works today
 
@@ -109,11 +99,11 @@ is parked until the project earns it or i can afford it. The same membership wou
 ringing on the lock screen and remove the seven day resigning cycle for
 sideloaded builds.
 
-## Funding the App Store path
+## Funding
 
-One thing preventing me from improving this more is the lack of money to afford the Apple Developer Program
-membership. Everything below is already probably mapped
-out correctly and hopefully becomes buildable the moment the membership exists:
+The one thing holding CornFlux back is money for the Apple Developer Program
+membership, 99 dollars a year. Everything below is already mapped out and
+becomes buildable the moment that membership exists:
 
 - Push notifications and calls arriving with the app closed on iPhone.
   Fluxer uses standard Web Push, so a small relay can forward the encrypted
@@ -123,7 +113,7 @@ out correctly and hopefully becomes buildable the moment the membership exists:
   answered from the lock screen.
 - A public TestFlight beta. TestFlight itself is free with the membership
   and supports up to ten thousand testers through a public link, so anyone
-  could install the app without owning a Mac and without SideStore.
+  could install the app in one tap without owning a Mac or building it themselves.
 - An eventual App Store release, and no more seven day expiry on builds.
 
 Before setting up any donation infrastructure I want to know people actually
