@@ -44,6 +44,8 @@ xattr -dr com.apple.quarantine /Applications/CornFlux.app
 
 Or open it once, let macOS block it, then go to **System Settings > Privacy & Security** and click **Open Anyway**. One time per build.
 
+Nix users: a Darwin package definition for a future nixpkgs submission lives in [packaging/nix/package.nix](packaging/nix/package.nix). Build it now with `nix-build packaging/nix` then `open ./result/Applications/CornFlux.app`.
+
 ### Install on iPhone with SideStore
 
 iOS will not run an app from outside the App Store unless it is signed with your own Apple ID. [SideStore](https://sidestore.io) (or [AltStore](https://altstore.io)) does that for you and re-signs the app before it expires, so you do not have to think about the seven day free-account limit.
