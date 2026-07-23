@@ -68,7 +68,6 @@ struct FluxerApp: App {
 
     init() {
         NotificationManager.shared.setUp()
-        HangMonitor.shared.start()
     }
 
     var body: some Scene {

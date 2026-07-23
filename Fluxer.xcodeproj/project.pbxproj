@@ -44,7 +44,6 @@
 		585EA28F0516AA6857599BD6 /* DesktopSearchResults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AAA7FB27B2984EF4FBAC46 /* DesktopSearchResults.swift */; };
 		5A6E114E18A8D6B8583FDF79 /* DesktopShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E15614D2336D491775754197 /* DesktopShell.swift */; };
 		5AFBC142EFD15564291C0E80 /* MemberListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA587D8BBBED81EE30AE6AF7 /* MemberListView.swift */; };
-		5CF2EBD66D2E4F3B475E1214 /* HangMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEED7D4C9A347933662ADBF3 /* HangMonitor.swift */; };
 		5DFF2694A1E76C9020D5EDF9 /* VoiceStageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C83B9D05FD1AC94A4BE2718 /* VoiceStageView.swift */; };
 		62A493586E908D38A9677660 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086581378BB70D816FB3E614 /* AvatarView.swift */; };
 		63A69801C14B9F149710B8C7 /* FluxerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1569297C4C0181A49661B6D /* FluxerApp.swift */; };
@@ -63,7 +62,6 @@
 		7FFF9C97A6A54DA580CB3551 /* VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D966850F387D2CAB8CE0AF /* VoiceManager.swift */; };
 		8343134B3A70FB8DAE266F57 /* DesktopSelfBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650628AE520E1EEAB6E5B66E /* DesktopSelfBar.swift */; };
 		84F0EE08A327263A0813F1AA /* MessageMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEACEAA9AFA28CCB8B597D9 /* MessageMarkdown.swift */; };
-		872A205761817CD80B2306A6 /* HangMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEED7D4C9A347933662ADBF3 /* HangMonitor.swift */; };
 		877590EC6966F2F9BE20E11F /* MemberListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA587D8BBBED81EE30AE6AF7 /* MemberListView.swift */; };
 		878C75BB806FBF5F78A365DC /* MessageRowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2A1966F0661EE5ECB703C2 /* MessageRowViews.swift */; };
 		8A25F73C285BF914FAC1EC97 /* SearchTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6551A26BAFAC58414724E1 /* SearchTab.swift */; };
@@ -149,7 +147,6 @@
 		D12D0494483EF2AF4F9294E6 /* CaptchaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptchaView.swift; sourceTree = "<group>"; };
 		D64738FE6F72259636FA76F8 /* fluxer-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fluxer-apple"; path = .; sourceTree = SOURCE_ROOT; };
 		DD7041167B7D2E7E3E7B7101 /* AppSession+Gateway.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppSession+Gateway.swift"; sourceTree = "<group>"; };
-		DEED7D4C9A347933662ADBF3 /* HangMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HangMonitor.swift; sourceTree = "<group>"; };
 		E15614D2336D491775754197 /* DesktopShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopShell.swift; sourceTree = "<group>"; };
 		F1569297C4C0181A49661B6D /* FluxerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxerApp.swift; sourceTree = "<group>"; };
 		F5831741BEAACEDE378A6E52 /* YouTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTab.swift; sourceTree = "<group>"; };
@@ -195,7 +192,6 @@
 			isa = PBXGroup;
 			children = (
 				D12D0494483EF2AF4F9294E6 /* CaptchaView.swift */,
-				DEED7D4C9A347933662ADBF3 /* HangMonitor.swift */,
 				CBE136C76A83BC536C207F06 /* KeychainStore.swift */,
 				FEEACEAA9AFA28CCB8B597D9 /* MessageMarkdown.swift */,
 			);
@@ -410,7 +406,6 @@
 				3344D3A814232F3BF867D6DD /* FriendsView.swift in Sources */,
 				AB95E5005F74514A80303739 /* Glass.swift in Sources */,
 				36753134535E92C938A55434 /* HandoffView.swift in Sources */,
-				872A205761817CD80B2306A6 /* HangMonitor.swift in Sources */,
 				CF2F2F0FA782BA8185512926 /* HomeTab.swift in Sources */,
 				49DD7DC67E6F27EFCD5DF3EA /* KeychainStore.swift in Sources */,
 				F2A4ED5F30165916BC449861 /* LoginView.swift in Sources */,
@@ -464,7 +459,6 @@
 				A9A36F200BA49A4624C3CAC2 /* FriendsView.swift in Sources */,
 				2BEC2D0C6BD1C10DA4D32F1B /* Glass.swift in Sources */,
 				9764510235091F922B55F159 /* HandoffView.swift in Sources */,
-				5CF2EBD66D2E4F3B475E1214 /* HangMonitor.swift in Sources */,
 				201412CCAEA7C0F07F5CC140 /* HomeTab.swift in Sources */,
 				D9DC1F96557CF02D9BA1DA85 /* KeychainStore.swift in Sources */,
 				BBF2244B1086D95E3947EA39 /* LoginView.swift in Sources */,
