@@ -2,7 +2,54 @@
 
 A native Fluxer client for iOS and macOS, written in Swift and SwiftUI.
 
-[Fluxer](https://fluxer.app) is a free and open source chat platform built for friends, groups, and communities. The official mobile apps are Flutter and the desktop app is Electron. This project is a fully native client for Apple platforms instead. It is currently in personal beta and moving fast.
+[Fluxer](https://fluxer.app) is a free and open source chat platform built for friends, groups, and communities. The official mobile apps are Flutter and the desktop app is Electron. This project is a fully native client for Apple platforms instead: one SwiftUI codebase, real system integration, and it opens instantly. It is currently in personal beta and moving fast.
+
+<!--
+SCREENSHOTS: drop real images into docs/media/ then uncomment the block below.
+See docs/media/README.md for the suggested shots and filenames.
+
+<p align="center">
+  <img src="docs/media/hero.png" alt="Fluxer on iPhone and macOS" width="100%">
+</p>
+-->
+
+> **Screenshots coming.** Real captures from the app will live here soon. If you want to see it now, grab a build below.
+
+## Download
+
+Prebuilt binaries are attached to the [latest release](https://github.com/DeeKahy/fluxer-apple/releases/latest).
+
+| Platform | File | Notes |
+| --- | --- | --- |
+| **macOS** (Intel + Apple Silicon) | `Fluxer-macOS-Universal.dmg` | One universal build for both Mac types |
+| **iPhone / iPad** | `Fluxer.ipa` | Sideload with SideStore or AltStore |
+
+There is no App Store build yet. Getting one needs a paid Apple Developer membership, which the project cannot afford on its own right now (see [Funding the App Store path](#funding-the-app-store-path)).
+
+### Install on macOS
+
+1. Open `Fluxer-macOS-Universal.dmg` and drag **Fluxer** to Applications.
+2. The app is signed ad hoc (no paid Developer certificate), so the first launch is gated by Gatekeeper. Open it once, let macOS block it, then go to **System Settings > Privacy & Security**, scroll down, and click **Open Anyway**. Launch again and confirm.
+3. That is a one-time step per build.
+
+If you prefer the terminal, you can clear the quarantine flag yourself:
+
+```
+xattr -dr com.apple.quarantine /Applications/Fluxer.app
+```
+
+### Install on iPhone with SideStore
+
+iOS will not run an app from outside the App Store unless it is signed with your own Apple ID. [SideStore](https://sidestore.io) (or [AltStore](https://altstore.io)) does that for you and re-signs the app before it expires, so you do not have to think about the seven day free-account limit.
+
+1. Install SideStore by following its [setup guide](https://docs.sidestore.io). You sign in with **your own** Apple ID; a free one works. SideStore never sees your Fluxer account.
+2. Download `Fluxer.ipa` from the [latest release](https://github.com/DeeKahy/fluxer-apple/releases/latest) onto the device.
+3. In SideStore, tap **+**, pick `Fluxer.ipa`, and let it install.
+4. Keep SideStore's background refresh on so it re-signs the app automatically. A free Apple ID caps you at three sideloaded apps at a time.
+
+The `.ipa` ships unsigned on purpose so SideStore can sign it with your account. Minimum iOS is 18.0.
+
+> Sideloading is available worldwide with SideStore or AltStore. The EU DMA "alternative app marketplaces" are a different thing and still require a paid Developer membership, so they are not the path here.
 
 ## What works today
 
@@ -54,7 +101,7 @@ is parked until the project earns it or i can afford it. The same membership wou
 ringing on the lock screen and remove the seven day resigning cycle for
 sideloaded builds.
 
-## Is there demand for this?
+## Funding the App Store path
 
 One thing preventing me from improving this more is the lack of money to afford the Apple Developer Program
 membership. Everything below is already probably mapped
@@ -68,7 +115,7 @@ out correctly and hopefully becomes buildable the moment the membership exists:
   answered from the lock screen.
 - A public TestFlight beta. TestFlight itself is free with the membership
   and supports up to ten thousand testers through a public link, so anyone
-  could install the app without owning a Mac.
+  could install the app without owning a Mac and without SideStore.
 - An eventual App Store release, and no more seven day expiry on builds.
 
 Before setting up any donation infrastructure I want to know people actually
@@ -77,7 +124,7 @@ want this. If you'd use the app, give a thumbs up on
 or open an issue and say hi. If enough people show up, funding the membership
 comes next.
 
-## Building
+## Building from source
 
 Requirements: Xcode 26+, [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
@@ -95,7 +142,7 @@ Free Apple accounts work; apps expire after seven days and need a rebuild.
 ## Relation to Fluxer
 
 This is an unofficial community client. Custom clients are explicitly
-welcomed by the Fluxer. The app uses the same documented HTTP and websocket APIs as the
+welcomed by Fluxer. The app uses the same documented HTTP and websocket APIs as the
 official web client, and LiveKit for media, matching upstream.
 
 ## License
