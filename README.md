@@ -1,8 +1,8 @@
-# Fluxer Apple
+# CornFlux
 
-A native Fluxer client for iOS and macOS, written in Swift and SwiftUI.
+A native client for Fluxer on iOS and macOS, written in Swift and SwiftUI.
 
-[Fluxer](https://fluxer.app) is a free and open source chat platform built for friends, groups, and communities. The official mobile apps are Flutter and the desktop app is Electron. This project is a fully native client for Apple platforms instead: one SwiftUI codebase, real system integration, and it opens instantly. It is currently in personal beta and moving fast.
+[Fluxer](https://fluxer.app) is a free and open source chat platform built for friends, groups, and communities. The official mobile apps are Flutter and the desktop app is Electron. CornFlux is a fully native client for Apple platforms instead: one SwiftUI codebase, real system integration, and it opens instantly. It is currently in personal beta and moving fast.
 
 <!--
 SCREENSHOTS: drop real images into docs/media/ then uncomment the block below.
@@ -21,30 +21,36 @@ Prebuilt binaries are attached to the [latest release](https://github.com/DeeKah
 
 | Platform | File | Notes |
 | --- | --- | --- |
-| **macOS** (Intel + Apple Silicon) | `Fluxer-macOS-Universal.dmg` | One universal build for both Mac types |
-| **iPhone / iPad** | `Fluxer.ipa` | Sideload with SideStore or AltStore |
+| **macOS** (Intel + Apple Silicon) | `CornFlux-macOS-Universal.dmg` | One universal build for both Mac types |
+| **iPhone / iPad** | `CornFlux.ipa` | Sideload with SideStore or AltStore |
 
 There is no App Store build yet. Getting one needs a paid Apple Developer membership, which the project cannot afford on its own right now (see [Funding the App Store path](#funding-the-app-store-path)).
 
 ### Install on macOS
 
-1. Open `Fluxer-macOS-Universal.dmg` and drag **Fluxer** to Applications.
-2. The app is signed ad hoc (no paid Developer certificate), so the first launch is gated by Gatekeeper. Open it once, let macOS block it, then go to **System Settings > Privacy & Security**, scroll down, and click **Open Anyway**. Launch again and confirm.
-3. That is a one-time step per build.
-
-If you prefer the terminal, you can clear the quarantine flag yourself:
+The quickest path is Homebrew:
 
 ```
-xattr -dr com.apple.quarantine /Applications/Fluxer.app
+brew install --cask deekahy/tap/cornflux
 ```
+
+Or install by hand: open `CornFlux-macOS-Universal.dmg` and drag **CornFlux** to Applications.
+
+Either way, the app is signed ad hoc (no paid Developer certificate), so macOS quarantines it and reports it as "damaged" on first launch. Clear the quarantine flag once:
+
+```
+xattr -dr com.apple.quarantine /Applications/CornFlux.app
+```
+
+Or open it once, let macOS block it, then go to **System Settings > Privacy & Security** and click **Open Anyway**. One time per build.
 
 ### Install on iPhone with SideStore
 
 iOS will not run an app from outside the App Store unless it is signed with your own Apple ID. [SideStore](https://sidestore.io) (or [AltStore](https://altstore.io)) does that for you and re-signs the app before it expires, so you do not have to think about the seven day free-account limit.
 
 1. Install SideStore by following its [setup guide](https://docs.sidestore.io). You sign in with **your own** Apple ID; a free one works. SideStore never sees your Fluxer account.
-2. Download `Fluxer.ipa` from the [latest release](https://github.com/DeeKahy/fluxer-apple/releases/latest) onto the device.
-3. In SideStore, tap **+**, pick `Fluxer.ipa`, and let it install.
+2. Download `CornFlux.ipa` from the [latest release](https://github.com/DeeKahy/fluxer-apple/releases/latest) onto the device.
+3. In SideStore, tap **+**, pick `CornFlux.ipa`, and let it install.
 4. Keep SideStore's background refresh on so it re-signs the app automatically. A free Apple ID caps you at three sideloaded apps at a time.
 
 The `.ipa` ships unsigned on purpose so SideStore can sign it with your account. Minimum iOS is 18.0.

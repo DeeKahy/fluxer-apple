@@ -482,7 +482,7 @@ enum AttachmentDownloader {
     /// with the same name can't clobber each other.
     nonisolated static func destination(id: String, filename: String) -> URL {
         FileManager.default.temporaryDirectory
-            .appendingPathComponent("FluxerDownloads", isDirectory: true)
+            .appendingPathComponent("CornFluxDownloads", isDirectory: true)
             .appendingPathComponent(id, isDirectory: true)
             .appendingPathComponent(filename)
     }

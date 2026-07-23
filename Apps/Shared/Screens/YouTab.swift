@@ -101,7 +101,7 @@ struct YouTab: View {
                 .padding(.horizontal, 16)
 
                 VStack(spacing: 3) {
-                    Text("Fluxer for iOS and macOS")
+                    Text("CornFlux for iOS and macOS")
                     Text("build \(Self.buildStamp) · compiled \(Self.buildDate)")
                 }
                 .font(.system(size: 13))

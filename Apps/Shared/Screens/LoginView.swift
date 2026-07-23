@@ -20,7 +20,7 @@ struct LoginView: View {
                 Image(systemName: "bubble.left.and.bubble.right.fill")
                     .font(.system(size: 44))
                     .foregroundStyle(.tint)
-                Text("Fluxer")
+                Text("CornFlux")
                     .font(.largeTitle.bold())
                 Text(isMfaStep ? "Enter your authenticator code" : "Sign in to your account")
                     .foregroundStyle(.secondary)

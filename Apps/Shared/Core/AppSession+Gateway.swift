@@ -77,7 +77,7 @@ extension AppSession {
                 incomingCall = channel
                 let caller = (channel?.recipients ?? []).first { $0.id != myId }
                 NotificationManager.shared.notifyIncomingCall(
-                    from: caller?.displayName ?? channel?.name ?? "Fluxer",
+                    from: caller?.displayName ?? channel?.name ?? "CornFlux",
                     channelId: channelId
                 )
             } else if incomingCall?.id == channelId {

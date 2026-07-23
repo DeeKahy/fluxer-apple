@@ -28,7 +28,7 @@ struct HomeTab: View {
             .padding(.bottom, 24)
         }
         .background(Theme.bg)
-        .navigationTitle(guild?.name ?? "Fluxer")
+        .navigationTitle(guild?.name ?? "CornFlux")
         .toolbarTitleMenu {
             ForEach(session.guilds) { g in
                 Button {

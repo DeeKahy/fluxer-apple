@@ -39,11 +39,11 @@ struct MenuBarContent: View {
             Divider()
         }
 
-        Button("Open Fluxer") {
+        Button("Open CornFlux") {
             openMainWindow()
         }
         .keyboardShortcut("o")
-        Button("Quit Fluxer") {
+        Button("Quit CornFlux") {
             NSApplication.shared.terminate(nil)
         }
         .keyboardShortcut("q")

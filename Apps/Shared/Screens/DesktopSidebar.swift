@@ -79,7 +79,7 @@ struct DesktopSidebar: View {
             }
         } label: {
             HStack(spacing: 6) {
-                Text(guild?.name ?? "Fluxer")
+                Text(guild?.name ?? "CornFlux")
                     .font(.system(size: 17, weight: .heavy))
                     .foregroundStyle(Theme.text)
                     .lineLimit(1)
