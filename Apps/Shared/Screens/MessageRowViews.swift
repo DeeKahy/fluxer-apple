@@ -476,38 +476,26 @@ private struct SwipeReplyModifier: ViewModifier {
                         .opacity(Double(min(1, abs(offset) / abs(threshold))))
                         .padding(.trailing, 14)
                 }
-                // simultaneousGesture, NOT .gesture: a plain .gesture on
-                // every row enters exclusive arbitration with the scroll
-                // view's pan recognizer. On a mostly-vertical drag this
-                // recognizer still claims the touch, and if the scroll view
-                // cancels it mid-drag the onEnded never fires and the pan
-                // gesture stays wedged until the channel is left and
-                // reopened (the "can tap but can't scroll" freeze). Running
-                // simultaneously takes it out of that arbitration entirely:
-                // the pan can never be starved, and the row only translates
-                // on horizontal-dominant drags.
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 18)
-                        .onChanged { value in
-                            let dx = value.translation.width
-                            // Vertical-dominant drag: this is a scroll, keep
-                            // the row still and drop any partial offset.
-                            guard dx < 0, abs(dx) > abs(value.translation.height) * 1.5 else {
-                                if offset != 0 { offset = 0 }
-                                armed = false
-                                return
-                            }
-                            offset = max(dx, -90)
-                            armed = offset <= threshold
-                        }
-                        .onEnded { _ in
-                            if offset <= threshold { onReply() }
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                offset = 0
-                            }
-                            armed = false
-                        }
-                )
+                // UIKit pan recognizer, not a SwiftUI DragGesture. Both
+                // SwiftUI flavors froze transcript scrolling on device: the
+                // plain .gesture entered exclusive arbitration with the
+                // scroll view's pan, and even .simultaneousGesture still
+                // installs a SwiftUI gesture shim that could leave the pan
+                // wedged after a cancelled touch (bisected to the commit
+                // that introduced the swipe; the freeze survived the
+                // simultaneous rewrite). The UIKit recognizer refuses to
+                // begin unless the touch is already moving left and
+                // horizontal-dominant, declares simultaneous recognition
+                // with everything, and resets state on .cancelled/.failed,
+                // so it structurally cannot starve or wedge the scroll pan.
+                #if os(iOS)
+                .gesture(SwipeReplyGesture(
+                    offset: $offset,
+                    armed: $armed,
+                    threshold: threshold,
+                    onReply: onReply
+                ))
+                #endif
                 .sensoryFeedback(trigger: armed) { wasArmed, isArmed in
                     wasArmed || !isArmed ? nil : .impact(weight: .medium)
                 }
@@ -516,3 +504,72 @@ private struct SwipeReplyModifier: ViewModifier {
         }
     }
 }
+
+#if os(iOS)
+/// The swipe-to-reply pan as a real UIPanGestureRecognizer. The delegate
+/// gates recognition at the UIKit level: the pan only begins when the touch
+/// is already moving left and horizontal-dominant, so vertical scrolls make
+/// this recognizer fail instantly instead of entering arbitration against
+/// the scroll view. Simultaneous recognition is allowed with everything so
+/// the scroll pan is never blocked, and .cancelled/.failed always reset the
+/// row, so a torn-down touch cannot leave the transcript wedged.
+private struct SwipeReplyGesture: UIGestureRecognizerRepresentable {
+    @Binding var offset: CGFloat
+    @Binding var armed: Bool
+    let threshold: CGFloat
+    let onReply: () -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let pan = UIPanGestureRecognizer()
+        pan.maximumNumberOfTouches = 1
+        pan.delegate = context.coordinator
+        return pan
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        switch recognizer.state {
+        case .changed:
+            let dx = recognizer.translation(in: recognizer.view).x
+            offset = min(max(dx, -90), 0)
+            armed = offset <= threshold
+        case .ended:
+            if offset <= threshold { onReply() }
+            settle()
+        case .cancelled, .failed:
+            settle()
+        default:
+            break
+        }
+    }
+
+    private func settle() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            offset = 0
+        }
+        armed = false
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = gestureRecognizer as? UIPanGestureRecognizer,
+                  let view = pan.view
+            else { return false }
+            let velocity = pan.velocity(in: view)
+            // Leftward and horizontal-dominant, otherwise fail so scrolls
+            // and the system back swipe never see this recognizer at all.
+            return velocity.x < 0 && abs(velocity.x) > abs(velocity.y)
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+    }
+}
+#endif
