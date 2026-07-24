@@ -3,6 +3,8 @@ import FluxerKit
 import UniformTypeIdentifiers
 #if os(iOS)
 import PhotosUI
+#else
+import AppKit
 #endif
 
 
@@ -25,9 +27,14 @@ struct MessageView: View {
     @FocusState private var composerFocused: Bool
     #if os(iOS)
     @State private var photoItems: [PhotosPickerItem] = []
+    @State private var pasteboardHasImages = UIPasteboard.general.hasImages
     #else
     @State private var showFileImporter = false
     #endif
+
+    /// Everything the pasteboard could hand us that we treat as an image.
+    /// The first four upload as-is; the rest get re-encoded as PNG.
+    private static let pastedImageTypes: [UTType] = [.png, .jpeg, .gif, .webP, .tiff, .heic, .image]
 
     struct PendingFile: Identifiable {
         let id = UUID()
@@ -144,6 +151,16 @@ struct MessageView: View {
                 messageToDelete = nil
             }
         }
+        #if os(iOS)
+        // changedNotification only fires for in-app copies; coming back from
+        // another app with a fresh screenshot is caught by didBecomeActive.
+        .onReceive(NotificationCenter.default.publisher(for: UIPasteboard.changedNotification)) { _ in
+            pasteboardHasImages = UIPasteboard.general.hasImages
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            pasteboardHasImages = UIPasteboard.general.hasImages
+        }
+        #endif
         #if os(macOS)
         .fileImporter(
             isPresented: $showFileImporter,
@@ -206,6 +223,11 @@ struct MessageView: View {
     private var mobileComposer: some View {
         HStack(alignment: .bottom, spacing: 8) {
             if session.canAttachFiles(in: channel) {
+                #if os(iOS)
+                if pasteboardHasImages {
+                    pasteImageButton
+                }
+                #endif
                 attachButton
             }
             HStack(alignment: .bottom, spacing: 4) {
@@ -269,6 +291,11 @@ struct MessageView: View {
                     .padding(.vertical, 3)
                 HStack(spacing: 4) {
                     if session.canAttachFiles(in: channel) {
+                        #if os(iOS)
+                        if pasteboardHasImages {
+                            pasteImageButton
+                        }
+                        #endif
                         attachButton
                     }
                     gifButton
@@ -327,6 +354,11 @@ struct MessageView: View {
                     session.composerTyping(in: channel)
                 }
             }
+            #if os(macOS)
+            // Cmd+V with an image on the pasteboard attaches it; text-only
+            // pasteboards fail the type check and paste into the field as usual.
+            .onPasteCommand(of: Self.pastedImageTypes, perform: appendPastedImages)
+            #endif
     }
 
     private var emojiButton: some View {
@@ -399,6 +431,19 @@ struct MessageView: View {
     }
 
     // MARK: Composer accessories
+
+    #if os(iOS)
+    /// System paste control: reads the pasteboard without the "allow paste"
+    /// prompt. Only shown while the pasteboard actually holds an image.
+    private var pasteImageButton: some View {
+        PasteButton(supportedContentTypes: Self.pastedImageTypes) { providers in
+            appendPastedImages(providers)
+        }
+        .labelStyle(.iconOnly)
+        .buttonBorderShape(.circle)
+        .tint(Theme.accent)
+    }
+    #endif
 
     @ViewBuilder
     private var attachButton: some View {
@@ -526,6 +571,54 @@ struct MessageView: View {
                 .padding(.top, 8)
             }
         }
+    }
+
+    // MARK: Pasted images
+
+    /// Turns image providers off the pasteboard into pending attachments.
+    /// PNG/JPEG/GIF/WebP upload untouched; TIFF (mac screenshots), HEIC and
+    /// anything else image-shaped is re-encoded as PNG so every client can
+    /// render it.
+    private func appendPastedImages(_ providers: [NSItemProvider]) {
+        guard session.canAttachFiles(in: channel) else { return }
+        let passthrough: [UTType] = [.png, .jpeg, .gif, .webP]
+        let stamp = Int(Date().timeIntervalSince1970)
+        for (index, provider) in providers.prefix(10).enumerated() {
+            let match = Self.pastedImageTypes.first {
+                provider.hasItemConformingToTypeIdentifier($0.identifier)
+            }
+            guard let type = match else { continue }
+            Task {
+                guard var data = await Self.loadData(from: provider, type: type) else { return }
+                var resolved = type
+                if !passthrough.contains(type) {
+                    guard let png = Self.pngData(from: data) else { return }
+                    data = png
+                    resolved = .png
+                }
+                pendingFiles.append(PendingFile(
+                    filename: "pasted-\(stamp)-\(index).\(resolved.preferredFilenameExtension ?? "png")",
+                    data: data,
+                    contentType: resolved.preferredMIMEType ?? "image/png"
+                ))
+            }
+        }
+    }
+
+    private nonisolated static func loadData(from provider: NSItemProvider, type: UTType) async -> Data? {
+        await withCheckedContinuation { continuation in
+            _ = provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, _ in
+                continuation.resume(returning: data)
+            }
+        }
+    }
+
+    private nonisolated static func pngData(from data: Data) -> Data? {
+        #if os(macOS)
+        NSBitmapImageRep(data: data)?.representation(using: .png, properties: [:])
+        #else
+        UIImage(data: data)?.pngData()
+        #endif
     }
 
     // MARK: Actions
