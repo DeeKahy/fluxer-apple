@@ -30,6 +30,7 @@ struct MessageView: View {
     @State private var pasteboardHasImages = UIPasteboard.general.hasImages
     #else
     @State private var showFileImporter = false
+    @State private var pasteKeyMonitor: Any?
     #endif
 
     /// Everything the pasteboard could hand us that we treat as an image.
@@ -162,6 +163,8 @@ struct MessageView: View {
         }
         #endif
         #if os(macOS)
+        .onAppear(perform: installPasteKeyMonitor)
+        .onDisappear(perform: removePasteKeyMonitor)
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.item],
@@ -620,6 +623,60 @@ struct MessageView: View {
         UIImage(data: data)?.pngData()
         #endif
     }
+
+    #if os(macOS)
+    /// Cmd+V lands in the text field's own paste: long before SwiftUI's
+    /// onPasteCommand gets a chance, so a local key monitor catches it at the
+    /// event level. Only keystrokes in the main window with actual image data
+    /// on the pasteboard are swallowed; everything else (text pastes, sheets,
+    /// popovers) falls through to normal handling.
+    private func installPasteKeyMonitor() {
+        guard pasteKeyMonitor == nil else { return }
+        pasteKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+            guard flags == .command,
+                  event.charactersIgnoringModifiers?.lowercased() == "v",
+                  let window = event.window,
+                  window.isKeyWindow,
+                  window === NSApp.mainWindow,
+                  session.canAttachFiles(in: channel),
+                  appendPasteboardImages() else { return event }
+            return nil
+        }
+    }
+
+    private func removePasteKeyMonitor() {
+        if let pasteKeyMonitor { NSEvent.removeMonitor(pasteKeyMonitor) }
+        pasteKeyMonitor = nil
+    }
+
+    /// Reads image data straight off the general pasteboard. Returns false
+    /// when there is none so the keystroke can fall through to a text paste.
+    @discardableResult
+    private func appendPasteboardImages() -> Bool {
+        let passthrough: [UTType] = [.png, .jpeg, .gif, .webP]
+        let stamp = Int(Date().timeIntervalSince1970)
+        var added = false
+        for (index, item) in (NSPasteboard.general.pasteboardItems ?? []).prefix(10).enumerated() {
+            let imageTypes = item.types.compactMap { UTType($0.rawValue) }.filter { $0.conforms(to: .image) }
+            guard let type = passthrough.first(where: imageTypes.contains) ?? imageTypes.first,
+                  var data = item.data(forType: NSPasteboard.PasteboardType(type.identifier)) else { continue }
+            var resolved = type
+            if !passthrough.contains(type) {
+                guard let png = Self.pngData(from: data) else { continue }
+                data = png
+                resolved = .png
+            }
+            pendingFiles.append(PendingFile(
+                filename: "pasted-\(stamp)-\(index).\(resolved.preferredFilenameExtension ?? "png")",
+                data: data,
+                contentType: resolved.preferredMIMEType ?? "image/png"
+            ))
+            added = true
+        }
+        return added
+    }
+    #endif
 
     // MARK: Actions
 
