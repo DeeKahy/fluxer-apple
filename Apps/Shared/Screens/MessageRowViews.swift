@@ -123,6 +123,30 @@ struct MessageLinkChip: View {
     }
 }
 
+/// A GIF or image a message consists of, rendered inline and animated (posted
+/// GIFs, bare .gif links) instead of as a raw URL.
+struct InlineMediaView: View {
+    let url: URL
+
+    @State private var showViewer = false
+
+    var body: some View {
+        AnimatedImage(url: url, maxPixelSize: 600, contentMode: .fit) {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.quaternary)
+                .frame(width: 180, height: 135)
+                .overlay { ProgressView() }
+        }
+        .frame(maxWidth: 260, maxHeight: 300, alignment: .leading)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(.top, 4)
+        .onTapGesture { showViewer = true }
+        .sheet(isPresented: $showViewer) {
+            ImageViewerSheet(url: url, filename: url.lastPathComponent)
+        }
+    }
+}
+
 struct MessageRow: View {
     @Environment(AppSession.self) private var session
     @Environment(\.desktopChrome) private var desktopChrome
@@ -229,6 +253,8 @@ struct MessageRow: View {
                             }
                         }
                         .padding(.top, 2)
+                    } else if let mediaURL = session.soleMediaURL(content) {
+                        InlineMediaView(url: mediaURL)
                     } else if !session.visibleMessageText(content)
                         .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         ForEach(Array(MessageMarkdown.segments(session.visibleMessageText(content)).enumerated()), id: \.offset) { _, segment in
@@ -259,8 +285,13 @@ struct MessageRow: View {
                 ForEach(message.attachments ?? []) { attachment in
                     AttachmentContent(attachment: attachment)
                 }
-                ForEach(Array((message.embeds ?? []).prefix(3).enumerated()), id: \.offset) { _, embed in
-                    EmbedView(embed: embed)
+                // A sole media URL is already drawn by InlineMediaView above, so
+                // skip the server's unfurl embed of that same URL (it would
+                // otherwise show the GIF a second time as a still image).
+                if message.content.flatMap({ session.soleMediaURL($0) }) == nil {
+                    ForEach(Array((message.embeds ?? []).prefix(3).enumerated()), id: \.offset) { _, embed in
+                        EmbedView(embed: embed)
+                    }
                 }
                 ForEach(session.messageLinks(in: message.content ?? ""), id: \.self) { link in
                     MessageLinkChip(link: link)

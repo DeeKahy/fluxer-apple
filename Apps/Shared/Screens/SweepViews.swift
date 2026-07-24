@@ -339,6 +339,143 @@ struct ImageViewerSheet: View {
     }
 }
 
+/// GIF picker for the composer: trending by default, live search, tap to send.
+struct GifPickerSheet: View {
+    @Environment(AppSession.self) private var session
+    @Environment(\.dismiss) private var dismiss
+
+    let onPick: (GifResult) -> Void
+
+    @State private var query = ""
+    @State private var results: [GifResult] = []
+    @State private var loading = false
+    @State private var searchTask: Task<Void, Never>?
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 6),
+        GridItem(.flexible(), spacing: 6),
+    ]
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                searchBar
+                ScrollView {
+                    if loading && results.isEmpty {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 40)
+                    } else if results.isEmpty {
+                        Text(query.isEmpty ? "No trending GIFs right now." : "No GIFs for \u{201C}\(query)\u{201D}.")
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 40)
+                    } else {
+                        LazyVGrid(columns: columns, spacing: 6) {
+                            ForEach(results) { gif in
+                                Button {
+                                    onPick(gif)
+                                    dismiss()
+                                } label: {
+                                    GifPreview(gif: gif)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(8)
+                    }
+                }
+                Text("Powered by KLIPY")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .padding(.vertical, 5)
+            }
+            .navigationTitle("GIFs")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                Button("Done") { dismiss() }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 380, minHeight: 460)
+        #endif
+        .presentationDetents([.large])
+        .task {
+            if results.isEmpty { await loadTrending() }
+        }
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search GIFs", text: $query)
+                .textFieldStyle(.plain)
+                .autocorrectionDisabled()
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
+                .onChange(of: query) { _, value in scheduleSearch(value) }
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                    scheduleSearch("")
+                } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(9)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+    }
+
+    private func scheduleSearch(_ value: String) {
+        searchTask?.cancel()
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            if Task.isCancelled { return }
+            if trimmed.isEmpty {
+                await loadTrending()
+            } else {
+                loading = true
+                let found = await session.searchGifs(trimmed)
+                if Task.isCancelled { return }
+                results = found
+                loading = false
+            }
+        }
+    }
+
+    private func loadTrending() async {
+        loading = true
+        let found = await session.trendingGifs()
+        if Task.isCancelled { return }
+        results = found
+        loading = false
+    }
+}
+
+/// One cell in the GIF grid: an animated preview at a fixed height.
+private struct GifPreview: View {
+    let gif: GifResult
+
+    var body: some View {
+        AnimatedImage(url: gif.previewURL, maxPixelSize: 300, contentMode: .fill) {
+            RoundedRectangle(cornerRadius: 8).fill(.quaternary)
+        }
+        .frame(height: 110)
+        .frame(maxWidth: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .contentShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
 /// Custom emoji picker for the composer.
 struct EmojiPickerSheet: View {
     @Environment(AppSession.self) private var session
@@ -348,39 +485,20 @@ struct EmojiPickerSheet: View {
 
     private let columns = [GridItem(.adaptive(minimum: 44))]
 
+    @State private var selectedGuild: Snowflake?
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 12) {
-                    if session.emojiByGuild.isEmpty {
-                        Text("No custom emoji in your guilds.")
-                            .foregroundStyle(.secondary)
-                            .padding()
+            ScrollViewReader { proxy in
+                HStack(spacing: 0) {
+                    // A guild-icon index down the side, like the server list:
+                    // tap one to jump to that guild's emoji.
+                    if session.emojiByGuild.count > 1 {
+                        categoryRail(proxy)
+                        Divider()
                     }
-                    ForEach(session.emojiByGuild, id: \.guild.id) { group in
-                        Text(group.guild.name)
-                            .font(.caption.bold())
-                            .foregroundStyle(.secondary)
-                        LazyVGrid(columns: columns, spacing: 8) {
-                            ForEach(group.emojis) { emoji in
-                                Button {
-                                    onPick(emoji)
-                                    dismiss()
-                                } label: {
-                                    EmojiImage(emoji: emoji.asReactionEmoji) {
-                                        Text(":\(emoji.name):")
-                                            .font(.caption2)
-                                            .lineLimit(1)
-                                    }
-                                    .frame(width: 36, height: 36)
-                                }
-                                .buttonStyle(.plain)
-                                .help(":\(emoji.name):")
-                            }
-                        }
-                    }
+                    emojiList
                 }
-                .padding()
             }
             .navigationTitle("Emoji")
             #if os(iOS)
@@ -391,9 +509,97 @@ struct EmojiPickerSheet: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 380, minHeight: 420)
+        .frame(minWidth: 440, minHeight: 420)
         #endif
         .presentationDetents([.medium, .large])
+        .onAppear {
+            if selectedGuild == nil { selectedGuild = session.emojiByGuild.first?.guild.id }
+        }
+    }
+
+    private var emojiList: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 12) {
+                if session.emojiByGuild.isEmpty {
+                    Text("No custom emoji in your guilds.")
+                        .foregroundStyle(.secondary)
+                        .padding()
+                }
+                ForEach(session.emojiByGuild, id: \.guild.id) { group in
+                    Text(group.guild.name)
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                        .id(group.guild.id)
+                    LazyVGrid(columns: columns, spacing: 8) {
+                        ForEach(group.emojis) { emoji in
+                            Button {
+                                onPick(emoji)
+                                dismiss()
+                            } label: {
+                                EmojiImage(emoji: emoji.asReactionEmoji) {
+                                    Text(":\(emoji.name):")
+                                        .font(.caption2)
+                                        .lineLimit(1)
+                                }
+                                .frame(width: 36, height: 36)
+                            }
+                            .buttonStyle(.plain)
+                            .help(":\(emoji.name):")
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+
+    private func categoryRail(_ proxy: ScrollViewProxy) -> some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 8) {
+                ForEach(session.emojiByGuild, id: \.guild.id) { group in
+                    Button {
+                        selectedGuild = group.guild.id
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo(group.guild.id, anchor: .top)
+                        }
+                    } label: {
+                        GuildCategoryIcon(guild: group.guild, selected: selectedGuild == group.guild.id)
+                    }
+                    .buttonStyle(.plain)
+                    .help(group.guild.name)
+                }
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 8)
+        }
+        .frame(width: 56)
+        .background(Theme.surface.opacity(0.4))
+    }
+}
+
+/// A guild icon in the emoji picker's category rail, mirroring the server list
+/// tiles: rounds to a square when it's the active category.
+private struct GuildCategoryIcon: View {
+    let guild: Guild
+    let selected: Bool
+
+    var body: some View {
+        RemoteImage(url: guild.iconURL(size: 48)) {
+            RoundedRectangle(cornerRadius: selected ? 12 : 20)
+                .fill(Theme.heroTile)
+                .overlay {
+                    Text(String(guild.name.prefix(1)).uppercased())
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Theme.accentSoft)
+                }
+        }
+        .frame(width: 40, height: 40)
+        .clipShape(RoundedRectangle(cornerRadius: selected ? 12 : 20))
+        .overlay {
+            RoundedRectangle(cornerRadius: selected ? 12 : 20)
+                .strokeBorder(Theme.accent, lineWidth: selected ? 2 : 0)
+        }
+        .animation(.easeInOut(duration: 0.15), value: selected)
     }
 }
 

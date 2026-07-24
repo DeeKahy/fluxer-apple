@@ -92,6 +92,26 @@ extension AppSession {
         }
     }
 
+    /// Trending GIFs from the instance provider, empty on failure.
+    func trendingGifs() async -> [GifResult] {
+        (try? await client.trendingGifs()) ?? []
+    }
+
+    /// GIF search results, empty on failure.
+    func searchGifs(_ query: String) async -> [GifResult] {
+        (try? await client.searchGifs(query)) ?? []
+    }
+
+    /// Posts a picked GIF: its media URL becomes the message (rendered inline
+    /// as animated media), and the share is registered for provider
+    /// attribution. Best effort on the attribution call.
+    func sendGif(_ gif: GifResult, in channel: Channel, query: String? = nil, replyTo: Snowflake? = nil) async {
+        guard let url = gif.sendURL else { return }
+        await sendMessage(url, in: channel, replyTo: replyTo)
+        let shareId = gif.shareId
+        Task { [client] in try? await client.registerGifShare(id: shareId, query: query) }
+    }
+
     func sendMessage(
         _ content: String,
         in channel: Channel,

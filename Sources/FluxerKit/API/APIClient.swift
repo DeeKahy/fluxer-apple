@@ -524,6 +524,36 @@ public actor APIClient {
         _ = try await executeRaw(request)
     }
 
+    // MARK: GIFs
+
+    /// Trending GIFs from the instance's active provider. Requires auth.
+    public func trendingGifs(locale: String = "en-US") async throws -> [GifResult] {
+        try await send("GET", Endpoint.gifsTrending, query: [
+            URLQueryItem(name: "locale", value: locale),
+        ])
+    }
+
+    /// Searches the instance's GIF provider for the query.
+    public func searchGifs(_ query: String, locale: String = "en-US") async throws -> [GifResult] {
+        try await send("GET", Endpoint.gifsSearch, query: [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "locale", value: locale),
+        ])
+    }
+
+    /// Registers a share so the provider gets attribution/analytics when a GIF
+    /// is posted. Best effort; failures are the caller's to ignore.
+    public func registerGifShare(id: String, query: String?, locale: String = "en-US") async throws {
+        struct Body: Encodable {
+            let id: String
+            let q: String?
+            let locale: String
+        }
+        let data = try JSONEncoder.fluxer.encode(Body(id: id, q: query, locale: locale))
+        let request = try makeRequest("POST", Endpoint.gifsRegisterShare, bodyData: data)
+        _ = try await executeRaw(request)
+    }
+
     // MARK: Search
 
     public struct MessageSearchResults: Sendable {

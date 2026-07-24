@@ -44,6 +44,9 @@ enum Endpoint {
     static let mentionsRead = "/users/@me/mentions/read"
     static func mention(_ messageId: Snowflake) -> String { "/users/@me/mentions/\(messageId)" }
     static let searchMessages = "/search/messages"
+    static let gifsTrending = "/gifs/trending"
+    static let gifsSearch = "/gifs/search"
+    static let gifsRegisterShare = "/gifs/register-share"
     static let sessions = "/auth/sessions"
     static let sessionsLogout = "/auth/sessions/logout"
     static func profile(_ userId: Snowflake) -> String { "/users/\(userId)/profile" }

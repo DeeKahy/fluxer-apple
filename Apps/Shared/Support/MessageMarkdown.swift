@@ -153,6 +153,25 @@ enum MessageMarkdown {
         return result
     }
 
+    /// When a message is nothing but a single image/GIF URL, returns it so the
+    /// UI can render the media inline instead of a bare link. Matches any
+    /// http(s) URL whose path ends in .gif, plus any URL on the instance media
+    /// host (proxied GIFs carry no file extension).
+    static func soleMediaURL(_ content: String, mediaHost: String?) -> URL? {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              !trimmed.contains(where: { $0 == " " || $0 == "\n" || $0 == "\t" }),
+              let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https"
+        else { return nil }
+        if url.path.lowercased().hasSuffix(".gif") { return url }
+        if let mediaHost, url.host()?.caseInsensitiveCompare(mediaHost) == .orderedSame {
+            return url
+        }
+        return nil
+    }
+
     /// The message text with recognized channel/message links removed, so a
     /// message that is only such links renders as chips with no empty line.
     static func textWithoutLinks(_ content: String, webHost: String?) -> String {

@@ -65,6 +65,12 @@ extension AppSession {
         MessageMarkdown.textWithoutLinks(content, webHost: instanceConfig.webOrigin.host())
     }
 
+    /// The single image/GIF URL a message consists of, if any, for inline
+    /// animated rendering (posted GIFs and bare .gif links).
+    func soleMediaURL(_ content: String) -> URL? {
+        MessageMarkdown.soleMediaURL(content, mediaHost: instanceConfig.mediaBase.host())
+    }
+
     /// Opens the channel a link points at and, when the link targets a
     /// specific message, asks the transcript to scroll to and highlight it.
     func jumpToMessage(channelId: Snowflake, messageId: Snowflake?) {

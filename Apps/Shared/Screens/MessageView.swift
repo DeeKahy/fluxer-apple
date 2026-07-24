@@ -21,6 +21,7 @@ struct MessageView: View {
     @State private var showMembers = false
     @State private var showPins = false
     @State private var showEmojiPicker = false
+    @State private var showGifPicker = false
     @FocusState private var composerFocused: Bool
     #if os(iOS)
     @State private var photoItems: [PhotosPickerItem] = []
@@ -209,6 +210,8 @@ struct MessageView: View {
             }
             HStack(alignment: .bottom, spacing: 4) {
                 composerField
+                gifButton
+                    .padding(.bottom, 9)
                 emojiButton
                     .padding(.trailing, 10)
                     .padding(.bottom, 9)
@@ -268,6 +271,7 @@ struct MessageView: View {
                     if session.canAttachFiles(in: channel) {
                         attachButton
                     }
+                    gifButton
                     emojiButton
                     Button(action: send) {
                         Image(systemName: editing != nil ? "checkmark" : "paperplane.fill")
@@ -342,6 +346,35 @@ struct MessageView: View {
         .sheet(isPresented: $showEmojiPicker) {
             EmojiPickerSheet { emoji in
                 draft += (draft.isEmpty || draft.hasSuffix(" ") ? "" : " ") + emoji.messageToken + " "
+            }
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    private var gifButton: some View {
+        Button {
+            showGifPicker = true
+        } label: {
+            Text("GIF")
+                .font(.system(size: 11, weight: .heavy))
+                .foregroundStyle(Theme.icon)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .strokeBorder(Theme.icon.opacity(0.5), lineWidth: 1.3)
+                )
+                .frame(
+                    width: desktopChrome ? 34 : nil,
+                    height: desktopChrome ? 30 : nil
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(SquishButtonStyle())
+        .help("Send a GIF")
+        .sheet(isPresented: $showGifPicker) {
+            GifPickerSheet { gif in
+                Task { await session.sendGif(gif, in: channel) }
             }
             .preferredColorScheme(.dark)
         }

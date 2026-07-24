@@ -22,18 +22,21 @@ actor AnimationLoader {
         init(_ value: DecodedAnimation?) { self.value = value }
     }
 
-    private let cache = NSCache<NSURL, Box>()
-    private var inFlight: [URL: Task<DecodedAnimation?, Never>] = [:]
+    private let cache = NSCache<NSString, Box>()
+    private var inFlight: [String: Task<DecodedAnimation?, Never>] = [:]
 
     init() {
         cache.countLimit = 300
     }
 
-    func animation(for url: URL) async -> DecodedAnimation? {
-        if let box = cache.object(forKey: url as NSURL) {
+    func animation(for url: URL, maxPixelSize: Int) async -> DecodedAnimation? {
+        // Key by size too: the same GIF is decoded small for the emoji grid
+        // and larger for inline media, and those must not share a cache slot.
+        let key = "\(maxPixelSize)|\(url.absoluteString)" as NSString
+        if let box = cache.object(forKey: key) {
             return box.value
         }
-        if let task = inFlight[url] {
+        if let task = inFlight[key as String] {
             return await task.value
         }
         let task = Task<DecodedAnimation?, Never> {
@@ -44,28 +47,28 @@ actor AnimationLoader {
                 if let (data, response) = try? await URLSession.shared.data(from: url),
                    let http = response as? HTTPURLResponse,
                    (200..<300).contains(http.statusCode) {
-                    return Self.decode(data)
+                    return Self.decode(data, maxPixelSize: maxPixelSize)
                 }
             }
             return nil
         }
-        inFlight[url] = task
+        inFlight[key as String] = task
         let result = await task.value
-        inFlight[url] = nil
-        cache.setObject(Box(result), forKey: url as NSURL)
+        inFlight[key as String] = nil
+        cache.setObject(Box(result), forKey: key)
         return result
     }
 
-    private static func decode(_ data: Data) -> DecodedAnimation? {
+    private static func decode(_ data: Data, maxPixelSize: Int) -> DecodedAnimation? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         let count = CGImageSourceGetCount(source)
         guard count > 0 else { return nil }
 
-        // Emoji never render larger than ~40pt, so downsample frames to keep
-        // memory low for message lists packed with animated emoji.
+        // Downsample frames to the display size to keep memory low for message
+        // lists packed with animated emoji and inline GIFs.
         let thumbOptions: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceThumbnailMaxPixelSize: 128,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
             kCGImageSourceCreateThumbnailWithTransform: true,
         ]
 
@@ -109,6 +112,11 @@ actor AnimationLoader {
 /// Falls back to the placeholder while loading or if decoding fails.
 struct AnimatedImage<Placeholder: View>: View {
     let url: URL?
+    /// Longest edge the frames are downsampled to; small for emoji, larger
+    /// for inline media.
+    var maxPixelSize: Int = 128
+    /// Fill (crop to a square, for emoji) or fit (preserve aspect, for media).
+    var contentMode: ContentMode = .fill
     @ViewBuilder var placeholder: () -> Placeholder
 
     @State private var animation: DecodedAnimation?
@@ -130,7 +138,7 @@ struct AnimatedImage<Placeholder: View>: View {
         .task(id: url) {
             animation = nil
             guard let url else { return }
-            animation = await AnimationLoader.shared.animation(for: url)
+            animation = await AnimationLoader.shared.animation(for: url, maxPixelSize: maxPixelSize)
         }
     }
 
@@ -144,7 +152,7 @@ struct AnimatedImage<Placeholder: View>: View {
         Image(decorative: frame, scale: 1)
             .resizable()
             .interpolation(.medium)
-            .scaledToFill()
+            .aspectRatio(contentMode: contentMode)
     }
 }
 
