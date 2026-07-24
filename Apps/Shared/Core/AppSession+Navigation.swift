@@ -48,9 +48,31 @@ extension AppSession {
         MessageMarkdown.render(
             content,
             revealedSpoilers: revealedSpoilers,
+            webHost: instanceConfig.webOrigin.host(),
             channelName: { self.findChannel($0)?.name },
             userName: { self.knownUsers[$0]?.displayName }
         )
+    }
+
+    /// Channel and message links parsed from a message, for the chips.
+    func messageLinks(in content: String) -> [MessageMarkdown.MessageLink] {
+        MessageMarkdown.messageLinks(content, webHost: instanceConfig.webOrigin.host())
+    }
+
+    /// Message text with recognized links removed, so a link-only message
+    /// draws just its chip with no empty text line above it.
+    func visibleMessageText(_ content: String) -> String {
+        MessageMarkdown.textWithoutLinks(content, webHost: instanceConfig.webOrigin.host())
+    }
+
+    /// Opens the channel a link points at and, when the link targets a
+    /// specific message, asks the transcript to scroll to and highlight it.
+    func jumpToMessage(channelId: Snowflake, messageId: Snowflake?) {
+        guard let channel = findChannel(channelId) else { return }
+        if let messageId {
+            messageJumpTargets[channel.id] = messageId
+        }
+        channelJump = channel
     }
 
     // MARK: Typing

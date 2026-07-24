@@ -32,6 +32,13 @@ struct MessageTranscriptView: View {
     /// for seconds.
     @State private var paginationArmed = false
 
+    /// The message a jump link is pointing at, briefly tinted after we scroll
+    /// to it. Cleared on a timer.
+    @State private var highlightedMessageId: Snowflake?
+    /// Guards against two seek passes (the open task and a same-channel tap)
+    /// running at once.
+    @State private var seeking = false
+
     var body: some View {
         ScrollViewReader { proxy in
         ScrollView {
@@ -60,6 +67,7 @@ struct MessageTranscriptView: View {
                         message: entry.message,
                         showsHeader: entry.showsHeader,
                         isOwn: entry.message.author?.id == session.currentUser?.id,
+                        isHighlighted: entry.message.id == highlightedMessageId,
                         onReact: { emoji in
                             Task { await session.toggleReaction(emoji, on: entry.message) }
                         },
@@ -113,17 +121,68 @@ struct MessageTranscriptView: View {
             session.captureUnreadMarker(channel)
             await session.loadMessages(for: channel)
             session.markChannelRead(channel)
+            // If this channel was opened by a message link, scroll to and
+            // highlight the target before arming pagination so the seek's own
+            // history loads don't race the scroll-up loader.
+            await seekToTarget(proxy)
             // Arm pagination only once layout has settled. The lazy stack
             // touches the top of the content during the first passes, so an
             // unguarded loader onAppear would chain-fire page loads on open.
             try? await Task.sleep(for: .milliseconds(300))
             paginationArmed = true
         }
+        // A tap on a message link for the channel already on screen won't
+        // re-run the task above (same id), so drive the seek from the target.
+        .onChange(of: session.messageJumpTargets[channel.id]) { _, target in
+            guard target != nil else { return }
+            Task { await seekToTarget(proxy) }
+        }
         .onDisappear {
             if session.activeChannelId == channel.id {
                 session.activeChannelId = nil
             }
         }
+        }
+    }
+
+    // MARK: Jump to message
+
+    /// Loads the target message into the window if needed, scrolls to center it,
+    /// and tints it for a couple of seconds. Consumes the pending target so it
+    /// only fires once per link tap.
+    private func seekToTarget(_ proxy: ScrollViewProxy) async {
+        guard !seeking, let target = session.messageJumpTargets[channel.id] else { return }
+        seeking = true
+        defer { seeking = false }
+
+        func loaded() -> Bool {
+            session.messages(in: channel.id).contains { $0.id == target }
+        }
+
+        if !loaded() {
+            // One window request centered on the message usually lands it;
+            // if the server can't do that, page back through history instead.
+            let landed = await session.loadMessagesAround(target, in: channel)
+            if !landed {
+                var pages = 0
+                while !loaded(), session.canLoadOlderMessages(in: channel.id), pages < 12 {
+                    _ = await session.loadOlderMessages(for: channel)
+                    pages += 1
+                }
+            }
+        }
+
+        session.messageJumpTargets[channel.id] = nil
+        guard loaded() else { return }
+        // Let the freshly loaded rows lay out before scrolling to one.
+        try? await Task.sleep(for: .milliseconds(150))
+        withAnimation(.easeInOut(duration: 0.3)) {
+            proxy.scrollTo(target, anchor: .center)
+        }
+        highlightedMessageId = target
+        try? await Task.sleep(for: .seconds(2))
+        withAnimation(.easeOut(duration: 0.6)) {
+            if highlightedMessageId == target { highlightedMessageId = nil }
         }
     }
 

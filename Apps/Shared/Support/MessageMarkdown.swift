@@ -8,13 +8,25 @@ import FluxerKit
 enum MessageMarkdown {
     static let channelURLScheme = "fluxer"
 
+    /// A link to a channel, or to a specific message inside one, parsed from
+    /// a web URL like https://web.fluxer.app/channels/{guild}/{channel}/{message}.
+    struct MessageLink: Hashable {
+        let channelId: Snowflake
+        /// nil for a plain channel link, set for a jump to one message.
+        let messageId: Snowflake?
+    }
+
     static func render(
         _ content: String,
         revealedSpoilers: Set<Int> = [],
+        webHost: String? = nil,
         channelName: (Snowflake) -> String?,
         userName: (Snowflake) -> String?
     ) -> AttributedString {
-        var text = content
+        // Web links to a channel or message render as their own chip below the
+        // text, so strip the raw URL out here before the bare-URL linker turns
+        // it into an ugly full link.
+        var text = textWithoutLinks(content, webHost: webHost)
 
         // ||spoiler|| markers. Revealed ones just lose the bars and render
         // normally. Hidden ones are replaced whole with a tappable link,
@@ -100,10 +112,11 @@ enum MessageMarkdown {
         return attributed
     }
 
-    /// When a message is nothing but 1 to 8 custom emoji, returns their ids
-    /// so the UI can draw the actual images at a friendly size.
-    static func emojiOnlyIds(_ content: String) -> [Snowflake]? {
-        guard let regex = try? NSRegularExpression(pattern: #"<a?:[A-Za-z0-9_~]+:(\d+)>"#) else { return nil }
+    /// When a message is nothing but 1 to 8 custom emoji, returns them as
+    /// tokens (id, name, animated flag) so the UI can draw the real images at
+    /// a friendly size and animate the animated ones.
+    static func emojiOnlyTokens(_ content: String) -> [ReactionEmoji]? {
+        guard let regex = try? NSRegularExpression(pattern: #"<(a)?:([A-Za-z0-9_~]+):(\d+)>"#) else { return nil }
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         let range = NSRange(trimmed.startIndex..., in: trimmed)
         let matches = regex.matches(in: trimmed, range: range)
@@ -114,9 +127,78 @@ enum MessageMarkdown {
             rest.removeSubrange(swiftRange)
         }
         guard rest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        return matches.compactMap { match in
-            Range(match.range(at: 1), in: trimmed).flatMap { Snowflake(string: String(trimmed[$0])) }
+        return matches.compactMap { match -> ReactionEmoji? in
+            guard let idRange = Range(match.range(at: 3), in: trimmed),
+                  let id = Snowflake(string: String(trimmed[idRange])),
+                  let nameRange = Range(match.range(at: 2), in: trimmed)
+            else { return nil }
+            let animated = match.range(at: 1).location != NSNotFound
+            return ReactionEmoji(id: id, name: String(trimmed[nameRange]), animated: animated)
         }
+    }
+
+    /// Channel and message links found in message content, in order, without
+    /// duplicates, capped at three. `webHost` is the current instance's web
+    /// origin host so links to that instance (and any fluxer.app host) are
+    /// recognized while foreign links stay plain.
+    static func messageLinks(_ content: String, webHost: String?) -> [MessageLink] {
+        var seen = Set<MessageLink>()
+        var result: [MessageLink] = []
+        for match in linkMatches(in: content, webHost: webHost) {
+            if seen.insert(match.link).inserted {
+                result.append(match.link)
+            }
+            if result.count == 3 { break }
+        }
+        return result
+    }
+
+    /// The message text with recognized channel/message links removed, so a
+    /// message that is only such links renders as chips with no empty line.
+    static func textWithoutLinks(_ content: String, webHost: String?) -> String {
+        var text = content
+        for match in linkMatches(in: text, webHost: webHost).reversed() {
+            text.replaceSubrange(match.range, with: "")
+        }
+        return text
+    }
+
+    private static let linkRegex = try? NSRegularExpression(
+        pattern: #"https?://([^/\s]+)/channels/(?:@me|\d+)/(\d+)(?:/(\d+))?/?"#
+    )
+
+    /// Matches every recognized channel/message web link with its string range.
+    private static func linkMatches(
+        in text: String,
+        webHost: String?
+    ) -> [(range: Range<String.Index>, link: MessageLink)] {
+        guard let regex = linkRegex else { return [] }
+        let range = NSRange(text.startIndex..., in: text)
+        var results: [(Range<String.Index>, MessageLink)] = []
+        for match in regex.matches(in: text, range: range) {
+            guard let fullRange = Range(match.range, in: text),
+                  let hostRange = Range(match.range(at: 1), in: text),
+                  isAllowedWebHost(String(text[hostRange]), configured: webHost),
+                  let channelRange = Range(match.range(at: 2), in: text),
+                  let channelId = Snowflake(string: String(text[channelRange]))
+            else { continue }
+            var messageId: Snowflake?
+            if let messageRange = Range(match.range(at: 3), in: text) {
+                messageId = Snowflake(string: String(text[messageRange]))
+            }
+            results.append((fullRange, MessageLink(channelId: channelId, messageId: messageId)))
+        }
+        return results
+    }
+
+    /// A link belongs in-app when its host matches this instance's web origin,
+    /// or is any fluxer.app host (covers canary and self-hosted defaults).
+    private static func isAllowedWebHost(_ host: String, configured: String?) -> Bool {
+        if let configured, host.caseInsensitiveCompare(configured) == .orderedSame {
+            return true
+        }
+        let lower = host.lowercased()
+        return lower == "fluxer.app" || lower.hasSuffix(".fluxer.app")
     }
 
     /// Invite codes found in message content, from fluxer.gg links or full

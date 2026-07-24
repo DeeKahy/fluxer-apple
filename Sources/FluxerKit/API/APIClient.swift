@@ -313,11 +313,19 @@ public actor APIClient {
     public func messages(
         in channelId: Snowflake,
         before: Snowflake? = nil,
+        after: Snowflake? = nil,
+        around: Snowflake? = nil,
         limit: Int = 50
     ) async throws -> [Message] {
         var query = [URLQueryItem(name: "limit", value: String(limit))]
         if let before {
             query.append(URLQueryItem(name: "before", value: before.stringValue))
+        }
+        if let after {
+            query.append(URLQueryItem(name: "after", value: after.stringValue))
+        }
+        if let around {
+            query.append(URLQueryItem(name: "around", value: around.stringValue))
         }
         return try await send("GET", Endpoint.messages(channelId), query: query)
     }

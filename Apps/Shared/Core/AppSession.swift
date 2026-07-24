@@ -116,6 +116,10 @@ final class AppSession {
     /// Set when a channel mention is tapped; the navigation layer consumes it.
     var channelJump: Channel?
 
+    /// Pending scroll-to-message target per channel, set when a message link is
+    /// tapped. The transcript for that channel consumes and clears it.
+    var messageJumpTargets: [Snowflake: Snowflake] = [:]
+
     var lastTypingSent: [Snowflake: Date] = [:]
     var cacheSaveTask: Task<Void, Never>?
     /// Channels whose in-memory messages came from cache or predate a

@@ -367,7 +367,7 @@ struct EmojiPickerSheet: View {
                                     onPick(emoji)
                                     dismiss()
                                 } label: {
-                                    RemoteImage(url: MediaURLs.customEmoji(emoji.asReactionEmoji)) {
+                                    EmojiImage(emoji: emoji.asReactionEmoji) {
                                         Text(":\(emoji.name):")
                                             .font(.caption2)
                                             .lineLimit(1)

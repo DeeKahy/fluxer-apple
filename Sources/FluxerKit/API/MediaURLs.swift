@@ -26,6 +26,11 @@ public enum MediaURLs {
 
     public static func customEmoji(_ emoji: ReactionEmoji) -> URL? {
         guard let id = emoji.id else { return nil }
+        // Animated emoji are served as a real GIF; the .webp path only ever
+        // returns the static first frame.
+        if emoji.animated == true {
+            return userContentBase.appending(path: "emojis/\(id).gif")
+        }
         var url = userContentBase.appending(path: "emojis/\(id).webp")
         url.append(queryItems: [URLQueryItem(name: "v", value: "5")])
         return url

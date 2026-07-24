@@ -66,6 +66,32 @@ extension AppSession {
         }
     }
 
+    /// Loads a window of messages centered on a target id, for jumping to a
+    /// linked message that isn't in the current window. Returns true when the
+    /// target is present in the loaded window afterwards. Errors are swallowed
+    /// (some servers may not support the around query) so the caller can fall
+    /// back to plain older-history pagination.
+    func loadMessagesAround(_ messageId: Snowflake, in channel: Channel) async -> Bool {
+        do {
+            let window = try await client.messages(
+                in: channel.id,
+                around: messageId,
+                limit: Self.historyPageSize
+            )
+            guard window.contains(where: { $0.id == messageId }) else { return false }
+            messages[channel.id] = window.sorted { $0.id < $1.id }
+            // A window is a slice out of the middle: older pages can still load,
+            // and re-entering the channel should refetch the newest page since
+            // this dropped it from view.
+            channelsWithFullHistory.remove(channel.id)
+            staleChannels.insert(channel.id)
+            scheduleCacheSave()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func sendMessage(
         _ content: String,
         in channel: Channel,

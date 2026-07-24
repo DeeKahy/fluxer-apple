@@ -75,6 +75,54 @@ struct MessageContentText: View {
     }
 }
 
+/// A chip for a link to a channel or a specific message. Looks like a channel
+/// reference; a message link also carries a bubble icon and a jump arrow, and
+/// tapping it navigates to the channel and scrolls to the message.
+struct MessageLinkChip: View {
+    @Environment(AppSession.self) private var session
+
+    let link: MessageMarkdown.MessageLink
+
+    var body: some View {
+        let channel = session.findChannel(link.channelId)
+        let isMessage = link.messageId != nil
+        Button {
+            session.jumpToMessage(channelId: link.channelId, messageId: link.messageId)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: isMessage ? "text.bubble.fill" : "number")
+                    .font(.system(size: 11, weight: .semibold))
+                Text(label(for: channel))
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                if isMessage {
+                    Image(systemName: "arrow.up.forward")
+                        .font(.system(size: 9, weight: .bold))
+                        .opacity(0.65)
+                }
+            }
+            .foregroundStyle(Theme.accent)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(Theme.accent.opacity(0.14), in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.22), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(channel == nil)
+        .padding(.top, 2)
+    }
+
+    private func label(for channel: Channel?) -> String {
+        guard let channel else {
+            return link.messageId != nil ? "message" : "channel"
+        }
+        if channel.type == .dm || channel.type == .groupDM {
+            return channel.name ?? "direct message"
+        }
+        return "#\(channel.name ?? "channel")"
+    }
+}
+
 struct MessageRow: View {
     @Environment(AppSession.self) private var session
     @Environment(\.desktopChrome) private var desktopChrome
@@ -82,6 +130,7 @@ struct MessageRow: View {
     let message: Message
     let showsHeader: Bool
     let isOwn: Bool
+    var isHighlighted: Bool = false
     let onReact: (ReactionEmoji) -> Void
     let onReply: () -> Void
     let onEdit: () -> Void
@@ -170,18 +219,19 @@ struct MessageRow: View {
                     }
                 }
                 if let content = message.content, !content.isEmpty {
-                    if let emojiIds = MessageMarkdown.emojiOnlyIds(content) {
+                    if let emojiTokens = MessageMarkdown.emojiOnlyTokens(content) {
                         HStack(spacing: 4) {
-                            ForEach(Array(emojiIds.enumerated()), id: \.offset) { _, id in
-                                RemoteImage(url: MediaURLs.customEmoji(ReactionEmoji(id: id, name: "e"))) {
+                            ForEach(Array(emojiTokens.enumerated()), id: \.offset) { _, emoji in
+                                EmojiImage(emoji: emoji) {
                                     Color.clear
                                 }
                                 .frame(width: 40, height: 40)
                             }
                         }
                         .padding(.top, 2)
-                    } else {
-                        ForEach(Array(MessageMarkdown.segments(content).enumerated()), id: \.offset) { _, segment in
+                    } else if !session.visibleMessageText(content)
+                        .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        ForEach(Array(MessageMarkdown.segments(session.visibleMessageText(content)).enumerated()), id: \.offset) { _, segment in
                             switch segment {
                             case .text(let text):
                                 MessageContentText(content: text)
@@ -212,6 +262,9 @@ struct MessageRow: View {
                 ForEach(Array((message.embeds ?? []).prefix(3).enumerated()), id: \.offset) { _, embed in
                     EmbedView(embed: embed)
                 }
+                ForEach(session.messageLinks(in: message.content ?? ""), id: \.self) { link in
+                    MessageLinkChip(link: link)
+                }
                 ForEach(MessageMarkdown.inviteCodes(message.content ?? ""), id: \.self) { code in
                     InviteCardView(code: code)
                 }
@@ -226,7 +279,9 @@ struct MessageRow: View {
         .padding(.horizontal, desktopChrome ? 6 : 0)
         .padding(.bottom, desktopChrome ? 1 : 0)
         .background {
-            if desktopChrome && hovering {
+            if isHighlighted {
+                RoundedRectangle(cornerRadius: 6).fill(Theme.accent.opacity(0.18))
+            } else if desktopChrome && hovering {
                 RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.035))
             }
         }
@@ -404,7 +459,7 @@ struct MessageRow: View {
                     } label: {
                         HStack(spacing: 4) {
                             if reaction.emoji.id != nil {
-                                RemoteImage(url: MediaURLs.customEmoji(reaction.emoji)) {
+                                EmojiImage(emoji: reaction.emoji) {
                                     Text(":\(reaction.emoji.name):").font(.caption2)
                                 }
                                 .frame(width: 16, height: 16)
