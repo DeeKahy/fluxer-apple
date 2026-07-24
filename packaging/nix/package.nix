@@ -25,7 +25,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   src = fetchurl {
     url = "https://github.com/DeeKahy/fluxer-apple/releases/download/v${finalAttrs.version}/CornFlux-macOS-Universal.dmg";
-    hash = "sha256-gXwmUpyTWEopRqoFnFXibAnZq7kdnT4M1hMBRpb8KF0=";
+    hash = "sha256-75L0wxttjPQy/s8Cn1JE4Cm26u6pNMLp20pJKami7mM=";
   };
 
   nativeBuildInputs = [ _7zz ];
