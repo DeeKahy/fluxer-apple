@@ -7,10 +7,24 @@ private struct DesktopChromeKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+/// True while the transcript is actively being scrolled, so desktop message
+/// rows can drop their hover chrome (highlight + floating toolbar) until the
+/// scroll settles. Scrolling drags rows under a stationary cursor, firing
+/// onHover on every row it passes; re-rendering the toolbar for each one made
+/// the wheel feel laggy.
+private struct TranscriptScrollingKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 extension EnvironmentValues {
     var desktopChrome: Bool {
         get { self[DesktopChromeKey.self] }
         set { self[DesktopChromeKey.self] = newValue }
+    }
+
+    var transcriptScrolling: Bool {
+        get { self[TranscriptScrollingKey.self] }
+        set { self[TranscriptScrollingKey.self] = newValue }
     }
 }
 

@@ -150,6 +150,7 @@ struct InlineMediaView: View {
 struct MessageRow: View {
     @Environment(AppSession.self) private var session
     @Environment(\.desktopChrome) private var desktopChrome
+    @Environment(\.transcriptScrolling) private var transcriptScrolling
 
     let message: Message
     let showsHeader: Bool
@@ -181,6 +182,14 @@ struct MessageRow: View {
         isPending || failedSend != nil
     }
 
+    /// Hover chrome is shown only when the cursor rests on the row AND the
+    /// transcript is not mid-scroll. Suppressing it during a scroll stops the
+    /// highlight and floating toolbar from churning as rows slide under the
+    /// cursor, which is what made desktop scrolling feel laggy.
+    private var showsHover: Bool {
+        hovering && !transcriptScrolling
+    }
+
     var body: some View {
         rowContent
             // Swipe a row from right to left to reply. Gated to the mobile
@@ -203,7 +212,7 @@ struct MessageRow: View {
                 Color.clear
                     .frame(width: desktopChrome ? 40 : 36, height: 1)
                     .overlay(alignment: .topTrailing) {
-                        if desktopChrome, hovering, let timestamp = message.timestamp {
+                        if desktopChrome, showsHover, let timestamp = message.timestamp {
                             Text(timestamp, style: .time)
                                 .font(.system(size: 10))
                                 .foregroundStyle(Theme.sectionMuted)
@@ -312,17 +321,19 @@ struct MessageRow: View {
         .background {
             if isHighlighted {
                 RoundedRectangle(cornerRadius: 6).fill(Theme.accent.opacity(0.18))
-            } else if desktopChrome && hovering {
+            } else if desktopChrome && showsHover {
                 RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.035))
             }
         }
         .overlay(alignment: .topTrailing) {
-            if desktopChrome && hovering && !isLocalPlaceholder {
+            if desktopChrome && showsHover && !isLocalPlaceholder {
                 hoverToolbar
             }
         }
-        .zIndex(hovering ? 1 : 0)
-        .onHover { hovering = $0 }
+        .zIndex(showsHover ? 1 : 0)
+        // Ignore hover updates while scrolling so a scroll that drags rows
+        // under the cursor doesn't write per-row state on every pass.
+        .onHover { if !transcriptScrolling { hovering = $0 } }
         .contentShape(Rectangle())
         .sheet(item: $profileUser) { user in
             ProfileSheet(user: user)

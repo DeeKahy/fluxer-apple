@@ -39,6 +39,11 @@ struct MessageTranscriptView: View {
     /// running at once.
     @State private var seeking = false
 
+    /// True while the user is actively scrolling. Desktop rows read this
+    /// through the environment to suppress hover chrome, which otherwise
+    /// churned as the cursor swept over row after row during a scroll.
+    @State private var isScrolling = false
+
     var body: some View {
         ScrollViewReader { proxy in
         ScrollView {
@@ -94,6 +99,15 @@ struct MessageTranscriptView: View {
         // UIScrollView's pan recognizer wedged until the channel was left
         // and reopened. Removing it is what unfreezes scrolling.
         .defaultScrollAnchor(.bottom)
+        .environment(\.transcriptScrolling, isScrolling)
+        // Only desktop rows have hover chrome to suppress, so keep this a
+        // no-op on iOS: flipping the flag would re-evaluate every visible row
+        // at each scroll boundary for no benefit.
+        .onScrollPhaseChange { _, phase in
+            guard desktopChrome else { return }
+            let scrolling = phase != .idle
+            if scrolling != isScrolling { isScrolling = scrolling }
+        }
         #if os(iOS)
         // Not .interactively: linking the pan gesture to the keyboard is
         // another way scrolling stops responding while the keyboard is up.

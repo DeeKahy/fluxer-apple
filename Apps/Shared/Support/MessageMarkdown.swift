@@ -8,6 +8,23 @@ import FluxerKit
 enum MessageMarkdown {
     static let channelURLScheme = "fluxer"
 
+    // Regexes are compiled once and reused. Compiling an NSRegularExpression
+    // is expensive, and these patterns never change; doing it inline meant
+    // every message row recompiled all of them on each body evaluation, which
+    // the LazyVStack runs for every row it scrolls into view.
+    private static let spoilerRegex = try? NSRegularExpression(
+        pattern: #"\|\|(.+?)\|\|"#,
+        options: [.dotMatchesLineSeparators]
+    )
+    private static let channelMentionRegex = try? NSRegularExpression(pattern: #"<#(\d+)>"#)
+    private static let customEmojiRegex = try? NSRegularExpression(pattern: #"<a?:([A-Za-z0-9_~]+):\d+>"#)
+    private static let userMentionRegex = try? NSRegularExpression(pattern: #"<@!?(\d+)>"#)
+    private static let bareURLRegex = try? NSRegularExpression(pattern: #"(?<![\(\]])(https?://[^\s<>]+)"#)
+    private static let emojiOnlyRegex = try? NSRegularExpression(pattern: #"<(a)?:([A-Za-z0-9_~]+):(\d+)>"#)
+    private static let inviteCodeRegex = try? NSRegularExpression(
+        pattern: #"(?:https?://)?fluxer\.gg/([A-Za-z0-9_-]+)"#
+    )
+
     /// A link to a channel, or to a specific message inside one, parsed from
     /// a web URL like https://web.fluxer.app/channels/{guild}/{channel}/{message}.
     struct MessageLink: Hashable {
@@ -32,10 +49,7 @@ enum MessageMarkdown {
         // normally. Hidden ones are replaced whole with a tappable link,
         // so the content never reaches the later transforms and the block
         // characters can't collide with markdown syntax.
-        if let regex = try? NSRegularExpression(
-            pattern: #"\|\|(.+?)\|\|"#,
-            options: [.dotMatchesLineSeparators]
-        ) {
+        if let regex = spoilerRegex {
             let range = NSRange(text.startIndex..., in: text)
             let matches = regex.matches(in: text, range: range)
             for (index, match) in matches.enumerated().reversed() {
@@ -56,14 +70,14 @@ enum MessageMarkdown {
         }
 
         // <#123> becomes a tappable link routed back into the app.
-        text = replace(in: text, pattern: #"<#(\d+)>"#) { id in
+        text = replace(in: text, regex: channelMentionRegex) { id in
             let name = channelName(id) ?? "channel"
             return "[**#\(escapeMarkdown(name))**](\(channelURLScheme)://channel/\(id))"
         }
 
         // Custom emoji tokens render as their name; emoji-only messages
         // are handled separately with real images.
-        if let regex = try? NSRegularExpression(pattern: #"<a?:([A-Za-z0-9_~]+):\d+>"#) {
+        if let regex = customEmojiRegex {
             let range = NSRange(text.startIndex..., in: text)
             for match in regex.matches(in: text, range: range).reversed() {
                 guard let fullRange = Range(match.range, in: text),
@@ -74,14 +88,14 @@ enum MessageMarkdown {
         }
 
         // <@123> and <@!123> become a highlighted name.
-        text = replace(in: text, pattern: #"<@!?(\d+)>"#) { id in
+        text = replace(in: text, regex: userMentionRegex) { id in
             let name = userName(id) ?? "someone"
             return "**@\(escapeMarkdown(name))**"
         }
 
         // Bare URLs get linked; ones already inside a markdown link are
         // left alone by requiring the character before not to be ( or ].
-        if let regex = try? NSRegularExpression(pattern: #"(?<![\(\]])(https?://[^\s<>]+)"#) {
+        if let regex = bareURLRegex {
             let range = NSRange(text.startIndex..., in: text)
             let matches = regex.matches(in: text, range: range).reversed()
             for match in matches {
@@ -116,7 +130,7 @@ enum MessageMarkdown {
     /// tokens (id, name, animated flag) so the UI can draw the real images at
     /// a friendly size and animate the animated ones.
     static func emojiOnlyTokens(_ content: String) -> [ReactionEmoji]? {
-        guard let regex = try? NSRegularExpression(pattern: #"<(a)?:([A-Za-z0-9_~]+):(\d+)>"#) else { return nil }
+        guard let regex = emojiOnlyRegex else { return nil }
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         let range = NSRange(trimmed.startIndex..., in: trimmed)
         let matches = regex.matches(in: trimmed, range: range)
@@ -223,9 +237,7 @@ enum MessageMarkdown {
     /// Invite codes found in message content, from fluxer.gg links or full
     /// invite URLs. Order preserved, duplicates removed, capped at three.
     static func inviteCodes(_ content: String) -> [String] {
-        guard let regex = try? NSRegularExpression(
-            pattern: #"(?:https?://)?fluxer\.gg/([A-Za-z0-9_-]+)"#
-        ) else { return [] }
+        guard let regex = inviteCodeRegex else { return [] }
         let range = NSRange(content.startIndex..., in: content)
         var seen = Set<String>()
         var codes: [String] = []
@@ -323,10 +335,10 @@ enum MessageMarkdown {
 
     private static func replace(
         in text: String,
-        pattern: String,
+        regex: NSRegularExpression?,
         with replacement: (Snowflake) -> String
     ) -> String {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }
+        guard let regex else { return text }
         var result = text
         let range = NSRange(result.startIndex..., in: result)
         for match in regex.matches(in: result, range: range).reversed() {
