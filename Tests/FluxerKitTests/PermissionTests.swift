@@ -94,4 +94,37 @@ struct PermissionTests {
         #expect(permissions.contains(.bypassSlowmode))
         #expect(!permissions.contains(.administrator))
     }
+
+    private func coloredRole(id: Snowflake, color: Int?, position: Int) -> Role {
+        let colorField = color.map { "\"color\": \($0), " } ?? ""
+        let json = #"{"id": "\#(id)", "name": "role", \#(colorField)"position": \#(position)}"#
+        return try! JSONDecoder.fluxer.decode(Role.self, from: Data(json.utf8))
+    }
+
+    @Test func roleColorPicksHighestColoredRole() {
+        let guild = makeGuild(roles: [
+            everyoneRole([]),
+            coloredRole(id: Snowflake(2), color: 0x00FF00, position: 1),
+            coloredRole(id: Snowflake(3), color: 0xFF0000, position: 5),
+        ])
+        // Member has both colored roles; the higher position (red) wins.
+        #expect(guild.roleColorValue(for: [Snowflake(2), Snowflake(3)]) == 0xFF0000)
+    }
+
+    @Test func roleColorSkipsColorlessAndZero() {
+        let guild = makeGuild(roles: [
+            everyoneRole([]),
+            coloredRole(id: Snowflake(2), color: 0x00FF00, position: 1),
+            coloredRole(id: Snowflake(3), color: 0, position: 9),
+            coloredRole(id: Snowflake(4), color: nil, position: 10),
+        ])
+        // The top two roles are color 0 and no color, so green stays the pick.
+        #expect(guild.roleColorValue(for: [Snowflake(2), Snowflake(3), Snowflake(4)]) == 0x00FF00)
+    }
+
+    @Test func roleColorNilWhenNoColoredRoles() {
+        let guild = makeGuild(roles: [everyoneRole([])])
+        #expect(guild.roleColorValue(for: [guildId]) == nil)
+        #expect(guild.roleColorValue(for: nil) == nil)
+    }
 }

@@ -78,6 +78,20 @@ public struct GuildMember: Codable, Hashable, Sendable {
     }
 }
 
+public extension Guild {
+    /// The color a member's name should paint, Discord style: the highest
+    /// positioned role that actually sets a color wins. Returns nil when none
+    /// of the member's roles carry a color (color 0 means "no color").
+    func roleColorValue(for roleIds: [Snowflake]?) -> Int? {
+        guard let roleIds, let roles else { return nil }
+        return roleIds
+            .compactMap { id in roles.first { $0.id == id } }
+            .filter { ($0.color ?? 0) != 0 }
+            .max { ($0.position ?? 0) < ($1.position ?? 0) }?
+            .color
+    }
+}
+
 /// Computes effective permissions the same way the server does: owner gets
 /// everything, role permissions union up, administrator short-circuits, then
 /// channel overwrites apply in order everyone, roles, member.

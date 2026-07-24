@@ -44,6 +44,12 @@ struct MemberListView: View {
         return all.filter { $0.displayName.localizedCaseInsensitiveContains(filter) }
     }
 
+    /// The member's highest colored role, if the guild handed us roles.
+    private func roleColor(for member: GuildMember) -> Color? {
+        guard let guild else { return nil }
+        return Color(roleColor: guild.roleColorValue(for: member.roles))
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -67,6 +73,7 @@ struct MemberListView: View {
                                 }
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(member.displayName)
+                                    .foregroundStyle(roleColor(for: member) ?? Theme.rowText)
                                 if let username = member.user?.username, username != member.displayName {
                                     Text(username)
                                         .font(.caption)

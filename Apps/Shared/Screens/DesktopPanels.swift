@@ -51,7 +51,7 @@ struct DesktopMembersPanel: View {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(member.displayName)
                                         .font(.system(size: 14, weight: .semibold))
-                                        .foregroundStyle(Theme.text)
+                                        .foregroundStyle(Color(roleColor: guild?.roleColorValue(for: member.roles)) ?? Theme.text)
                                         .lineLimit(1)
                                     if let username = member.user?.username, username != member.displayName {
                                         Text(username)

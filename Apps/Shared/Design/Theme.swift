@@ -9,6 +9,13 @@ extension Color {
             blue: Double(hex & 0xFF) / 255
         )
     }
+
+    /// A Fluxer role color (a packed 0xRRGGBB int) as a Color, or nil when the
+    /// value is missing or zero so callers can fall back to the name palette.
+    init?(roleColor value: Int?) {
+        guard let value, value != 0 else { return nil }
+        self.init(hex: UInt32(value & 0xFFFFFF))
+    }
 }
 
 /// Design tokens for the ink-dark look: near-black layered surfaces,

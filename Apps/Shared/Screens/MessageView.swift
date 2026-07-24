@@ -305,6 +305,19 @@ struct MessageView: View {
             .padding(.vertical, 9)
             .focused($composerFocused)
             .onSubmit(send)
+            .onKeyPress(.escape) {
+                // Same as tapping the x on the reply/edit banner.
+                if editing != nil {
+                    editing = nil
+                    draft = ""
+                    return .handled
+                }
+                if replyingTo != nil {
+                    replyingTo = nil
+                    return .handled
+                }
+                return .ignored
+            }
             .onChange(of: draft) { _, newValue in
                 if !newValue.isEmpty && editing == nil {
                     session.composerTyping(in: channel)
